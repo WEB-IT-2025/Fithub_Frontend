@@ -3,3 +3,8 @@ nodemodules/
 node_modules
 
 expo-env.d.ts
+devices.json
+
+README.md
+
+router.d.ts
