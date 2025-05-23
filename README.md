@@ -1,3 +1,16 @@
+#環境構築手順
+#nodemoduleインストール
+npm install 
+
+#expoインストール
+sudo npm install --global expo-cli
+
+#実行
+npx expo start
+
+
+
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
