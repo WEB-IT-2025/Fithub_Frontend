@@ -19,4 +19,6 @@ sudo npm install --global expo-cli
 
 #実行
 npx expo start
+
+#QRコードが表示されたら成功
 ```
