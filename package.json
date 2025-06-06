@@ -2,6 +2,7 @@
     "name": "fithub-demo",
     "main": "expo-router/entry",
     "version": "1.0.0",
+    "type": "module",
     "scripts": {
         "start": "expo start",
         "reset-project": "node ./scripts/reset-project.js",
@@ -41,7 +42,8 @@
         "react-native-safe-area-context": "5.4.0",
         "react-native-screens": "~4.10.0",
         "react-native-web": "~0.20.0",
-        "react-native-webview": "13.13.5"
+        "react-native-webview": "13.13.5",
+        "tailwind-react-native-classnames": "^3.0.1"
     },
     "devDependencies": {
         "@babel/core": "^7.25.2",
