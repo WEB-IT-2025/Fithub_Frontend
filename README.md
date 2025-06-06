@@ -78,7 +78,12 @@ fithub/
 npm install 
 
 #expoインストール
-sudo npm install --global expo-cli
+npm i --global expo-cli
+#macユーザー
+sudo npm i --global expo-cli
+
+#tailwind適用
+npm i tailwind-react-native-classnames
 
 #実行
 npx expo start
