@@ -15,6 +15,14 @@ const LoginScreen = () => {
         router.replace('/(tabs)/home')
     }
 
+    const handleRegister = () => {
+        router.push('/(auth)/register')
+    }
+
+    const handleDevLogin = () => {
+        router.push('/(auth)/home')
+    }
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -41,7 +49,12 @@ const LoginScreen = () => {
                     />
                     <Button
                         title='新規登録'
-                        onPress={() => router.push('/register')}
+                        onPress={handleRegister}
+                        variant='secondary'
+                    />
+                    <Button
+                        title='開発用ログイン'
+                        onPress={handleDevLogin}
                         variant='secondary'
                     />
                 </View>
