@@ -85,8 +85,6 @@ sudo npm i --global expo-cli
 #tailwind適用
 npm i tailwind-react-native-classnames
 
-
-
 #スマホのみ実行
 #npx expo start
 #web版実行
