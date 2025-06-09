@@ -70,6 +70,7 @@ fithub/
 - **Node.js v20.18.1**
 - **npm v10.9.2**
 - **npx v10.2.2**
+- **tailwind-react-native-classnames v3.0.1**
 
 
 ```bash
