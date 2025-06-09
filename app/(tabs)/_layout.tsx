@@ -16,6 +16,7 @@ export default function TabLayout() {
                     borderTopColor: '#E5E5EA',
                 },
             }}
+            // tabBar={() => null}
         >
             <Tabs.Screen
                 name='home'
