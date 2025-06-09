@@ -85,8 +85,26 @@ sudo npm i --global expo-cli
 #tailwind適用
 npm i tailwind-react-native-classnames
 
-#実行
-npx expo start
+
+
+#スマホのみ実行
+#npx expo start
+#web版実行
+npx expo start --web
 
 #QRコードが表示されたら成功
+
 ```
+## Tailwind CSS IntelliSenseを適用させる設定
+setting.jsonに以下を追加
+
+```
+"tailwindCSS.experimental.classRegex": [
+    "tw`([^`]*)",
+    "tw\\(\"([^\"]*)",
+    "tw\\('([^']*)",
+    "tw\\(\\`([^`]*)",
+    "classnames\\(([^)]*)\\)"
+]
+```
+もしうまくいかない場合はAIに上手い感じに書いてもらう
