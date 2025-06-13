@@ -27,6 +27,10 @@ export default function AuthHomeScreen() {
                 title='メイン画面へ'
                 onPress={() => router.replace('/(tabs)/home')}
             />
+            <Button
+                title='ログアウト'
+                onPress={() => router.replace('/(auth)/login')}
+            />
         </View>
     )
 }
