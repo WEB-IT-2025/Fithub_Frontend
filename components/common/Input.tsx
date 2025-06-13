@@ -1,6 +1,12 @@
-import React from 'react'
+import React from 'react';
 
-import { StyleSheet, Text, TextInput, View } from 'react-native'
+
+
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+
+
+
+
 
 type InputProps = {
     label: string
@@ -8,9 +14,10 @@ type InputProps = {
     onChangeText: (text: string) => void
     placeholder?: string
     secureTextEntry?: boolean
+    placeholderTextColor?: string
 }
 
-const Input = ({ label, value, onChangeText, placeholder, secureTextEntry }: InputProps) => {
+const Input = ({ label, value, onChangeText, placeholder, secureTextEntry, placeholderTextColor }: InputProps) => {
     return (
         <View style={styles.container}>
             <Text style={styles.label}>{label}</Text>
@@ -20,6 +27,7 @@ const Input = ({ label, value, onChangeText, placeholder, secureTextEntry }: Inp
                 onChangeText={onChangeText}
                 placeholder={placeholder}
                 secureTextEntry={secureTextEntry}
+                placeholderTextColor={placeholderTextColor}
             />
         </View>
     )

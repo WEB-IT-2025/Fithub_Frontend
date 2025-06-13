@@ -27,13 +27,15 @@ const LoginScreen = () => {
                         value={email}
                         onChangeText={setEmail}
                         placeholder='example@email.com'
+                        placeholderTextColor='#aaa'
                     />
                     <Input
                         label='パスワード'
                         value={password}
                         onChangeText={setPassword}
                         placeholder='パスワードを入力'
-                        secureTextEntry
+                        placeholderTextColor='#aaa'
+                        secureTextEntry={true}
                     />
                     <Button
                         title='ログイン'
