@@ -13,7 +13,7 @@ export default function TabBar() {
             path: '/home',
         },
         {
-            name: 'コミュニテsィ',
+            name: 'コミュニティ',
             icon: 'people-circle-outline',
             path: '/community',
         },
