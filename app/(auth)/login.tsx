@@ -10,18 +10,6 @@ const LoginScreen = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
 
-    const handleLogin = () => {
-        // TODO: ログイン処理を実装
-        router.replace('/(tabs)/home')
-    }
-
-    const handleRegister = () => {
-        router.push('/(auth)/register')
-    }
-
-    const handleDevLogin = () => {
-        router.push('/(auth)/home')
-    }
 
     return (
         <KeyboardAvoidingView
