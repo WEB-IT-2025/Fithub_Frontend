@@ -17,7 +17,7 @@ export default function TabLayout() {
                 },
             }}
             
-            // tabBar={() => null}
+             tabBar={() => null}
         >
             <Tabs.Screen
                 name='home'

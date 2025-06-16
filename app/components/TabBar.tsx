@@ -47,7 +47,7 @@ export default function TabBar() {
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        height: 80,
+        height: 120,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#E5E5EA',
