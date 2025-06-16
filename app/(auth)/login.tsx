@@ -1,17 +1,25 @@
-import React, { useState } from 'react'
-import { VITE_API_BASE_URL } from '@env'
-import { router } from 'expo-router'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
+import React, { useState } from 'react';
 
-import Button from '@/components/common/Button'
-import Input from '@/components/common/Input'
+
+
+import { router } from 'expo-router';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+
+
+
+import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
+
+
+
+
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
 
     const handleLogin = () => {
-        const url = VITE_API_BASE_URL
+        // const url = VITE_API_BASE_URL
         // TODO: ログイン処理を実装
         router.replace('/(tabs)/home')
     }
