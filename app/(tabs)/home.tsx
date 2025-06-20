@@ -1,67 +1,74 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, Modal } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground } from 'react-native'
 import { faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { faCalendar } from "@fortawesome/free-regular-svg-icons";
-import { faCoffee, faDog, faPerson, faScroll } from "@fortawesome/free-solid-svg-icons";
+import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import TabBar from '../components/TabBar'
 import MissionBoard from '../components/missionboard'
 
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 };
+const image = require("../assets/images/home_bg.png");
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>ホーム</Text>
-            <View style={styles.buttonGroup}>
-                
-                <TouchableOpacity
-                    style={styles.circleButton}
-                    onPress={() => {/* プロフィール画面へ遷移など */}}
-                >
-                    <FontAwesomeIcon style={iconStyle} icon={faPerson} size={30}  color='black'/>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.circleButton}
-                    onPress={() => {/* ペット画面へ遷移など */}}
-                >
-                    <FontAwesomeIcon style={iconStyle} icon={faDog} size={30} color='black' />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.circleButton}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <FontAwesomeIcon style={iconStyle} icon={faScroll} size={30} color='black' />
-                </TouchableOpacity>
-                
-            </View>
-
-            <Modal
-                visible={modalVisible}
-                animationType="slide"
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <View style={{ width: '90%', height: '90%', position: 'relative' }}>
-                        <MissionBoard />
-                        <TouchableOpacity
-                            style={styles.closeModalButtonAbsolute}
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Text style={styles.closeModalButtonText}>✕</Text>
-                        </TouchableOpacity>
-                    </View>
+        <ImageBackground
+            source={image} style={image}
+            // style={{ flex: 1, width: '100%', height: '100%' }}
+            resizeMode="cover"
+        >
+            <View style={styles.container}>
+                <Text style={styles.title}>ホーム</Text>
+                <View style={styles.buttonGroup}>
+                    
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() => {/* プロフィール画面へ遷移など */}}
+                    >
+                        <FontAwesomeIcon style={iconStyle} icon={faUser} size={30}  color='black'/>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() => {/* ペット画面へ遷移など */}}
+                    >
+                        <FontAwesomeIcon style={iconStyle} icon={faDog} size={30} color='black' />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.circleButton}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <FontAwesomeIcon style={iconStyle} icon={faScroll} size={30} color='black' />
+                    </TouchableOpacity>
+                    
                 </View>
-            </Modal>
 
-            {/* TabBarを最下部に固定 */}
-            <View style={styles.tabBarContainer}>
-                <TabBar />
+                <Modal
+                    visible={modalVisible}
+                    animationType="slide"
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={{ width: '90%', height: '90%', position: 'relative' }}>
+                            <MissionBoard />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* TabBarを最下部に固定 */}
+                <View style={styles.tabBarContainer}>
+                    <TabBar />
+                </View>
             </View>
-        </View>
+        </ImageBackground>
     )
 }
 
