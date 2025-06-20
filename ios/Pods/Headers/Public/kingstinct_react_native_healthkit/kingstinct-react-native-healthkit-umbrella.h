@@ -1,0 +1,1 @@
+../../../Target Support Files/kingstinct-react-native-healthkit/kingstinct-react-native-healthkit-umbrella.h
