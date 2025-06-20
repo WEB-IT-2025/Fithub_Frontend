@@ -344,3 +344,6 @@ expo-env.d.ts
 
 #ios
 ios/
+
+#android
+android/
