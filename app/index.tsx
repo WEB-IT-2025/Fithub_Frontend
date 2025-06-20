@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-
+import { MenuProvider } from 'react-native-popup-menu'
 
 
 import { Image } from 'expo-image';
