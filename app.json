@@ -1,22 +1,24 @@
 {
     "expo": {
-        "name": "fithub-demo",
-        "slug": "fithub-demo",
+        "name": "FithubFrontend",
+        "slug": "FithubFrontend",
         "version": "1.0.0",
         "orientation": "portrait",
         "icon": "./assets/images/icon.png",
-        "scheme": "fithubdemo",
+        "scheme": "FithubFrontend",
         "userInterfaceStyle": "automatic",
         "newArchEnabled": true,
         "ios": {
-            "supportsTablet": true
+            "supportsTablet": true,
+            "bundleIdentifier": "com.anonymous.FithubFrontend"
         },
         "android": {
             "adaptiveIcon": {
                 "foregroundImage": "./assets/images/adaptive-icon.png",
                 "backgroundColor": "#ffffff"
             },
-            "edgeToEdgeEnabled": true
+            "edgeToEdgeEnabled": true,
+            "package": "com.anonymous.FithubFrontend"
         },
         "web": {
             "bundler": "metro",

@@ -44,5 +44,5 @@ export default function RootLayout() {
             </Stack>
             <StatusBar style='auto' />
         </ThemeProvider>
-    )
+  )
 }

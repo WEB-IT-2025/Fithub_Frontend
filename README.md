@@ -86,6 +86,9 @@ sudo npm i --global expo-cli
 #tailwind適用
 npm i tailwind-react-native-classnames
 
+#歩数を取得するためのライブラリ(IOS)
+npm install @kingstinct/react-native-healthkit
+
 #スマホのみ実行
 #npx expo start
 #web版実行
