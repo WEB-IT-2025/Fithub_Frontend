@@ -13,13 +13,13 @@ export default function TabBar() {
             path: '/home',
         },
         {
-            name: 'コミュニティ',
+            name: 'グループ',
             icon: 'people-circle-outline',
-            path: '/community',
+            path: '../(tabs)/App',
         },
         {
             name: 'ストア',
-            icon: 'store',
+            icon: 'cart',
             path: '/store',
         },
     ]
