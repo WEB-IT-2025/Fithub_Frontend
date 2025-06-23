@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground } from 'react-native'
-import { faTwitter } from "@fortawesome/free-brands-svg-icons";
+import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground, Image } from 'react-native'
+import { faGithub, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
@@ -9,6 +9,9 @@ import MissionBoard from '../components/missionboard'
 
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 };
+
+const PET_NAME = '天王寺熟子'
+const WALK_PERCENT = 0.6
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
@@ -20,27 +23,49 @@ const HomeScreen = () => {
             resizeMode="cover"
         >
             <View style={styles.container}>
-                <View style={styles.buttonGroup}>
-                    
-                    <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => {/* プロフィール画面へ遷移など */}}
-                    >
-                        <FontAwesomeIcon style={iconStyle} icon={faUser} size={30}  color='black'/>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => {/* ペット画面へ遷移など */}}
-                    >
-                        <FontAwesomeIcon style={iconStyle} icon={faDog} size={30} color='black' />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.circleButton}
-                        onPress={() => setModalVisible(true)}
-                    >
-                        <FontAwesomeIcon style={iconStyle} icon={faScroll} size={30} color='black' />
-                    </TouchableOpacity>
-                    
+                <View style={styles.row}>
+                    {/* 左側ボタン */}
+                    <View style={styles.sideButtonGroup}>
+                        <TouchableOpacity
+                            style={styles.circleButton}
+                            onPress={() => {/* プロフィール画面へ遷移など */}}
+                        >
+                            <FontAwesomeIcon style={iconStyle} icon={faUser} size={30}  color='black'/>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.circleButton}
+                            onPress={() => {/* ペット画面へ遷移など */}}
+                        >
+                            <FontAwesomeIcon style={iconStyle} icon={faDog} size={30} color='black' />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.circleButton}
+                            onPress={() => setModalVisible(true)}
+                        >
+                            <FontAwesomeIcon style={iconStyle} icon={faScroll} size={30} color='black' />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* 中央ペット情報 */}
+                    <View style={styles.petInfo}>
+                        <Text style={styles.petName}>{PET_NAME}</Text>
+                        <Image
+                            source={require('@/assets/images/cat_test.png')}
+                            style={styles.petImage}
+                            resizeMode="cover"
+                        />
+                        <Text style={styles.label}>今日の歩数</Text>
+                        <View style={styles.progressBarBackground}>
+                            <View style={[styles.progressBarFill, { width: `${WALK_PERCENT * 100}%` }]} />
+                        </View>
+                        <Text style={styles.percentText}>5000歩まであと40％</Text>
+                    </View>
+
+                    {/* 右側ボタン（クローン） */}
+                    <View style={styles.sideButtonGroup}>
+                        
+                        
+                    </View>
                 </View>
 
                 <Modal
@@ -81,7 +106,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'flex-start',
         padding: 20,
-        paddingBottom: 0,
+        paddingBottom: 20,
     },
     missionButton: {
         backgroundColor: '#fff',
@@ -123,10 +148,21 @@ const styles = StyleSheet.create({
         bottom: 0,
         backgroundColor: 'transparent',
     },
-    buttonGroup: {
-        alignItems: 'flex-start',
-        width: '100%',
-        marginBottom: 20,
+    row: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    sideButtonGroup: {
+        flex: 1,
+        alignItems: 'flex-start', 
+    },
+    petInfo: {
+        flex: 3,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     circleButton: {
         backgroundColor: '#fff',
@@ -137,6 +173,47 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginBottom: 16,
         elevation: 2,
+    },
+    petName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginTop: 16,
+        marginBottom: 16,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        color: '#fff',
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    petImage: {
+        width: 170,
+        height: 170,
+        marginBottom: 36,
+    },
+    label: {
+        fontSize: 18,
+        color: '#fff',
+        marginBottom: 12,
+    },
+    progressBarBackground: {
+        width: 180,
+        height: 20,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 10,
+        overflow: 'hidden',
+        marginBottom: 12,
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#4caf50',
+    },
+    percentText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: 'bold',
     },
 })
 
