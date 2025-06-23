@@ -9,19 +9,17 @@ import MissionBoard from '../components/missionboard'
 
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 };
-const image = require("../assets/images/home_bg.png");
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
 
     return (
         <ImageBackground
-            source={image} style={image}
-            // style={{ flex: 1, width: '100%', height: '100%' }}
+            source={require('@/assets/images/home_bg.png')}
+            style={styles.background}
             resizeMode="cover"
         >
             <View style={styles.container}>
-                <Text style={styles.title}>ホーム</Text>
                 <View style={styles.buttonGroup}>
                     
                     <TouchableOpacity
@@ -73,17 +71,17 @@ const HomeScreen = () => {
 }
 
 const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+    },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'flex-start',
         padding: 20,
-        paddingBottom: 120, // ← TabBarの高さ分だけ下に余白を追加
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
+        paddingBottom: 0,
     },
     missionButton: {
         backgroundColor: '#fff',
