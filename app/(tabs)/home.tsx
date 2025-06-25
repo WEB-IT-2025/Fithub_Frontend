@@ -2,9 +2,13 @@ import React, { useState } from 'react'
 import { StyleSheet, Text, View, TouchableOpacity, Modal } from 'react-native'
 import TabBar from '../components/TabBar'
 import MissionBoard from '../components/missionboard'
+import Profile from '../components/common/profile' // 追加
+import { useRouter } from 'expo-router'
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
+    const [profileVisible, setProfileVisible] = useState(false) // 追加
+    const router = useRouter()
 
     return (
         <View style={styles.container}>
@@ -16,6 +20,15 @@ const HomeScreen = () => {
                 <Text style={styles.missionButtonText}>ミッションボード</Text>
             </TouchableOpacity>
 
+            {/* プロフィール画面への遷移ボタンを追加 */}
+            <TouchableOpacity
+                style={[styles.missionButton, { backgroundColor: '#388e3c' }]}
+                onPress={() => setProfileVisible(true)}
+            >
+                <Text style={styles.missionButtonText}>プロフィール</Text>
+            </TouchableOpacity>
+
+            {/* ミッションボードモーダル */}
             <Modal
                 visible={modalVisible}
                 animationType="slide"
@@ -27,6 +40,25 @@ const HomeScreen = () => {
                         <TouchableOpacity
                             style={styles.closeModalButtonAbsolute}
                             onPress={() => setModalVisible(false)}
+                        >
+                            <Text style={styles.closeModalButtonText}>✕</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* プロフィールモーダル */}
+            <Modal
+                visible={profileVisible}
+                animationType="slide"
+                onRequestClose={() => setProfileVisible(false)}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ width: '90%', height: '90%', position: 'relative' }}>
+                        <Profile />
+                        <TouchableOpacity
+                            style={styles.closeModalButtonAbsolute}
+                            onPress={() => setProfileVisible(false)}
                         >
                             <Text style={styles.closeModalButtonText}>✕</Text>
                         </TouchableOpacity>
