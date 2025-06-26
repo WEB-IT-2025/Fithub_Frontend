@@ -24,8 +24,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="fithubdemo"/>
-        <data android:scheme="FithubFrontend"/>
+        <data android:scheme="fithubfrontend"/>
       </intent-filter>
     </activity>
   </application>

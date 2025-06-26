@@ -1,6 +1,6 @@
 {
   "name": "ExpoSymbols",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "summary": "Provides access to the SF Symbols library on iOS for React Native and Expo apps.",
   "description": "Provides access to the SF Symbols library on iOS for React Native and Expo apps.",
   "license": "MIT",

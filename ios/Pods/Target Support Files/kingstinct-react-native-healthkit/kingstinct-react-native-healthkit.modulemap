@@ -1,6 +1,0 @@
-module kingstinct_react_native_healthkit {
-  umbrella header "kingstinct-react-native-healthkit-umbrella.h"
-
-  export *
-  module * { export * }
-}

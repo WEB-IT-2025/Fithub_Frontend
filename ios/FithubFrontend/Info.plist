@@ -8,10 +8,6 @@
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
     <string>FithubFrontend</string>
-    <key>CFBundleDocumentTypes</key>
-    <array>
-      <dict/>
-    </array>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -31,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>FithubFrontend</string>
+          <string>fithubfrontend</string>
           <string>com.anonymous.FithubFrontend</string>
         </array>
       </dict>
@@ -40,10 +36,6 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
-    <key>NSHealthShareUsageDescription</key>
-    <string>このアプリはヘルスケアデータへのアクセスを必要とします。</string>
-    <key>NSHealthUpdateUsageDescription</key>
-    <string>このアプリはヘルスケアデータを書き込みます。</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>

@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 
-import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { Link } from 'expo-router'
 import { Platform, StyleSheet } from 'react-native'
@@ -32,6 +31,12 @@ export default function HomeScreen() {
             >
                 <ThemedText>歩数画面</ThemedText>
             </Link> */}
+            <Link
+                href='/config'
+                style={tw`m-4`}
+            >
+                <ThemedText>コンフィグ画面</ThemedText>
+            </Link>
         </View>
     )
 }

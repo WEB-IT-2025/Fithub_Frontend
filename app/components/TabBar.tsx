@@ -20,7 +20,7 @@ export default function TabBar() {
         {
             name: 'ストア',
             icon: 'cart',
-            path: '/store',
+            path: '../config.tsx',
         },
     ]
 
