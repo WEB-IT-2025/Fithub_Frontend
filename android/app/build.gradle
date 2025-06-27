@@ -94,6 +94,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        // この行を追加
+        manifestPlaceholders = [
+            appAuthRedirectScheme: 'fithubfrontend'
+        ]
     }
     signingConfigs {
         debug {
