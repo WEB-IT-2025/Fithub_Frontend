@@ -1,14 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'
 
-
-
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { Button, SafeAreaView, Text } from 'react-native';
-
-
-
-
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth'
+import { GoogleSignin } from '@react-native-google-signin/google-signin'
+import { Button, SafeAreaView, Text } from 'react-native'
 
 // GoogleSigninの設定
 GoogleSignin.configure({
