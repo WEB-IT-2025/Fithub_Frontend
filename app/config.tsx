@@ -2,123 +2,104 @@ import React, { useEffect, useState } from 'react';
 
 
 
-import { getApps, initializeApp } from 'firebase/app';
-import { User, getAuth, onAuthStateChanged, signInAnonymously, signOut } from 'firebase/auth';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Platform } from 'react-native';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Button, SafeAreaView, Text } from 'react-native';
 
 
 
 
 
-// Android用Firebase config
-const androidFirebaseConfig = {
-    apiKey: 'AIzaSyCebUbGNEyVkFnQM13Gj1yY5BSAbHYF5qU',
-    authDomain: 'your-project.firebaseapp.com',
-    projectId: 'fithub-8675d',
-    storageBucket: 'your-project.appspot.com',
-    messagingSenderId: 'your-sender-id',
-    appId: 'your-android-app-id',
-}
+// GoogleSigninの設定
+GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_WEBCLIENTID || '',
+    // iosClientId: '<IOS_CLIENT_ID>',
+    offlineAccess: true,
+    forceCodeForRefreshToken: true,
+})
 
-// Firebase初期化
-const app = getApps().length === 0 ? initializeApp(androidFirebaseConfig) : getApps()[0]
-const auth = getAuth(app)
+// アプリ
+const App = () => {
+    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null)
+    const [accessToken, setAccessToken] = useState<string | null>(null)
 
-export default function ConfigScreen() {
-    const [user, setUser] = useState<User | null>(null)
-    const [loading, setLoading] = useState(false)
-
+    // 初期化
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user)
-        })
-        return unsubscribe
+        // Authenticationリスナーの準備
+        const subscriber = auth().onAuthStateChanged(onAuthStateChanged)
+        return subscriber
     }, [])
 
-    const handleSignIn = async () => {
-        setLoading(true)
-        try {
-            await signInAnonymously(auth)
-            Alert.alert('成功', 'Firebase認証が完了しました')
-        } catch (error) {
-            Alert.alert('エラー', `認証に失敗しました: ${error}`)
-        }
-        setLoading(false)
-    }
+    // サインイン・サインアウト時に呼ばれる
+    const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
+        setUser(user)
+        if (user) {
+            // ユーザーがサインインしている場合、アクセストークンを取得
+            try {
+                const token = await user.getIdToken()
+                setAccessToken(token)
+                console.log('Firebase ID Token:', token)
 
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth)
-            Alert.alert('成功', 'ログアウトしました')
-        } catch (error) {
-            Alert.alert('エラー', `ログアウトに失敗しました: ${error}`)
-        }
-    }
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Firebase Config画面</Text>
-            <Text style={styles.info}>プラットフォーム: {Platform.OS}</Text>
-
-            {user ?
-                <View style={styles.authSection}>
-                    <Text style={styles.info}>認証済み</Text>
-                    <Text style={styles.info}>UID: {user.uid}</Text>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={handleSignOut}
-                    >
-                        <Text style={styles.buttonText}>ログアウト</Text>
-                    </TouchableOpacity>
-                </View>
-            :   <View style={styles.authSection}>
-                    <Text style={styles.info}>未認証</Text>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={handleSignIn}
-                        disabled={loading}
-                    >
-                        <Text style={styles.buttonText}>{loading ? '認証中...' : 'Firebase認証'}</Text>
-                    </TouchableOpacity>
-                </View>
+                // Google Access Tokenも取得したい場合
+                const googleToken = await GoogleSignin.getTokens()
+                console.log('Google Access Token:', googleToken.accessToken)
+            } catch (error) {
+                console.error('Token取得エラー:', error)
             }
-        </View>
+        } else {
+            setAccessToken(null)
+        }
+    } // サインイン
+    const onSignIn = async () => {
+        try {
+            await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
+            const { data } = await GoogleSignin.signIn()
+            const googleCredential = auth.GoogleAuthProvider.credential(data!.idToken)
+
+            // Firebase認証
+            const result = await auth().signInWithCredential(googleCredential)
+
+            // アクセストークンを即座に取得
+            const token = await result.user.getIdToken()
+            setAccessToken(token)
+            console.log('ログイン成功 - Firebase ID Token:', token)
+
+            return result
+        } catch (error) {
+            console.error(error)
+        }
+    }
+    // サインアウト
+    const onSignOut = async () => {
+        try {
+            await GoogleSignin.revokeAccess()
+            await auth().signOut()
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    // UI
+    return (
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {user ?
+                <>
+                    <Text>{user?.displayName}</Text>
+                    <Text style={{ fontSize: 12, margin: 10 }}>
+                        Token: {accessToken ? accessToken.substring(0, 20) + '...' : 'なし'}
+                    </Text>
+                    <Button
+                        title='SignOut'
+                        onPress={onSignOut}
+                    />
+                </>
+            :   <Button
+                    title='SignIn'
+                    onPress={onSignIn}
+                />
+            }
+        </SafeAreaView>
     )
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        backgroundColor: '#fff',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#000',
-    },
-    info: {
-        fontSize: 16,
-        marginBottom: 10,
-        color: '#666',
-    },
-    authSection: {
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    button: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        borderRadius: 8,
-        marginTop: 10,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-})
+export default App
