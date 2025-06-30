@@ -6,6 +6,8 @@ import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-s
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import TabBar from '../components/TabBar'
 import MissionBoard from '../components/missionboard'
+import Profile from '../components/common/profile' // 追加
+import { useRouter } from 'expo-router'
 
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 };
@@ -15,6 +17,8 @@ const WALK_PERCENT = 0.6
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
+    const [profileVisible, setProfileVisible] = useState(false) // 追加
+    const router = useRouter()
 
     return (
         <ImageBackground
