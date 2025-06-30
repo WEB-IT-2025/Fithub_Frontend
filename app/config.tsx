@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth'
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
-import { Alert, Button, Modal, SafeAreaView, StyleSheet, Text, View } from 'react-native'
-import WebView from 'react-native-webview'
+
+
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Alert, Button, Modal, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import WebView from 'react-native-webview';
+
+
+
+
 
 // GoogleSigninの設定
 GoogleSignin.configure({
@@ -44,10 +50,12 @@ const App = () => {
     const [githubTokens, setGithubTokens] = useState<AuthTokens | null>(null)
     const [showWebView, setShowWebView] = useState<boolean>(false)
 
-    // GitHub OAuth設定
-    const GITHUB_CLIENT_ID = 'Ov23liBO8RebhEgVDKTj'
-    const REDIRECT_URI = 'fithub://oauth'
+    // 新しく追加: トークン詳細表示用のモーダル状態
+    const [showTokenModal, setShowTokenModal] = useState<boolean>(false)
 
+    // GitHub OAuth設定
+    const GITHUB_CLIENT_ID = process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID || ''
+    const REDIRECT_URI = process.env.EXPO_PUBLIC_REDIRECT_URI || ''
     // Firebase認証状態の監視（自動ログイン）
     useEffect(() => {
         console.log('Firebase Auth状態監視開始...')
@@ -175,6 +183,7 @@ const App = () => {
                     scope: tokenData.scope || '',
                 }
                 setGithubTokens(tokens)
+                console.log('GitHubアクセストークン取得成功:', tokens.accessToken.substring(0, 20) + '...')
                 await fetchGitHubUserInfo(tokenData.access_token)
             } else {
                 throw new Error('アクセストークンの取得に失敗')
@@ -237,7 +246,7 @@ const App = () => {
         }
     }
 
-    // トークン情報表示（修正版）
+    // 簡単なトークン情報表示（既存の機能）
     const showTokenInfo = () => {
         const info: string[] = []
 
@@ -255,6 +264,45 @@ const App = () => {
             Alert.alert('トークン情報', info.join('\n\n'))
         } else {
             Alert.alert('トークン情報', 'トークンがありません')
+        }
+    }
+
+    // 新しく追加: GitHubアクセストークンの詳細表示
+    const showGitHubTokenDetails = () => {
+        if (!githubTokens) {
+            Alert.alert('エラー', 'GitHubトークンが見つかりません')
+            return
+        }
+        setShowTokenModal(true)
+    }
+
+    // 新しく追加: GitHubアクセストークンをテストする関数
+    const testGitHubToken = async () => {
+        if (!githubTokens) {
+            Alert.alert('エラー', 'GitHubトークンが見つかりません')
+            return
+        }
+
+        try {
+            const response = await fetch('https://api.github.com/user', {
+                headers: {
+                    Authorization: `Bearer ${githubTokens.accessToken}`,
+                    Accept: 'application/vnd.github.v3+json',
+                },
+            })
+
+            if (response.ok) {
+                const userData = await response.json()
+                Alert.alert(
+                    'トークンテスト成功 ✅',
+                    `トークンは有効です！\nユーザー名: ${userData.login}\nAPI制限: ${response.headers.get('X-RateLimit-Remaining')}/${response.headers.get('X-RateLimit-Limit')}`
+                )
+            } else {
+                Alert.alert('トークンテスト失敗 ❌', `ステータス: ${response.status}`)
+            }
+        } catch (error) {
+            console.error('トークンテストエラー:', error)
+            Alert.alert('トークンテスト失敗', 'ネットワークエラーが発生しました')
         }
     }
 
@@ -298,6 +346,15 @@ const App = () => {
                                 </View>
                             )}
 
+                            {/* GitHubアクセストークン表示エリア */}
+                            {githubTokens && (
+                                <View style={styles.tokenDisplay}>
+                                    <Text style={styles.tokenTitle}>🔑 GitHubアクセストークン</Text>
+                                    <Text style={styles.tokenText}>{githubTokens.accessToken.substring(0, 30)}...</Text>
+                                    <Text style={styles.tokenText}>スコープ: {githubTokens.scope}</Text>
+                                </View>
+                            )}
+
                             <View style={styles.spacer} />
 
                             {/* ボタン群 */}
@@ -311,13 +368,29 @@ const App = () => {
                                 </>
                             )}
 
+                            {/* 新しく追加: GitHubトークン関連のボタン */}
+                            {githubTokens && (
+                                <>
+                                    <Button
+                                        title='GitHubトークン詳細'
+                                        onPress={showGitHubTokenDetails}
+                                    />
+                                    <View style={styles.spacer} />
+                                    <Button
+                                        title='GitHubトークンテスト'
+                                        onPress={testGitHubToken}
+                                    />
+                                    <View style={styles.spacer} />
+                                </>
+                            )}
+
                             <Button
                                 title='接続テスト'
                                 onPress={testConnection}
                             />
                             <View style={styles.spacer} />
                             <Button
-                                title='トークン情報'
+                                title='全トークン情報'
                                 onPress={showTokenInfo}
                             />
                             <View style={styles.spacer} />
@@ -367,6 +440,64 @@ const App = () => {
                         startInLoadingState={true}
                     />
                 </SafeAreaView>
+            </Modal>
+
+            {/* 新しく追加: GitHubトークン詳細表示モーダル */}
+            <Modal
+                visible={showTokenModal}
+                animationType='slide'
+                transparent={true}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <ScrollView>
+                            <Text style={styles.modalTitle}>GitHubアクセストークン詳細</Text>
+
+                            {githubTokens && (
+                                <>
+                                    <View style={styles.tokenDetailSection}>
+                                        <Text style={styles.tokenDetailLabel}>アクセストークン:</Text>
+                                        <Text
+                                            style={styles.tokenDetailValue}
+                                            selectable={true}
+                                        >
+                                            {githubTokens.accessToken}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.tokenDetailSection}>
+                                        <Text style={styles.tokenDetailLabel}>トークンタイプ:</Text>
+                                        <Text style={styles.tokenDetailValue}>{githubTokens.tokenType}</Text>
+                                    </View>
+
+                                    <View style={styles.tokenDetailSection}>
+                                        <Text style={styles.tokenDetailLabel}>スコープ:</Text>
+                                        <Text style={styles.tokenDetailValue}>
+                                            {githubTokens.scope || '設定されていません'}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.tokenDetailSection}>
+                                        <Text style={styles.tokenDetailLabel}>使用例:</Text>
+                                        <Text
+                                            style={styles.codeExample}
+                                            selectable={true}
+                                        >
+                                            {`curl -H "Authorization: Bearer ${githubTokens.accessToken}" https://api.github.com/user`}
+                                        </Text>
+                                    </View>
+                                </>
+                            )}
+                        </ScrollView>
+
+                        <View style={styles.modalButtons}>
+                            <Button
+                                title='閉じる'
+                                onPress={() => setShowTokenModal(false)}
+                            />
+                        </View>
+                    </View>
+                </View>
             </Modal>
         </SafeAreaView>
     )
@@ -430,6 +561,28 @@ const styles = StyleSheet.create({
         color: '#333',
         marginBottom: 2,
     },
+    // 新しく追加: GitHubトークン表示用スタイル
+    tokenDisplay: {
+        backgroundColor: '#e8f5e8',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 10,
+        alignItems: 'center',
+        width: '100%',
+    },
+    tokenTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#2d5a2d',
+        marginBottom: 8,
+    },
+    tokenText: {
+        fontSize: 12,
+        color: '#2d5a2d',
+        fontFamily: 'monospace',
+        marginBottom: 2,
+        textAlign: 'center',
+    },
     signInContainer: {
         width: '100%',
         alignItems: 'center',
@@ -449,6 +602,58 @@ const styles = StyleSheet.create({
     webViewTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    // 新しく追加: モーダル用スタイル
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        maxHeight: '80%',
+        width: '100%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+        color: '#333',
+    },
+    tokenDetailSection: {
+        marginBottom: 15,
+    },
+    tokenDetailLabel: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#555',
+        marginBottom: 5,
+    },
+    tokenDetailValue: {
+        fontSize: 12,
+        color: '#333',
+        backgroundColor: '#f8f9fa',
+        padding: 10,
+        borderRadius: 5,
+        fontFamily: 'monospace',
+    },
+    codeExample: {
+        fontSize: 10,
+        color: '#333',
+        backgroundColor: '#f1f3f4',
+        padding: 10,
+        borderRadius: 5,
+        fontFamily: 'monospace',
+    },
+    modalButtons: {
+        marginTop: 20,
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
 })
 
