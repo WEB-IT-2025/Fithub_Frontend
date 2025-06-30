@@ -6,6 +6,7 @@ import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-s
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import TabBar from '../components/TabBar'
 import MissionBoard from '../components/missionboard'
+import Profile from '../components/profile' // 追加
 
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 };
@@ -15,6 +16,7 @@ const WALK_PERCENT = 0.6
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
+    const [profileVisible, setProfileVisible] = useState(false) // 追加
 
     return (
         <ImageBackground
@@ -28,7 +30,7 @@ const HomeScreen = () => {
                     <View style={styles.sideButtonGroup}>
                         <TouchableOpacity
                             style={styles.circleButton}
-                            onPress={() => {/* プロフィール画面へ遷移など */}}
+                            onPress={() => setProfileVisible(true)} // プロフィールモーダルを開く
                         >
                             <FontAwesomeIcon style={iconStyle} icon={faUser} size={30}  color='black'/>
                         </TouchableOpacity>
@@ -68,6 +70,7 @@ const HomeScreen = () => {
                     </View>
                 </View>
 
+                {/* ミッションボードモーダル */}
                 <Modal
                     visible={modalVisible}
                     animationType="slide"
@@ -79,6 +82,25 @@ const HomeScreen = () => {
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
                                 onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* プロフィールモーダル */}
+                <Modal
+                    visible={profileVisible}
+                    animationType="slide"
+                    onRequestClose={() => setProfileVisible(false)}
+                >
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <View style={{ width: '90%', height: '90%', position: 'relative' }}>
+                            <Profile />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setProfileVisible(false)}
                             >
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
