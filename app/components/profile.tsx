@@ -14,16 +14,21 @@ const contributionColors = [
 ]
 
 const Profile = () => {
-    const [period, setPeriod] = useState<'日' | '週' | '月'>('日') // ← 初期値を「日」に
+    const [period, setPeriod] = useState<'日' | '週' | '月'>('日')
     const [toggleWidth, setToggleWidth] = useState(0)
     const sliderAnim = useRef(new Animated.Value(0)).current
 
+    // 端6px開ける
+    const sliderMargin = 6
+    const sliderCount = 3
+    const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
+
     // スライダー位置を計算
     const getLeft = (p: '日' | '週' | '月') => {
-        if (toggleWidth === 0) return 0
-        if (p === '日') return 0
-        if (p === '週') return toggleWidth / 3
-        return (toggleWidth / 3) * 2
+        if (toggleWidth === 0) return sliderMargin
+        if (p === '日') return sliderMargin
+        if (p === '週') return sliderMargin + sliderWidth
+        return sliderMargin + sliderWidth * 2
     }
 
     useEffect(() => {
@@ -103,7 +108,7 @@ const Profile = () => {
                 </View>
                 {/* 名前＋インジケーター3本（縦並び） */}
                 <View style={styles.petParamInfo}>
-                    <Text style={styles.petParamName}>天王寺　熟子
+                    <Text style={styles.petParamName}>くろた
                     </Text>
                     <View style={styles.indicatorColumn}>
                         <View style={styles.indicatorRow}>
@@ -166,7 +171,7 @@ const Profile = () => {
                             styles.toggleSlider,
                             {
                                 left: sliderAnim,
-                                width: toggleWidth / 3 || '33.3%',
+                                width: sliderWidth || '33.3%',
                             }
                         ]}
                     />
