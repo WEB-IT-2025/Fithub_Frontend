@@ -22,7 +22,7 @@ const TabBar = () => {
             </TouchableOpacity>
             <TouchableOpacity
                 style={styles.tabButton}
-                // onPress={() => router.push('遷移先のパス')}
+                onPress={() => router.push('/group')}
             >
                 <FontAwesomeIcon
                     icon={faUserGroup}
