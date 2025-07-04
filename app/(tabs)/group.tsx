@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
         paddingBottom: 64,
     },
     title: {
+        paddingTop: 24,
         fontSize: 24,
         fontWeight: 'bold',
         color: '#388e3c',
@@ -53,12 +54,13 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     roomList: {
+        paddingTop: 24, // ← ここを追加（お好みで数値調整）
         paddingBottom: 24,
     },
     roomButton: {
         backgroundColor: '#ACEEBB',
         borderRadius: 12,
-        paddingVertical: 20,
+        paddingVertical: 32,
         paddingHorizontal: 24,
         marginBottom: 16,
         alignItems: 'center',
