@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground, Image } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground, Image, StatusBar, Platform } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { faGithub, faTwitter } from "@fortawesome/free-brands-svg-icons";
 import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-solid-svg-icons";
@@ -75,9 +76,31 @@ const HomeScreen = () => {
                     visible={modalVisible}
                     animationType="slide"
                     onRequestClose={() => setModalVisible(false)}
+                    statusBarTranslucent={true}
+                    presentationStyle="fullScreen"
+                    hardwareAccelerated={true}
                 >
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={{ width: '90%', height: '90%', position: 'relative' }}>
+                    <StatusBar
+                        barStyle="dark-content"
+                        backgroundColor="transparent"
+                        translucent={true}
+                        hidden={Platform.OS === 'android'}
+                    />
+                    {Platform.OS === 'ios' ? (
+                        <SafeAreaView style={styles.fullScreenModal}>
+                            <MissionBoard />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </SafeAreaView>
+                    ) : (
+                        <View style={[
+                            styles.fullScreenModal,
+                            { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }
+                        ]}>
                             <MissionBoard />
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
@@ -86,7 +109,7 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    )}
                 </Modal>
 
                 {/* プロフィールモーダル */}
@@ -94,9 +117,31 @@ const HomeScreen = () => {
                     visible={profileVisible}
                     animationType="slide"
                     onRequestClose={() => setProfileVisible(false)}
+                    statusBarTranslucent={true}
+                    presentationStyle="fullScreen"
+                    hardwareAccelerated={true}
                 >
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <View style={{ width: '90%', height: '90%', position: 'relative' }}>
+                    <StatusBar
+                        barStyle="dark-content"
+                        backgroundColor="transparent"
+                        translucent={true}
+                        hidden={Platform.OS === 'android'}
+                    />
+                    {Platform.OS === 'ios' ? (
+                        <SafeAreaView style={styles.fullScreenModal}>
+                            <Profile />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setProfileVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </SafeAreaView>
+                    ) : (
+                        <View style={[
+                            styles.fullScreenModal,
+                            { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }
+                        ]}>
                             <Profile />
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
@@ -105,7 +150,7 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    )}
                 </Modal>
 
                 {/* TabBarを最下部に固定 */}
@@ -241,6 +286,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#fff',
         fontWeight: 'bold',
+    },
+    fullScreenModal: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        position: 'relative',
     },
 })
 

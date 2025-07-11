@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { Animated, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 
 const userName = 'Nguyen Duc Huynh'
 const contributions = [2, 0, 4, 3, 2, 4, 3] // 0〜4の値のみ使うようにしてください
@@ -18,8 +20,8 @@ const Profile = () => {
     const [toggleWidth, setToggleWidth] = useState(0)
     const sliderAnim = useRef(new Animated.Value(0)).current
 
-    // 端6px開ける
-    const sliderMargin = 6
+    // レスポンシブなスライダーマージン
+    const sliderMargin = responsiveWidth(1.5) // 6px -> レスポンシブ
     const sliderCount = 3
     const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
 
@@ -77,7 +79,7 @@ const Profile = () => {
             <View style={styles.underline} />
             {/* ユーザー名 */}
             <Text style={styles.userName}>{userName}</Text>
-            
+
             {/* 今週のコントリビューション */}
             <Text style={styles.sectionLabel}>今週のコントリビューション</Text>
             {/* 7日分のコントリビューションデータ */}
@@ -88,7 +90,7 @@ const Profile = () => {
                             key={idx}
                             style={[
                                 styles.contributionBox,
-                                { backgroundColor: contributionColors[Math.max(0, Math.min(count, 4))] }
+                                { backgroundColor: contributionColors[Math.max(0, Math.min(count, 4))] },
                             ]}
                         />
                     ))}
@@ -103,54 +105,59 @@ const Profile = () => {
                     <Image
                         source={require('@/assets/images/moukona.jpeg')}
                         style={styles.petParamImage}
-                        resizeMode="cover"
+                        resizeMode='cover'
                     />
                 </View>
                 {/* 名前＋インジケーター3本（縦並び） */}
                 <View style={styles.petParamInfo}>
-                    <Text style={styles.petParamName}>くろた
-                    </Text>
+                    <Text style={styles.petParamName}>くろた</Text>
                     <View style={styles.indicatorColumn}>
                         <View style={styles.indicatorRow}>
                             <Text style={styles.indicatorLabel}>健康度</Text>
                             <View style={styles.indicator}>
-                                <Animated.View style={{
-                                    backgroundColor: '#2BA44E',
-                                    height: '100%',
-                                    borderRadius: 5,
-                                    width: healthAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: ['0%', '100%']
-                                    }),
-                                }} />
+                                <Animated.View
+                                    style={{
+                                        backgroundColor: '#2BA44E',
+                                        height: '100%',
+                                        borderRadius: responsiveWidth(1.25), // 5px -> レスポンシブ
+                                        width: healthAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: ['0%', '100%'],
+                                        }),
+                                    }}
+                                />
                             </View>
                         </View>
                         <View style={styles.indicatorRow}>
                             <Text style={styles.indicatorLabel}>サイズ</Text>
                             <View style={styles.indicator}>
-                                <Animated.View style={{
-                                    backgroundColor: '#2BA44E',
-                                    height: '100%',
-                                    borderRadius: 5,
-                                    width: sizeAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: ['0%', '100%']
-                                    }),
-                                }} />
+                                <Animated.View
+                                    style={{
+                                        backgroundColor: '#2BA44E',
+                                        height: '100%',
+                                        borderRadius: responsiveWidth(1.25), // 5px -> レスポンシブ
+                                        width: sizeAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: ['0%', '100%'],
+                                        }),
+                                    }}
+                                />
                             </View>
                         </View>
                         <View style={styles.indicatorRow}>
                             <Text style={styles.indicatorLabel}>年齢</Text>
                             <View style={styles.indicator}>
-                                <Animated.View style={{
-                                    backgroundColor: '#2BA44E',
-                                    height: '100%',
-                                    borderRadius: 5,
-                                    width: ageAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: ['0%', '100%']
-                                    }),
-                                }} />
+                                <Animated.View
+                                    style={{
+                                        backgroundColor: '#2BA44E',
+                                        height: '100%',
+                                        borderRadius: responsiveWidth(1.25), // 5px -> レスポンシブ
+                                        width: ageAnim.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: ['0%', '100%'],
+                                        }),
+                                    }}
+                                />
                             </View>
                         </View>
                     </View>
@@ -164,7 +171,7 @@ const Profile = () => {
             <View style={styles.toggleContainer}>
                 <View
                     style={styles.toggleBackground}
-                    onLayout={e => setToggleWidth(e.nativeEvent.layout.width)}
+                    onLayout={(e) => setToggleWidth(e.nativeEvent.layout.width)}
                 >
                     <Animated.View
                         style={[
@@ -172,7 +179,7 @@ const Profile = () => {
                             {
                                 left: sliderAnim,
                                 width: sliderWidth || '33.3%',
-                            }
+                            },
                         ]}
                     />
                     {['日', '週', '月'].map((label) => (
@@ -182,10 +189,9 @@ const Profile = () => {
                             onPress={() => setPeriod(label as '日' | '週' | '月')}
                             activeOpacity={1}
                         >
-                            <Text style={[
-                                styles.toggleText,
-                                period === label && styles.activeToggleText
-                            ]}>{label}</Text>
+                            <Text style={[styles.toggleText, period === label && styles.activeToggleText]}>
+                                {label}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -204,7 +210,14 @@ const Profile = () => {
 
             {/* 折れ線グラフ（ダミー） */}
             <View style={styles.graphPlaceholder}>
-                <Text style={{ color: '#bbb' }}>（ここに折れ線グラフ）</Text>
+                <Text
+                    style={{
+                        color: '#bbb',
+                        fontSize: responsiveFontSize(2), // レスポンシブ対応
+                    }}
+                >
+                    （ここに折れ線グラフ）
+                </Text>
             </View>
         </View>
     )
@@ -214,53 +227,59 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#ffffff',
-        borderRadius: 20,
-        padding: 24,
-        paddingTop: 10,
+        borderRadius: responsiveWidth(5), // 20 -> レスポンシブ
+        padding: responsiveWidth(6), // 24 -> レスポンシブ
+        paddingTop: Platform.OS === 'ios' ? responsiveHeight(6) : responsiveHeight(0), // iOS用に上部パディング増加
     },
     title: {
-        fontSize: 24,
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(3), // Androidで少し小さく
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: responsiveHeight(0.25),
         color: '#388e3c',
     },
     underline: {
-        height: 1,
+        height: responsiveHeight(0.125), // 1 -> レスポンシブ
         backgroundColor: '#ccc',
         width: '150%',
         alignSelf: 'center',
-        marginBottom: 10,
+        marginBottom: responsiveHeight(1.25), // 10 -> レスポンシブ
         opacity: 0.5,
     },
     userName: {
-        fontSize: 18,
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25), // Androidで少し小さく
         fontWeight: 'bold',
         color: '#000',
-        marginBottom: 10,
+        marginBottom: responsiveHeight(1.25),
         textAlign: 'left',
     },
     sectionLabel: {
-        fontSize: 16,
-        color: '#000',           // 黒
-        fontWeight: 'bold',      // ボールド
-        marginBottom: 16,
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.9) : responsiveFontSize(2), // Androidで少し小さく
+        color: '#000',
+        fontWeight: 'bold',
+        marginBottom: responsiveHeight(1),
         textAlign: 'left',
         alignSelf: 'flex-start',
     },
     contributionBoard: {
         backgroundColor: '#fff',
-        borderRadius: 16,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        marginBottom: 16,
+        borderRadius: responsiveWidth(4),
+        paddingVertical: responsiveHeight(1.25),
+        paddingHorizontal: responsiveWidth(4),
+        marginBottom: responsiveHeight(2),
         alignSelf: 'flex-start',
-        // ドロップシャドウ
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.18,
-        shadowRadius: 12,
-        elevation: 8, // Android用
+        // プラットフォーム別シャドウ
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: responsiveHeight(0.75) },
+                shadowOpacity: 0.18,
+                shadowRadius: responsiveWidth(3),
+            },
+            android: {
+                elevation: 6, // Androidではelevationを少し下げる
+            },
+        }),
     },
     contributionRow: {
         flexDirection: 'row',
@@ -268,109 +287,122 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     contributionBox: {
-        width: 36,
-        height: 36,
-        borderRadius: 8,
-        marginLeft: 4,
-        marginRight: 4,
+        width: responsiveWidth(9), // 36 -> レスポンシブ
+        height: responsiveWidth(9), // 36 -> レスポンシブ（正方形を維持）
+        borderRadius: responsiveWidth(2), // 8 -> レスポンシブ
+        marginLeft: responsiveWidth(1), // 4 -> レスポンシブ
+        marginRight: responsiveWidth(1), // 4 -> レスポンシブ
         alignItems: 'center',
         justifyContent: 'center',
     },
     Spacer: {
-        height: 12, 
+        height: responsiveHeight(1.5), // 12 -> レスポンシブ
     },
     petParamRow: {
         flexDirection: 'row',
-        alignItems: 'stretch', // ← stretchで高さを揃える
-        marginBottom: 24,
+        alignItems: 'stretch',
+        marginBottom: responsiveHeight(3), // 24 -> レスポンシブ
         width: '100%',
     },
     petParamImageWrapper: {
         justifyContent: 'center',
         alignItems: 'center',
-        height: 80, // 下のpetParamInfoと高さを揃える
-        marginRight: 16,
+        height: responsiveHeight(10), // 80 -> レスポンシブ
+        marginRight: responsiveWidth(4), // 16 -> レスポンシブ
     },
     petParamImage: {
-        width: 100,
-        height: 100,
+        width: responsiveWidth(25), // 100 -> レスポンシブ
+        height: responsiveWidth(25), // 100 -> レスポンシブ（正方形を維持）
     },
     petParamInfo: {
         flex: 1,
         justifyContent: 'center',
-        height: 80, // 画像と同じ高さに
+        height: responsiveHeight(10), // 80 -> レスポンシブ
     },
     petParamName: {
-        fontSize: 18,
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25), // Androidで少し小さく
         fontWeight: 'bold',
         color: '#388e3c',
-        marginBottom: 8,
+        marginBottom: responsiveHeight(1),
         textAlign: 'center',
     },
     indicatorColumn: {
         flexDirection: 'column',
-        alignItems: 'flex-start', // ← 左寄せ
-        gap: 6, //
+        alignItems: 'flex-start',
+        gap: responsiveHeight(0.3), // 6 -> 2.4px に縮小
     },
     indicatorRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 6,
-        width: '100%', // 横幅いっぱい使う
+        marginBottom: responsiveHeight(0.3), // 6 -> 2.4px に縮小
+        width: '100%',
     },
     indicatorLabel: {
-        fontSize: 14,
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.6) : responsiveFontSize(1.75), // Androidで少し小さく
         color: '#333',
-        marginRight: 10,
-        minWidth: 60, // 必要なら固定幅
+        marginRight: responsiveWidth(2.5),
+        minWidth: responsiveWidth(15),
         textAlign: 'right',
     },
     indicator: {
-        height: 10,
-        borderRadius: 5,
+        height: responsiveHeight(1.25),
+        borderRadius: responsiveWidth(1.25),
         flex: 1,
         minWidth: 0,
-        backgroundColor: '#fff', // 背景を白
-        // ドロップシャドウ
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.18,
-        shadowRadius: 4,
-        elevation: 3, // Android用
+        backgroundColor: '#fff',
+        // プラットフォーム別シャドウ
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
+                shadowOpacity: 0.18,
+                shadowRadius: responsiveWidth(1),
+            },
+            android: {
+                elevation: 2, // Androidではelevationを少し下げる
+            },
+        }),
         overflow: 'visible',
         position: 'relative',
     },
     toggleContainer: {
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: responsiveHeight(2), // 16 -> レスポンシブ
         width: '100%',
     },
     toggleBackground: {
-        width: '100%', // ← 横幅を100%に
-        maxWidth: 400, // 必要なら最大幅を設定（例: 400px）
-        height: 44,
+        width: '100%',
+        maxWidth: responsiveWidth(100),
+        height: responsiveHeight(5.5),
         backgroundColor: '#fff',
-        borderRadius: 22,
+        borderRadius: responsiveHeight(2.75),
         flexDirection: 'row',
         alignItems: 'center',
         position: 'relative',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-        elevation: 4,
+        // プラットフォーム別シャドウ
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
+                shadowOpacity: 0.12,
+                shadowRadius: responsiveWidth(1.5),
+            },
+            android: {
+                elevation: 3, // Androidではelevationを少し下げる
+            },
+        }),
     },
     toggleSlider: {
         position: 'absolute',
-        top: 4,
-        height: 36,
+        top: responsiveHeight(0.5), // 4 -> レスポンシブ
+        height: responsiveHeight(4.5), // 36 -> レスポンシブ
         backgroundColor: '#136229',
-        borderRadius: 18,
+        borderRadius: responsiveHeight(2.25), // 18 -> レスポンシブ
         zIndex: 1,
     },
     toggleTouchable: {
         flex: 1,
-        height: 44,
+        height: responsiveHeight(5.5), // 44 -> レスポンシブ
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 2,
@@ -378,45 +410,45 @@ const styles = StyleSheet.create({
     toggleText: {
         color: '#136229',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: responsiveFontSize(2), // 16 -> レスポンシブ
     },
     activeToggleText: {
         color: '#fff',
     },
     totalRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start', // ← 上揃えに
-        marginBottom: 8,
-        gap: 8,
+        alignItems: 'flex-start',
+        marginBottom: responsiveHeight(1), // 8 -> レスポンシブ
+        gap: responsiveWidth(2), // 8 -> レスポンシブ
     },
     totalLabel: {
-        fontSize: 12,
+        fontSize: responsiveFontSize(1.5), // 12 -> レスポンシブ
         color: '#666',
-        marginBottom: 2, // ラベルと値の間に少し余白
+        marginBottom: responsiveHeight(0.25), // 2 -> レスポンシブ
     },
     totalValue: {
         fontWeight: 'bold',
         color: '#000',
-        fontSize: 20,
+        fontSize: responsiveFontSize(2.5), // 20 -> レスポンシブ
     },
     totalNumber: {
-        fontSize: 32, // 数字を大きく
+        fontSize: responsiveFontSize(4), // 32 -> レスポンシブ
         fontWeight: 'bold',
         color: '#000',
     },
     totalUnit: {
-        fontSize: 16, // 単位を小さく
+        fontSize: responsiveFontSize(2), // 16 -> レスポンシブ
         fontWeight: 'bold',
         color: '#000',
     },
     graphPlaceholder: {
-        height: 180,
+        height: responsiveHeight(22.5), // 180 -> レスポンシブ
         width: '100%',
         backgroundColor: '#f4f4f4',
-        borderRadius: 12,
+        borderRadius: responsiveWidth(3), // 12 -> レスポンシブ
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 24,
+        marginBottom: responsiveHeight(3), // 24 -> レスポンシブ
     },
 })
 
