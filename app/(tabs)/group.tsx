@@ -1,6 +1,8 @@
 import React from 'react'
-import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity } from 'react-native'
+
 import { useRouter } from 'expo-router'
+import { ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
 import TabBar from '../components/TabBar'
 
 const rooms = [
@@ -18,16 +20,18 @@ const GroupScreen = () => {
         <ImageBackground
             source={require('@/assets/images/home_bg.png')}
             style={styles.background}
-            resizeMode="cover"
+            resizeMode='cover'
         >
             <View style={styles.container}>
                 <Text style={styles.title}>グループ選択</Text>
                 <ScrollView contentContainerStyle={styles.roomList}>
-                    {rooms.map(room => (
+                    {rooms.map((room) => (
                         <TouchableOpacity
                             key={room.id}
                             style={styles.roomButton}
-                            onPress={() => router.push({ pathname: '/rooms/[roomId]', params: { roomId: String(room.id) } })}
+                            onPress={() =>
+                                router.push({ pathname: '/rooms/[roomId]', params: { roomId: String(room.id) } })
+                            }
                         >
                             <Text style={styles.roomButtonText}>{room.name}</Text>
                         </TouchableOpacity>
@@ -60,7 +64,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     roomList: {
-        paddingTop: 24,// ← ここを追加（お好みで数値調整）
+        paddingTop: 24, // ← ここを追加（お好みで数値調整）
         paddingBottom: 24,
     },
     roomButton: {

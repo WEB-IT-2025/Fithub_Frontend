@@ -16,9 +16,9 @@ import Button from '@/components/common/Button'
 export default function HomeScreen() {
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Link href='/(auth)/login'>
+            {/* <Link href='/(auth)/login'>
                 <ThemedText>ログイン画面へ</ThemedText>
-            </Link>
+            </Link> */}
             <Link
                 href='/(tabs)/home'
                 style={tw`m-4`}
@@ -35,7 +35,7 @@ export default function HomeScreen() {
                 href='/config'
                 style={tw`m-4`}
             >
-                <ThemedText>コンフィグ画面</ThemedText>
+                <ThemedText>ggログイン画面</ThemedText>
             </Link>
         </View>
     )
