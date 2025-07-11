@@ -224,7 +224,7 @@ const ConfigScreen = () => {
             const payload = parseJwtPayload(token)
             if (payload && payload.user_id && payload.user_name) {
                 console.log('✅ JWTからユーザー情報取得成功:', payload.user_name)
-                
+
                 // JWTペイロードからユーザー情報を構築
                 const userInfo: User = {
                     user_id: payload.user_id,
@@ -232,7 +232,7 @@ const ConfigScreen = () => {
                     user_icon: payload.user_icon || null,
                     email: payload.email || null,
                 }
-                
+
                 console.log('📊 JWTデコード結果:', userInfo)
                 return userInfo
             }
