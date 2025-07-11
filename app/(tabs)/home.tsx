@@ -194,7 +194,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
-        elevation: 2,
+        // ドロップシャドウ追加
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 4, // Android用の影を強化
     },
     petName: {
         fontSize: 18,
