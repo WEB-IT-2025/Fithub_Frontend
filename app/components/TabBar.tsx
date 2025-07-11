@@ -32,7 +32,7 @@ const TabBar = () => {
             </TouchableOpacity>
             <TouchableOpacity
                 style={styles.tabButton}
-                // onPress={() => router.push('遷移先のパス')}
+                onPress={() => router.push('/(tabs)/shop')} // ← ここを追加
             >
                 <FontAwesomeIcon
                     icon={faShop}
