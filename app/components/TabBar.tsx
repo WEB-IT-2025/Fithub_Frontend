@@ -1,45 +1,45 @@
-import { Ionicons } from '@expo/vector-icons'
-import { usePathname, useRouter } from 'expo-router'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React from 'react'
+import { View, TouchableOpacity, StyleSheet } from 'react-native'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import { faPerson, faDog, faScroll, faHome, faUserGroup, faShop, faG, faStore } from '@fortawesome/free-solid-svg-icons'
+import { useRouter, usePathname } from 'expo-router'
 
-export default function TabBar() {
+const TabBar = () => {
     const router = useRouter()
     const pathname = usePathname()
 
-    const tabs = [
-        {
-            name: 'ホーム',
-            icon: 'home',
-            path: '/home',
-        },
-        {
-            name: 'グループ',
-            icon: 'people-circle-outline',
-            path: '../(tabs)/App',
-        },
-        {
-            name: 'ストア',
-            icon: 'cart',
-            path: '../config.tsx',
-        },
-    ]
-
     return (
         <View style={styles.container}>
-            {tabs.map((tab) => (
-                <TouchableOpacity
-                    key={tab.path}
-                    style={styles.tab}
-                    onPress={() => router.push(tab.path as any)}
-                >
-                    <Ionicons
-                        name={tab.icon as keyof typeof Ionicons.glyphMap}
-                        size={24}
-                        color={pathname === tab.path ? '#007AFF' : '#8E8E93'}
-                    />
-                    <Text style={[styles.tabText, pathname === tab.path && styles.activeTabText]}>{tab.name}</Text>
-                </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+                style={styles.tabButton}
+                onPress={() => router.replace('/(tabs)/home')} // ← ここを修正
+            >
+                <FontAwesomeIcon
+                    icon={faHome}
+                    size={30}
+                    color="#000"
+                />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.tabButton}
+                onPress={() => router.push('/group')}
+            >
+                <FontAwesomeIcon
+                    icon={faUserGroup}
+                    size={30}
+                    color="#000"
+                />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.tabButton}
+                // onPress={() => router.push('遷移先のパス')}
+            >
+                <FontAwesomeIcon
+                    icon={faShop}
+                    size={30}
+                    color="#000"
+                />
+            </TouchableOpacity>
         </View>
     )
 }
@@ -48,31 +48,25 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         height: 120,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#E5E5EA',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingBottom: 48,
+        paddingTop: 24,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: -2,
-        },
+        shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 5,
     },
-    tab: {
+    tabButton: {
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
     },
-    tabText: {
-        fontSize: 12,
-        marginTop: 4,
-        color: '#8E8E93',
-    },
-    activeTabText: {
-        color: '#007AFF',
-    },
 })
+
+export default TabBar
