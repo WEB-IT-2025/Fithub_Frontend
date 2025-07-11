@@ -1963,31 +1963,6 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
                         />
 
                         <Button
-                            title={isLoading ? '📊 読み込み中...' : '📊 データ再読み込み'}
-                            onPress={loadDashboardData}
-                            disabled={isLoading || isSyncing}
-                            color='#007bff'
-                        />
-
-                        <Button
-                            title='👤 ユーザー情報再取得'
-                            onPress={handleManualUserFetch}
-                            disabled={isLoading}
-                        />
-
-                        <Button
-                            title='📱 ストレージを確認'
-                            onPress={checkStorage}
-                            color='#6c757d'
-                        />
-
-                        <Button
-                            title='🗑️ 全ストレージ削除'
-                            onPress={clearAllStorage}
-                            color='#dc3545'
-                        />
-
-                        <Button
                             title='🚪 ログアウト'
                             onPress={handleLogout}
                             color='#ff6b6b'
@@ -2036,11 +2011,6 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
                                 }}
                                 color='#dc3545'
                             />
-                            <Button
-                                title='🗑️ 全ストレージ削除'
-                                onPress={clearAllStorage}
-                                color='#dc3545'
-                            />
                         </View>
                     </View>
                 </ScrollView>
@@ -2053,69 +2023,26 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
         <SafeAreaView style={styles.container}>
             <ScrollView style={styles.scrollView}>
                 <View style={styles.loginContainer}>
-                    <Text style={styles.title}>ログイン</Text>
-                    <Text style={styles.subtitle}>既存のアカウントでログイン</Text>
+                    <Text style={styles.title}>Fithub</Text>
+                    <Text style={styles.subtitle}>ログインまたは新規登録</Text>
 
                     <View style={styles.buttonContainer}>
                         <Button
-                            title='Googleでログイン'
+                            title='Googleで続行'
                             onPress={() => handleOAuthLogin('google')}
                             disabled={isLoading}
-                        />
-                        <Button
-                            title='GitHubでログイン'
-                            onPress={() => handleOAuthLogin('github')}
-                            disabled={isLoading}
+                            color='#4285f4'
                         />
                     </View>
 
-                    <Text style={styles.separator}>または</Text>
-
-                    <Text style={styles.title}>新規登録</Text>
-                    <Text style={styles.subtitle}>新しいアカウントを作成</Text>
-
-                    <View style={styles.buttonContainer}>
-                        <Button
-                            title='Googleで新規登録'
-                            onPress={() => handleOAuthRegister('google')}
-                            disabled={isLoading}
-                            color='#34a853'
-                        />
-                        <Button
-                            title='GitHubで新規登録'
-                            onPress={() => handleOAuthRegister('github')}
-                            disabled={isLoading}
-                            color='#333'
-                        />
-                    </View>
-
-                    <View style={styles.buttonContainer}>
-                        {sessionToken && (
+                    {sessionToken && (
+                        <View style={styles.buttonContainer}>
                             <Button
                                 title='ユーザー情報再取得'
                                 onPress={handleManualUserFetch}
                             />
-                        )}
-                    </View>
-
-                    <View style={styles.center}>
-                        <Button
-                            title='ストレージを確認'
-                            onPress={checkStorage}
-                        />
-                        <View style={styles.space} />
-                        <Button
-                            title='🔧 設定確認'
-                            onPress={showConfig}
-                            color='#6f42c1'
-                        />
-                        <View style={styles.space} />
-                        <Button
-                            title='�🗑️ 全ストレージ削除'
-                            onPress={clearAllStorage}
-                            color='#dc3545'
-                        />
-                    </View>
+                        </View>
+                    )}
                 </View>
             </ScrollView>
 
