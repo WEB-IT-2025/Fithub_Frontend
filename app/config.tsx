@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
@@ -16,7 +16,7 @@ import {
 } from 'react-native'
 import WebView from 'react-native-webview'
 
-// ユーザー情報の型定義
+// 基本型定義
 interface User {
     user_id: string
     user_name: string
@@ -24,231 +24,86 @@ interface User {
     email: string
 }
 
-// OAuth データの型定義
-interface OAuthData {
-    access_token: string
-    refresh_token: string
-    expires_in: number
-    user_info: {
-        user_name: string
-        email: string
-        user_icon: string
-    }
-}
-
-// ユーザーデータAPI関連の型定義
-interface ExerciseData {
-    day: string
-    exercise_quantity: number
-}
-
-interface ContributionData {
-    day: string
-    count: string
-}
-
-interface TodayData {
-    date: string
-    steps: number
-    contributions: number
-}
-
 interface UserData {
     user_id: string
-    today: TodayData
-    recent_exercise: ExerciseData[]
-    recent_contributions: ContributionData[]
+    today: {
+        date: string
+        steps: number
+        contributions: number
+    }
+    recent_exercise: Array<{
+        day: string
+        exercise_quantity: number
+    }>
+    recent_contributions: Array<{
+        day: string
+        count: string
+    }>
     last_updated: string
-}
-
-interface WeeklyStats {
-    total_steps: number
-    total_contributions: number
-    active_days: number
-}
-
-interface MonthlyStats {
-    total_steps: number
-    total_contributions: number
-    active_days: number
 }
 
 interface UserStats {
-    user_id: string
-    weekly: WeeklyStats
-    monthly: MonthlyStats
-    last_updated: string
+    weekly: {
+        total_steps: number
+        total_contributions: number
+        active_days: number
+    }
+    monthly: {
+        total_steps: number
+        total_contributions: number
+        active_days: number
+    }
 }
 
 interface SyncResult {
-    user_id: string
     synced_at: string
     exercise_data: {
-        date: string
         steps: number
-        source: string
         status: string
     }
     contribution_data: {
-        date: string
         contributions: number
-        source: string
         status: string
     }
 }
 
-// デバッグログエントリの型定義
-interface DebugLogEntry {
-    timestamp: string
-    type: 'AppState' | 'AsyncStorage' | 'JWT' | 'API' | 'Auth' | 'Data'
-    event: string
-    details: any
-}
-
-// バックエンドのAPIベースURL
+// APIベースURLとストレージキー
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
-
-// ストレージキー
 const STORAGE_KEYS = {
     SESSION_TOKEN: 'session_token',
     USER_ID: 'user_id',
-    DEBUG_LOGS: 'debug_logs',
 }
 
-// base64url形式をbase64形式に変換するヘルパー関数
-const base64UrlToBase64 = (str: string): string => {
-    // base64urlからbase64への変換
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
-
-    // パディングを追加
-    switch (base64.length % 4) {
-        case 0:
-            break
-        case 2:
-            base64 += '=='
-            break
-        case 3:
-            base64 += '='
-            break
-        default:
-            throw new Error('Invalid base64url string')
-    }
-
-    return base64
-}
-
-// JWTのペイロードを安全に解析するヘルパー関数
+// JWT解析ヘルパー
 const parseJwtPayload = (token: string): any | null => {
     try {
         const parts = token.split('.')
-        if (parts.length !== 3) {
-            console.error('❌ JWT形式が不正です: パーツ数が3でない')
-            return null
-        }
+        if (parts.length !== 3) return null
 
         const payload = parts[1]
-        const base64Payload = base64UrlToBase64(payload)
-        const decodedPayload = atob(base64Payload)
-        const parsedPayload = JSON.parse(decodedPayload)
+        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
 
-        console.log('✅ JWT解析成功:', {
-            header: parts[0].length,
-            payload: parts[1].length,
-            signature: parts[2].length,
-            exp: parsedPayload.exp,
-            iat: parsedPayload.iat,
-            user_id: parsedPayload.user_id,
-            user_name: parsedPayload.user_name,
-            type: parsedPayload.type || 'unknown',
-            provider: parsedPayload.provider || 'unknown',
-            session_type: parsedPayload.session_type || 'unknown',
-            oauth_provider: parsedPayload.oauth_provider || 'unknown',
-            auth_method: parsedPayload.auth_method || 'unknown',
-            fullPayload: parsedPayload, // 完全なペイロードを表示
-        })
+        switch (base64.length % 4) {
+            case 2:
+                base64 += '=='
+                break
+            case 3:
+                base64 += '='
+                break
+        }
 
-        return parsedPayload
-    } catch (error) {
-        console.error('❌ JWT解析エラー:', error)
+        return JSON.parse(atob(base64))
+    } catch {
         return null
     }
 }
 
-// JWT有効期限をチェックする関数
+// JWT期限チェック
 const isJwtExpired = (token: string | null): boolean => {
-    if (!token) {
-        console.log('🔍 JWT期限チェック: トークンがnull/undefined')
-        return true
-    }
-
-    try {
-        const payload = parseJwtPayload(token)
-        if (!payload) {
-            console.log('🔍 JWT期限チェック: ペイロード解析に失敗')
-            return true
-        }
-
-        const currentTime = Math.floor(Date.now() / 1000)
-        const timeLeft = payload.exp - currentTime
-        const timeLeftMinutes = Math.floor(timeLeft / 60)
-        const timeLeftHours = Math.floor(timeLeftMinutes / 60)
-        const timeLeftDays = Math.floor(timeLeftHours / 24)
-        const expired = currentTime >= payload.exp
-
-        // 詳細なタイムスタンプ情報を表示
-        const jwtDetailedLog = {
-            tokenPrefix: token.substring(0, 20) + '...',
-            tokenLength: token.length,
-            payload: {
-                iat: payload.iat,
-                exp: payload.exp,
-                user_id: payload.user_id,
-                user_name: payload.user_name,
-            },
-            times: {
-                current: currentTime,
-                issued: payload.iat,
-                expires: payload.exp,
-                issuedDate: new Date(payload.iat * 1000).toISOString(),
-                expiresDate: new Date(payload.exp * 1000).toISOString(),
-                currentDate: new Date(currentTime * 1000).toISOString(),
-            },
-            duration: {
-                totalLifetime: payload.exp - payload.iat,
-                totalLifetimeDays: Math.floor((payload.exp - payload.iat) / (24 * 60 * 60)),
-                timeSinceIssued: currentTime - payload.iat,
-                timeSinceIssuedDays: Math.floor((currentTime - payload.iat) / (24 * 60 * 60)),
-                timeLeft: timeLeft,
-                timeLeftMinutes: timeLeftMinutes,
-                timeLeftHours: timeLeftHours,
-                timeLeftDays: timeLeftDays,
-            },
-            status: {
-                expired: expired,
-                valid: !expired,
-                reason: expired ? 'current_time_exceeds_exp' : 'within_valid_period',
-            },
-        }
-
-        console.log('🔍 JWT詳細期限チェック:', jwtDetailedLog)
-
-        // 期限切れの場合、詳細な理由を記録
-        if (expired) {
-            console.log('⚠️ JWT期限切れ詳細:', {
-                expiredBy: timeLeft * -1,
-                expiredByMinutes: Math.floor((timeLeft * -1) / 60),
-                expiredByHours: Math.floor((timeLeft * -1) / 3600),
-                expiredByDays: Math.floor((timeLeft * -1) / (24 * 3600)),
-                wasValidFor: payload.exp - payload.iat,
-                wasValidForDays: Math.floor((payload.exp - payload.iat) / (24 * 3600)),
-            })
-        }
-
-        return expired
-    } catch (error) {
-        console.error('❌ JWT期限チェックエラー:', error)
-        return true
-    }
+    if (!token) return true
+    const payload = parseJwtPayload(token)
+    if (!payload) return true
+    return Math.floor(Date.now() / 1000) >= payload.exp
 }
 
 const ConfigScreen = () => {
@@ -259,10 +114,6 @@ const ConfigScreen = () => {
     const [oauthModalVisible, setOauthModalVisible] = useState(false)
     const [oauthProvider, setOauthProvider] = useState<'google' | 'github'>('google')
     const [oauthUrl, setOauthUrl] = useState<string>('')
-    const [debugLogs, setDebugLogs] = useState<DebugLogEntry[]>([])
-    const [showDebugLogs, setShowDebugLogs] = useState(false)
-
-    // データAPI関連のstate
     const [userData, setUserData] = useState<UserData | null>(null)
     const [userStats, setUserStats] = useState<UserStats | null>(null)
     const [isSyncing, setIsSyncing] = useState(false)
@@ -272,173 +123,87 @@ const ConfigScreen = () => {
     const appStateRef = useRef<AppStateStatus>(AppState.currentState)
     const lastForegroundTime = useRef<number>(Date.now())
 
-    // デバッグログを追加する関数
-    const addDebugLog = async (
-        type: 'AppState' | 'AsyncStorage' | 'JWT' | 'API' | 'Auth' | 'Data',
-        event: string,
-        details: any
-    ) => {
-        const logEntry: DebugLogEntry = {
-            timestamp: new Date().toISOString(),
-            type,
-            event,
-            details,
-        }
-
-        console.log(`🐛 [${type}] ${event}:`, details)
-
-        setDebugLogs((prev) => {
-            const newLogs = [...prev, logEntry].slice(-100) // 最新100件を保持
-            // AsyncStorageにも保存
-            AsyncStorage.setItem(STORAGE_KEYS.DEBUG_LOGS, JSON.stringify(newLogs)).catch((err) => {
-                console.error('❌ デバッグログ保存エラー:', err)
-            })
-            return newLogs
-        })
+    // ダミーのaddDebugLog関数（デバッグログを削除）
+    const addDebugLog = async (type: string, event: string, details: any) => {
+        // デバッグログ機能を削除したため、何もしない
     }
 
-    // デバッグログを読み込む関数
+    // ダミーのloadDebugLogs関数
     const loadDebugLogs = async () => {
+        // デバッグログ機能を削除したため、何もしない
+    }
+
+    // ストレージヘルパー関数
+    const getStorageItem = async (key: string): Promise<string | null> => {
         try {
-            const savedLogs = await AsyncStorage.getItem(STORAGE_KEYS.DEBUG_LOGS)
-            if (savedLogs) {
-                const parsed = JSON.parse(savedLogs)
-                setDebugLogs(parsed)
-                console.log('📱 デバッグログ読み込み完了:', parsed.length, '件')
-            }
-        } catch (error) {
-            console.error('❌ デバッグログ読み込みエラー:', error)
+            return await AsyncStorage.getItem(key)
+        } catch {
+            return null
         }
     }
 
-    // AsyncStorage操作のヘルパー関数
     const setStorageItem = async (key: string, value: string): Promise<boolean> => {
         try {
             await AsyncStorage.setItem(key, value)
-            console.log(`✅ AsyncStorage保存成功: ${key} = ${value}`)
-
-            // 保存直後に再取得して検証
-            const retrieved = await AsyncStorage.getItem(key)
-            if (retrieved === value) {
-                console.log(`✅ AsyncStorage検証成功: ${key} = ${retrieved}`)
-                await addDebugLog('AsyncStorage', 'setItem', { key, value, verified: true })
-                return true
-            } else {
-                console.error(`❌ AsyncStorage検証失敗: ${key} - 保存値: ${value}, 取得値: ${retrieved}`)
-                await addDebugLog('AsyncStorage', 'setItem', { key, value, retrieved, verified: false })
-                return false
-            }
-        } catch (error) {
-            console.error(`❌ AsyncStorage保存エラー: ${key}`, error)
-            await addDebugLog('AsyncStorage', 'setItem_error', {
-                key,
-                value,
-                error: error instanceof Error ? error.message : String(error),
-            })
+            return true
+        } catch {
             return false
-        }
-    }
-
-    const getStorageItem = async (key: string): Promise<string | null> => {
-        try {
-            const value = await AsyncStorage.getItem(key)
-            console.log(`📱 AsyncStorage取得: ${key} = ${value}`)
-            await addDebugLog('AsyncStorage', 'getItem', { key, value, valueLength: value?.length || 0 })
-            return value
-        } catch (error) {
-            console.error(`❌ AsyncStorage取得エラー: ${key}`, error)
-            await addDebugLog('AsyncStorage', 'getItem_error', {
-                key,
-                error: error instanceof Error ? error.message : String(error),
-            })
-            return null
         }
     }
 
     const removeStorageItem = async (key: string): Promise<boolean> => {
         try {
             await AsyncStorage.removeItem(key)
-            console.log(`🗑️ AsyncStorage削除: ${key}`)
-
-            // 削除直後に再取得して検証
-            const retrieved = await AsyncStorage.getItem(key)
-            if (retrieved === null) {
-                console.log(`✅ AsyncStorage削除検証成功: ${key}`)
-                await addDebugLog('AsyncStorage', 'removeItem', { key, verified: true })
-                return true
-            } else {
-                console.error(`❌ AsyncStorage削除検証失敗: ${key} - 削除後取得値: ${retrieved}`)
-                await addDebugLog('AsyncStorage', 'removeItem', { key, retrieved, verified: false })
-                return false
-            }
-        } catch (error) {
-            console.error(`❌ AsyncStorage削除エラー: ${key}`, error)
-            await addDebugLog('AsyncStorage', 'removeItem_error', {
-                key,
-                error: error instanceof Error ? error.message : String(error),
-            })
+            return true
+        } catch {
             return false
         }
     }
 
+    // 日本時間（JST）のヘルパー関数
+    const getJSTTime = () => {
+        const now = new Date()
+        const jstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000) // UTC+9
+        return jstTime.toISOString().replace('Z', '+09:00')
+    }
+
     // 認証情報の保存
     const saveAuthInfo = async (token: string, userIdValue: string): Promise<boolean> => {
-        console.log('🔐 認証情報を保存中...')
-
-        const tokenSaved = await setStorageItem(STORAGE_KEYS.SESSION_TOKEN, token)
-        const userIdSaved = await setStorageItem(STORAGE_KEYS.USER_ID, userIdValue)
-
-        if (tokenSaved && userIdSaved) {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token)
+            await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, userIdValue)
             setSessionToken(token)
             setUserId(userIdValue)
             console.log('✅ 認証情報保存完了')
             return true
-        } else {
-            console.error('❌ 認証情報保存失敗')
+        } catch (error) {
+            console.error('❌ 認証情報保存失敗:', error)
             return false
         }
     }
 
     // 認証情報の削除
     const clearAuthInfo = async (): Promise<void> => {
-        console.log('🗑️ 認証情報を削除中...')
-
-        await removeStorageItem(STORAGE_KEYS.SESSION_TOKEN)
-        await removeStorageItem(STORAGE_KEYS.USER_ID)
-
-        setSessionToken(null)
-        setUserId(null)
-        setUser(null)
-        console.log('✅ 認証情報削除完了')
+        try {
+            await AsyncStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN)
+            await AsyncStorage.removeItem(STORAGE_KEYS.USER_ID)
+            setSessionToken(null)
+            setUserId(null)
+            setUser(null)
+            setUserData(null)
+            console.log('✅ 認証情報削除完了')
+        } catch (error) {
+            console.error('❌ 認証情報削除エラー:', error)
+        }
     }
 
     // 認証情報の読み込み
     const loadAuthInfo = async (): Promise<{ token: string | null; userId: string | null }> => {
-        console.log('📱 認証情報を読み込み中...')
-
         try {
-            // AsyncStorageの状態を詳細チェック
-            const allKeys = await AsyncStorage.getAllKeys()
-            console.log('🔍 AsyncStorage全キー:', allKeys)
-
-            const token = await getStorageItem(STORAGE_KEYS.SESSION_TOKEN)
-            const userIdValue = await getStorageItem(STORAGE_KEYS.USER_ID)
-
-            // 詳細ログ
-            console.log('📋 認証情報読み込み詳細:', {
-                tokenKey: STORAGE_KEYS.SESSION_TOKEN,
-                userIdKey: STORAGE_KEYS.USER_ID,
-                tokenFound: !!token,
-                tokenLength: token?.length || 0,
-                userIdFound: !!userIdValue,
-                userIdValue: userIdValue || 'なし',
-                allAuthKeys: allKeys.filter((key) => key.includes('session') || key.includes('user')),
-            })
-
+            const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+            const userIdValue = await AsyncStorage.getItem(STORAGE_KEYS.USER_ID)
             setSessionToken(token)
             setUserId(userIdValue)
-
-            console.log(`📱 認証情報読み込み完了: token=${token ? '有' : '無'}, userId=${userIdValue ? '有' : '無'}`)
             return { token, userId: userIdValue }
         } catch (error) {
             console.error('❌ 認証情報読み込みエラー:', error)
@@ -446,183 +211,37 @@ const ConfigScreen = () => {
         }
     }
 
-    // ユーザー情報の取得（自動ログイン時は適切なエンドポイントを使用）
-    const fetchUserInfo = async (token: string, isAutoLogin: boolean = false): Promise<User | null> => {
-        let endpoints: string[]
-
-        if (isAutoLogin) {
-            // 自動ログイン時はユーザー情報取得専用エンドポイントを使用
-            endpoints = ['/api/auth/verify', '/api/user/me', '/api/user/profile', '/api/user']
-        } else {
-            // 手動での情報取得時は複数のエンドポイントを試行
-            endpoints = ['/api/auth/verify', '/api/user/me', '/api/user/profile', '/api/user']
-        }
-
-        await addDebugLog('API', 'fetchUserInfo_start', {
-            apiBaseUrl: API_BASE_URL,
-            tokenLength: token.length,
-            tokenPrefix: token.substring(0, 20),
-            endpointsToTry: endpoints,
-            isAutoLogin,
-        })
-
-        for (const endpoint of endpoints) {
-            try {
-                const fullUrl = `${API_BASE_URL}${endpoint}`
-                console.log(`🔍 ユーザー情報取得試行: ${endpoint} (自動ログイン: ${isAutoLogin})`)
-                console.log(`🌐 完全なURL: ${fullUrl}`)
-                console.log(`🔐 使用トークン: ${token.substring(0, 20)}...`)
-
-                await addDebugLog('API', 'request_start', {
-                    endpoint,
-                    fullUrl,
-                    method: 'GET',
-                    tokenPrefix: token.substring(0, 20),
-                    isAutoLogin,
-                })
-
-                const response = await fetch(fullUrl, {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                })
-
-                console.log(`📊 API応答: ${endpoint} - Status: ${response.status}`)
-
-                await addDebugLog('API', 'response_received', {
-                    endpoint,
-                    fullUrl,
-                    status: response.status,
-                    statusText: response.statusText,
-                    headers: Object.fromEntries(response.headers.entries()),
-                    isAutoLogin,
-                })
-
-                if (response.ok) {
-                    const data = await response.json()
-                    console.log(`✅ ユーザー情報取得成功: ${endpoint}`, data)
-
-                    await addDebugLog('API', 'response_success', {
-                        endpoint,
-                        fullUrl,
-                        data,
-                        hasUserData: !!(data.data && data.data.user),
-                        hasDirectUser: !!data.user,
-                        hasDirectUserFields: !!(data.user_id && data.user_name),
-                        isAutoLogin,
-                    })
-
-                    // レスポンス形式の確認: data.data.user または data.user または data 直接
-                    let userInfo: any = null
-
-                    if (data.data && data.data.user) {
-                        // 形式1: { data: { user: {...} } }
-                        userInfo = data.data.user
-                        console.log('✅ レスポンス形式1: data.data.user')
-                    } else if (data.user) {
-                        // 形式2: { user: {...} }
-                        userInfo = data.user
-                        console.log('✅ レスポンス形式2: data.user')
-                    } else if (data.user_id && data.user_name) {
-                        // 形式3: 直接ユーザー情報 { user_id, user_name, ... }
-                        userInfo = data
-                        console.log('✅ レスポンス形式3: 直接ユーザー情報')
-                    }
-
-                    if (userInfo && userInfo.user_id) {
-                        return {
-                            user_id: userInfo.user_id,
-                            user_name: userInfo.user_name,
-                            user_icon: userInfo.user_icon,
-                            email: userInfo.email,
-                        }
-                    } else {
-                        console.warn(`⚠️ 予期しないレスポンス形式: ${endpoint}`, data)
-                        console.warn(
-                            '🔍 期待される形式: { data: { user: {...} } } または { user: {...} } または直接ユーザー情報'
-                        )
-                        await addDebugLog('API', 'response_format_unexpected', {
-                            endpoint,
-                            fullUrl,
-                            data,
-                            isAutoLogin,
-                            reason: 'user_info_not_found_in_expected_structure',
-                            checkedStructures: [
-                                { type: 'data.data.user', found: !!(data.data && data.data.user) },
-                                { type: 'data.user', found: !!data.user },
-                                { type: 'direct_user_fields', found: !!(data.user_id && data.user_name) },
-                            ],
-                        })
-                    }
-                } else {
-                    console.log(`❌ ユーザー情報取得失敗: ${endpoint} - ${response.status}`)
-
-                    // レスポンスの詳細を確認
-                    try {
-                        const errorText = await response.text()
-                        console.log(`📋 エラーレスポンス内容:`, errorText)
-
-                        await addDebugLog('API', 'response_error', {
-                            endpoint,
-                            fullUrl,
-                            status: response.status,
-                            statusText: response.statusText,
-                            errorText,
-                            isAutoLogin,
-                        })
-
-                        if (response.status === 401) {
-                            console.log('🔒 認証エラー: トークンが無効または期限切れです')
-                            // 401の場合は他のエンドポイントも試さず早期リターン
-                            return null
-                        }
-                    } catch (textError) {
-                        console.error('❌ エラーレスポンス読み取り失敗:', textError)
-                        await addDebugLog('API', 'response_read_error', {
-                            endpoint,
-                            fullUrl,
-                            textError: textError instanceof Error ? textError.message : String(textError),
-                            isAutoLogin,
-                        })
-                    }
-                }
-            } catch (error) {
-                console.error(`❌ ユーザー情報取得エラー: ${endpoint}`, error)
-                await addDebugLog('API', 'request_error', {
-                    endpoint,
-                    fullUrl: `${API_BASE_URL}${endpoint}`,
-                    error:
-                        error instanceof Error ?
-                            {
-                                name: error.name,
-                                message: error.message,
-                                stack: error.stack,
-                            }
-                        :   { message: String(error) },
-                    isAutoLogin,
-                })
-            }
-        }
-
-        console.log('❌ 全エンドポイントでユーザー情報取得失敗')
-        return null
-    }
-
-    // ユーザーデータの取得（フィットネスデータ）
-    const fetchUserData = async (token: string): Promise<UserData | null> => {
+    // ユーザー情報の取得（JWTトークンからデコード + 必要に応じてAPI確認）
+    const fetchUserInfo = async (token: string): Promise<User | null> => {
         try {
-            const fullUrl = `${API_BASE_URL}/api/data/user`
-            console.log('🔍 ユーザーデータ取得試行:', fullUrl)
+            console.log('🔍 ユーザー情報取得開始（JWTデコード方式）')
+            console.log('Client time (JST):', getJSTTime())
+            console.log('Client timestamp:', Math.floor(Date.now() / 1000))
+            console.log('📋 トークン長:', token.length)
+            console.log('📋 トークンプレビュー:', `${token.substring(0, 20)}...${token.substring(token.length - 20)}`)
 
-            await addDebugLog('Data', 'fetchUserData_start', {
-                apiBaseUrl: API_BASE_URL,
-                endpoint: '/api/data/user',
-                tokenLength: token.length,
-            })
+            // まず、JWTトークンからユーザー情報をデコード
+            const payload = parseJwtPayload(token)
+            if (payload && payload.user_id && payload.user_name) {
+                console.log('✅ JWTからユーザー情報取得成功:', payload.user_name)
+                
+                // JWTペイロードからユーザー情報を構築
+                const userInfo: User = {
+                    user_id: payload.user_id,
+                    user_name: payload.user_name,
+                    user_icon: payload.user_icon || null,
+                    email: payload.email || null,
+                }
+                
+                console.log('📊 JWTデコード結果:', userInfo)
+                return userInfo
+            }
 
-            const response = await fetch(fullUrl, {
+            // JWTデコードが失敗した場合、/api/data/userエンドポイントを試行（動作することが確認済み）
+            console.log('🔄 JWTデコード失敗 - /api/data/userエンドポイントで確認')
+            console.log('📋 API URL:', `${API_BASE_URL}/api/data/user`)
+
+            const response = await fetch(`${API_BASE_URL}/api/data/user`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -630,47 +249,249 @@ const ConfigScreen = () => {
                 },
             })
 
-            console.log('📊 ユーザーデータAPI応答:', response.status)
-
-            await addDebugLog('Data', 'fetchUserData_response', {
-                status: response.status,
-                statusText: response.statusText,
+            console.log('📡 ユーザーデータAPI応答:', response.status)
+            console.log('📡 応答ヘッダー:', {
+                'content-type': response.headers.get('content-type'),
+                'content-length': response.headers.get('content-length'),
             })
 
             if (response.ok) {
                 const data = await response.json()
-                console.log('✅ ユーザーデータ取得成功:', data)
+                console.log('✅ ユーザーデータAPI成功 - レスポンス:', data)
 
-                await addDebugLog('Data', 'fetchUserData_success', {
-                    hasData: !!data.data,
-                    userId: data.data?.user_id,
-                    todaySteps: data.data?.today?.steps,
-                    todayContributions: data.data?.today?.contributions,
-                })
-
-                if (data.success && data.data) {
-                    return data.data
+                if (data.success && data.data && data.data.user_id) {
+                    // /api/data/userのレスポンスからユーザー情報を抽出
+                    const userInfo: User = {
+                        user_id: data.data.user_id,
+                        user_name: data.data.user_name || 'Unknown User',
+                        user_icon: data.data.user_icon || null,
+                        email: data.data.email || null,
+                    }
+                    console.log('✅ ユーザーデータAPIからユーザー情報取得成功:', userInfo.user_name)
+                    return userInfo
                 } else {
-                    console.warn('⚠️ ユーザーデータレスポンス形式が予期しない:', data)
-                    return null
+                    console.log('❌ ユーザーデータAPI: 有効なユーザー情報が見つかりません', data)
                 }
             } else {
                 const errorText = await response.text()
-                console.log('❌ ユーザーデータ取得失敗:', response.status, errorText)
-
-                await addDebugLog('Data', 'fetchUserData_error', {
+                console.log('❌ ユーザーデータAPI失敗:', {
                     status: response.status,
                     statusText: response.statusText,
                     errorText,
                 })
+            }
+            return null
+        } catch (error) {
+            console.error('❌ ユーザー情報取得エラー:', error)
+            return null
+        }
+    }
 
+    // ユーザーデータの取得（歩数データ）- ネイティブfetch
+    const fetchUserData = async (token: string): Promise<UserData | null> => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/data/user`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                if (data.success && data.data) {
+                    console.log(`🚶‍♂️ 今日の歩数: ${data.data.today.steps} 歩`)
+                    return data.data
+                }
+            }
+            return null
+        } catch (error) {
+            console.error('❌ ユーザーデータ取得エラー:', error)
+            return null
+        }
+    }
+
+    // WebView API ハンドラーマップ（グローバル）
+    const webViewApiHandlers = useRef(new Map<string, (message: any) => void>()).current
+
+    // WebView経由でのAPI呼び出し（ブラウザ環境でのJWT発行対応）
+    const fetchViaWebView = async (url: string, options: RequestInit = {}): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+            // WebViewに注入するJavaScript
+            const script = `
+                (function() {
+                    console.log('🌐 WebView API呼び出し開始: ${url}');
+                    
+                    fetch('${url}', ${JSON.stringify(options)})
+                        .then(response => {
+                            console.log('📡 WebView API応答:', response.status);
+                            return response.json().then(data => ({
+                                status: response.status,
+                                ok: response.ok,
+                                data: data
+                            }));
+                        })
+                        .then result => {
+                            console.log('✅ WebView API成功:', result);
+                            if (window.ReactNativeWebView) {
+                                window.ReactNativeWebView.postMessage(JSON.stringify({
+                                    type: 'API_RESPONSE',
+                                    requestId: '${requestId}',
+                                    success: true,
+                                    result: result
+                                }));
+                            } else {
+                                console.error('❌ ReactNativeWebView not available');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ WebView API失敗:', error);
+                            if (window.ReactNativeWebView) {
+                                window.ReactNativeWebView.postMessage(JSON.stringify({
+                                    type: 'API_RESPONSE',
+                                    requestId: '${requestId}',
+                                    success: false,
+                                    error: error.message
+                                }));
+                            } else {
+                                console.error('❌ ReactNativeWebView not available for error reporting');
+                            }
+                        });
+                })();
+                true;
+            `
+
+            // WebViewが利用可能かチェック
+            if (webViewRef.current) {
+                // タイムアウト処理
+                const timeoutId = setTimeout(() => {
+                    webViewApiHandlers.delete(requestId)
+                    reject(new Error('WebView API timeout'))
+                }, 10000)
+
+                // ハンドラーを登録
+                webViewApiHandlers.set(requestId, (message: any) => {
+                    clearTimeout(timeoutId)
+                    webViewApiHandlers.delete(requestId)
+
+                    if (message.success) {
+                        resolve(message.result)
+                    } else {
+                        reject(new Error(message.error))
+                    }
+                })
+
+                console.log('🚀 WebView JavaScript注入開始:', requestId)
+                webViewRef.current.injectJavaScript(script)
+            } else {
+                reject(new Error('WebView not available'))
+            }
+        })
+    }
+
+    // WebViewメッセージハンドラー
+    const handleWebViewMessage = (event: any) => {
+        try {
+            const message = JSON.parse(event.nativeEvent.data)
+            console.log('📨 WebView メッセージ受信:', message)
+
+            if (message.type === 'API_RESPONSE' && message.requestId) {
+                const handler = webViewApiHandlers.get(message.requestId)
+                if (handler) {
+                    handler(message)
+                    return
+                }
+            }
+
+            // 既存のメッセージ処理も継続
+            console.log('📨 通常のWebViewメッセージ処理:', message)
+        } catch (error) {
+            console.error('❌ WebView メッセージ解析エラー:', error)
+        }
+    }
+
+    // WebView経由でのユーザーデータ取得
+    const fetchUserDataViaWebView = async (token: string): Promise<UserData | null> => {
+        try {
+            console.log('🌐 WebView経由でユーザーデータ取得開始')
+
+            const options = {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'User-Agent':
+                        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+                },
+            }
+
+            const result = await fetchViaWebView(`${API_BASE_URL}/api/data/user`, options)
+
+            if (result.ok && result.data?.success && result.data?.data) {
+                console.log('✅ WebView経由でユーザーデータ取得成功')
+                console.log(`🚶‍♂️ 今日の歩数: ${result.data.data.today.steps} 歩 (WebView経由)`)
+                return result.data.data
+            } else {
+                console.log('❌ WebView経由でユーザーデータ取得失敗:', result)
                 return null
             }
         } catch (error) {
-            console.error('❌ ユーザーデータ取得エラー:', error)
-            await addDebugLog('Data', 'fetchUserData_exception', {
-                error: error instanceof Error ? error.message : String(error),
-            })
+            console.error('❌ WebView経由ユーザーデータ取得エラー:', error)
+            return null
+        }
+    }
+
+    // フォールバック機能付きユーザーデータ取得（ネイティブ → WebView）
+    const fetchUserDataWithFallback = async (token: string): Promise<UserData | null> => {
+        console.log('📊 フォールバック機能付きユーザーデータ取得開始')
+
+        // まずネイティブfetchを試行
+        try {
+            console.log('🔄 1. ネイティブfetchでユーザーデータ取得試行')
+            const nativeResult = await fetchUserData(token)
+            if (nativeResult) {
+                console.log('✅ ネイティブfetch成功 - ユーザーデータ取得完了')
+                return nativeResult
+            }
+        } catch (error) {
+            console.log('❌ ネイティブfetch失敗:', error)
+        }
+
+        // ネイティブが失敗した場合、WebViewフォールバックを試行
+        try {
+            console.log('🔄 2. WebViewフォールバック試行（ブラウザ環境でのJWT対応）')
+            const webViewResult = await fetchUserDataViaWebView(token)
+            if (webViewResult) {
+                console.log('✅ WebViewフォールバック成功 - ユーザーデータ取得完了')
+                return webViewResult
+            }
+        } catch (error) {
+            console.log('❌ WebViewフォールバック失敗:', error)
+        }
+
+        console.log('❌ 両方の方法でユーザーデータ取得に失敗')
+        return null
+    }
+
+    // ユーザー情報取得（ネイティブfetchのみ）
+    const fetchUserInfoWithFallback = async (token: string): Promise<User | null> => {
+        console.log('🔐 ユーザー情報取得開始（ネイティブfetchのみ）')
+
+        try {
+            console.log('🔄 ネイティブfetchでユーザー情報取得試行')
+            const result = await fetchUserInfo(token)
+            if (result) {
+                console.log('✅ ネイティブfetch成功 - ユーザー情報取得完了')
+                return result
+            } else {
+                console.log('❌ ユーザー情報取得失敗')
+                return null
+            }
+        } catch (error) {
+            console.log('❌ ネイティブfetch失敗:', error)
             return null
         }
     }
@@ -932,6 +753,8 @@ const ConfigScreen = () => {
         const callbackScheme = 'fithub://oauth'
         if (url.startsWith(callbackScheme)) {
             console.log('✅ OAuth コールバック検出:', url)
+            console.log('Client time (JST):', getJSTTime())
+            console.log('Client timestamp:', Math.floor(Date.now() / 1000))
             setOauthModalVisible(false)
 
             try {
@@ -953,7 +776,7 @@ const ConfigScreen = () => {
                         saveAuthInfo(sessionToken, userId).then((success) => {
                             if (success) {
                                 // ユーザー情報を取得
-                                fetchUserInfo(sessionToken, false).then((userInfo) => {
+                                fetchUserInfoWithFallback(sessionToken).then((userInfo) => {
                                     if (userInfo) {
                                         setUser(userInfo)
                                         Alert.alert('ログイン成功', `ようこそ ${userInfo.user_name} さん！`)
@@ -1001,7 +824,7 @@ const ConfigScreen = () => {
                     console.log('✅ OAuth認証成功 (サーバー)')
                     saveAuthInfo(sessionToken, userId).then((authSuccess) => {
                         if (authSuccess) {
-                            fetchUserInfo(sessionToken, false).then((userInfo) => {
+                            fetchUserInfoWithFallback(sessionToken).then((userInfo) => {
                                 if (userInfo) {
                                     setUser(userInfo)
                                     Alert.alert('ログイン成功', `ようこそ ${userInfo.user_name} さん！`)
@@ -1145,7 +968,7 @@ const ConfigScreen = () => {
                         console.log('📋 ユーザーデータなし、APIから取得試行')
                         saveAuthInfo(sessionToken, 'unknown').then((authSuccess) => {
                             if (authSuccess) {
-                                fetchUserInfo(sessionToken, false).then((userInfo) => {
+                                fetchUserInfoWithFallback(sessionToken).then((userInfo) => {
                                     if (userInfo) {
                                         setUser(userInfo)
                                         // userIdを正しい値で更新
@@ -1254,6 +1077,8 @@ const ConfigScreen = () => {
             setIsLoading(true)
             console.log('🚀 アプリ起動: 自動ログイン開始')
             console.log('🕐 現在時刻:', new Date().toLocaleString())
+            console.log('Client time (JST):', getJSTTime())
+            console.log('Client timestamp:', Math.floor(Date.now() / 1000))
 
             await addDebugLog('Auth', 'autoLogin_start', {
                 timestamp: Date.now(),
@@ -1327,7 +1152,7 @@ const ConfigScreen = () => {
 
                 console.log('✅ JWT有効 - ユーザー情報取得を開始')
                 await addDebugLog('Auth', 'fetchUserInfo_start', { tokenValid: true })
-                const userInfo = await fetchUserInfo(token, true) // isAutoLogin: true
+                const userInfo = await fetchUserInfoWithFallback(token) // 自動ログイン（ネイティブfetchのみ）
 
                 if (userInfo) {
                     setUser(userInfo)
@@ -1339,7 +1164,8 @@ const ConfigScreen = () => {
                         email: userInfo.email,
                     })
 
-                    // ダッシュボードデータを読み込み
+                    // ダッシュボードデータを自動読み込み（歩数データ含む）
+                    console.log('🔄 自動ログイン成功 - ダッシュボードデータを自動取得開始')
                     await loadDashboardData()
                 } else {
                     console.log('❌ 自動ログイン失敗: ユーザー情報取得不可')
@@ -1416,6 +1242,10 @@ const ConfigScreen = () => {
 
     // 初期化
     useEffect(() => {
+        console.log('🎯 Config画面初期化開始')
+        console.log('Client time (JST):', getJSTTime())
+        console.log('Client timestamp:', Math.floor(Date.now() / 1000))
+
         // デバッグログを読み込み
         loadDebugLogs()
 
@@ -1448,7 +1278,23 @@ const ConfigScreen = () => {
                 // 必要に応じて自動ログインを試行
                 if (authInfo.token && authInfo.userId && !user) {
                     console.log('🔄 フォアグラウンド復帰時に自動ログインを試行')
-                    autoLogin()
+                    // JWT期限チェック
+                    if (!isJwtExpired(authInfo.token)) {
+                        console.log(
+                            '✅ JWT有効 - フォアグラウンド復帰時にユーザー情報とデータを自動取得（ネイティブfetchのみ）'
+                        )
+                        const userInfo = await fetchUserInfoWithFallback(authInfo.token)
+                        if (userInfo) {
+                            setUser(userInfo)
+                            console.log('✅ フォアグラウンド復帰時の自動ログイン成功')
+                            // 歩数データも自動更新
+                            await loadDashboardData()
+                        } else {
+                            console.log('❌ フォアグラウンド復帰時の自動ログイン失敗')
+                        }
+                    } else {
+                        console.log('⚠️ フォアグラウンド復帰時: JWT期限切れ')
+                    }
                 }
             }
 
@@ -1509,7 +1355,7 @@ const ConfigScreen = () => {
 
         setIsLoading(true)
         try {
-            const userInfo = await fetchUserInfo(sessionToken, false) // 手動取得
+            const userInfo = await fetchUserInfoWithFallback(sessionToken) // 手動取得（ネイティブfetchのみ）
             if (userInfo) {
                 setUser(userInfo)
                 Alert.alert('成功', 'ユーザー情報を取得しました')
@@ -1557,27 +1403,34 @@ const ConfigScreen = () => {
 
         try {
             console.log('📊 ダッシュボードデータ読み込み開始')
+            console.log('🚶‍♂️ 歩数データを含む全データを自動取得中（歩数データはWebViewフォールバック付き）...')
             setIsLoading(true)
 
-            // ユーザーデータと統計を並行取得
+            // ユーザーデータ（歩数含む）と統計を並行取得 - 歩数データのみWebViewフォールバック付き
             const [userDataResult, userStatsResult] = await Promise.all([
-                fetchUserData(sessionToken),
+                fetchUserDataWithFallback(sessionToken),
                 fetchUserStats(sessionToken),
             ])
 
             if (userDataResult) {
                 setUserData(userDataResult)
-                console.log('✅ ユーザーデータ設定完了')
+                console.log('✅ ユーザーデータ設定完了（歩数データ含む）')
+                console.log(`📊 今日の歩数: ${userDataResult.today.steps} 歩`)
+                console.log(`💻 今日のコントリビューション: ${userDataResult.today.contributions} 回`)
             }
 
             if (userStatsResult) {
                 setUserStats(userStatsResult)
                 console.log('✅ ユーザー統計設定完了')
+                console.log(`📈 今週の歩数: ${userStatsResult.weekly.total_steps} 歩`)
+                console.log(`📈 今月の歩数: ${userStatsResult.monthly.total_steps} 歩`)
             }
 
             if (!userDataResult && !userStatsResult) {
                 console.log('⚠️ 両方のデータ取得に失敗')
                 Alert.alert('データ取得エラー', 'フィットネスデータの取得に失敗しました。再試行してください。')
+            } else {
+                console.log('🎉 ダッシュボードデータ自動読み込み完了')
             }
         } catch (error) {
             console.error('❌ ダッシュボードデータ読み込みエラー:', error)
@@ -2258,12 +2111,6 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
                         />
                         <View style={styles.space} />
                         <Button
-                            title='� デバッグログ表示'
-                            onPress={() => setShowDebugLogs(true)}
-                            color='#17a2b8'
-                        />
-                        <View style={styles.space} />
-                        <Button
                             title='�🗑️ 全ストレージ削除'
                             onPress={clearAllStorage}
                             color='#dc3545'
@@ -2291,6 +2138,7 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
                         ref={webViewRef}
                         source={{ uri: oauthUrl }}
                         onNavigationStateChange={handleWebViewNavigationStateChange}
+                        onMessage={handleWebViewMessage}
                         userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'
                         javaScriptEnabled={true}
                         domStorageEnabled={true}
@@ -2303,46 +2151,6 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
                         sharedCookiesEnabled={true}
                         style={styles.webView}
                     />
-                </SafeAreaView>
-            </Modal>
-
-            {/* Debug Logs Modal */}
-            <Modal
-                visible={showDebugLogs}
-                animationType='slide'
-            >
-                <SafeAreaView style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>📊 デバッグログ ({debugLogs.length}件)</Text>
-                        <Button
-                            title='閉じる'
-                            onPress={() => setShowDebugLogs(false)}
-                        />
-                    </View>
-                    <ScrollView style={styles.debugLogsContainer}>
-                        {debugLogs
-                            .slice(-50)
-                            .reverse()
-                            .map((log, index) => (
-                                <View
-                                    key={index}
-                                    style={styles.debugLogEntry}
-                                >
-                                    <Text style={styles.debugLogTimestamp}>
-                                        {new Date(log.timestamp).toLocaleString()}
-                                    </Text>
-                                    <Text style={styles.debugLogType}>
-                                        [{log.type}] {log.event}
-                                    </Text>
-                                    <Text style={styles.debugLogDetails}>{JSON.stringify(log.details, null, 2)}</Text>
-                                </View>
-                            ))}
-                        {debugLogs.length === 0 && (
-                            <View style={styles.debugLogEntry}>
-                                <Text style={styles.debugLogDetails}>デバッグログがありません</Text>
-                            </View>
-                        )}
-                    </ScrollView>
                 </SafeAreaView>
             </Modal>
         </SafeAreaView>
