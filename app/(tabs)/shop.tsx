@@ -6,9 +6,15 @@ const { width: screenWidth } = Dimensions.get('window')
 
 // 仮のペットデータ
 const pets = [
-    { id: 1, name: 'ペットA', image: require('@/assets/images/cat_test.png'), price: 500 },
-    { id: 2, name: 'ペットB', image: require('@/assets/images/cat_test.png'), price: 800 },
-    { id: 3, name: 'ペットC', image: require('@/assets/images/cat_test.png'), price: 1200 },
+    { id: 1, name: 'ペットA', image: require('@/assets/images/fithub_cat.png'), price: 500 },
+    { id: 2, name: 'ペットB', image: require('@/assets/images/moukona.jpeg'), price: 800 },
+    { id: 3, name: 'ペットC', image: require('@/assets/images/fithub_cat.png'), price: 1200 },
+    { id: 4, name: 'ペットD', image: require('@/assets/images/fithub_cat.png'), price: 500 },
+    { id: 5, name: 'ペットE', image: require('@/assets/images/moukona.jpeg'), price: 800 },
+    { id: 6, name: 'ペットF', image: require('@/assets/images/fithub_cat.png'), price: 1200 },
+    { id: 7, name: 'ペットG', image: require('@/assets/images/fithub_cat.png'), price: 500 },
+    { id: 8, name: 'ペットH', image: require('@/assets/images/moukona.jpeg'), price: 800 },
+    { id: 9, name: 'ペットI', image: require('@/assets/images/fithub_cat.png'), price: 1200 },
 ]
 
 const ShopScreen = () => {
@@ -43,7 +49,9 @@ const ShopScreen = () => {
                     <Image source={selectedPet.image} style={styles.selectedPetImage} />
                     <View style={styles.selectedPetBottom}>
                         <View style={styles.selectedPetLeftInfo}>
-                            <Text style={styles.selectedPetDescription}>かわいいペットです</Text>
+                            <Text style={styles.selectedPetDescription} numberOfLines={2}>
+                                ここに説明テキスト。とても長い説明文でも2行までしか表示されません。それ以上は省略されます。
+                            </Text>
                             <Text style={styles.selectedPetPrice}>{selectedPet.price}pt</Text>
                         </View>
                         <TouchableOpacity style={styles.exchangeButton}>
@@ -70,24 +78,44 @@ const ShopScreen = () => {
                         </TouchableOpacity>
                     </View>
                     
-                    {/* 右側：カルーセルスライダー（比率6） */}
-                    <View style={styles.carouselContainer}>
+                    {/* 右側：スライダーメニュー（比率6） */}
+                    <View style={styles.sliderContainer}>
                         <ScrollView 
                             horizontal 
                             showsHorizontalScrollIndicator={false}
-                            pagingEnabled
-                            onMomentumScrollEnd={(event) => {
-                                const index = Math.floor(event.nativeEvent.contentOffset.x / (screenWidth * 0.6 * 0.8))
-                                setSelectedPetIndex(index)
-                            }}
+                            contentContainerStyle={styles.sliderContent}
                         >
-                            {pets.map((pet, index) => (
-                                <View key={pet.id} style={styles.carouselItem}>
-                                    <Image source={pet.image} style={styles.carouselPetImage} />
-                                    <Text style={styles.carouselPetName}>{pet.name}</Text>
-                                    <Text style={styles.carouselPetPrice}>{pet.price}pt</Text>
+                            <View style={styles.sliderGrid}>
+                                {/* 1段目 */}
+                                <View style={styles.sliderRow}>
+                                    {pets.slice(0, Math.ceil(pets.length / 2)).map((pet, index) => (
+                                        <TouchableOpacity 
+                                            key={pet.id} 
+                                            style={styles.sliderItem}
+                                            onPress={() => setSelectedPetIndex(index)}
+                                        >
+                                            <Image source={pet.image} style={styles.sliderPetImage} />
+                                            <Text style={styles.sliderPetName}>{pet.name}</Text>
+                                            <Text style={styles.sliderPetPrice}>{pet.price}pt</Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
-                            ))}
+                                
+                                {/* 2段目 */}
+                                <View style={styles.sliderRow}>
+                                    {pets.slice(Math.ceil(pets.length / 2)).map((pet, index) => (
+                                        <TouchableOpacity 
+                                            key={pet.id} 
+                                            style={styles.sliderItem}
+                                            onPress={() => setSelectedPetIndex(Math.ceil(pets.length / 2) + index)}
+                                        >
+                                            <Image source={pet.image} style={styles.sliderPetImage} />
+                                            <Text style={styles.sliderPetName}>{pet.name}</Text>
+                                            <Text style={styles.sliderPetPrice}>{pet.price}pt</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
                         </ScrollView>
                     </View>
                 </View>
@@ -141,13 +169,13 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.8)',
         borderRadius: 12,
         padding: 16,
-        marginBottom: 16,
+        marginBottom: 6,
         alignItems: 'center', // 中央寄せに変更
         flex: 1,
     },
     selectedPetImage: {
-        width: 100,
-        height: 100,
+        width: 120,
+        height: 120,
         marginBottom: 12,
     },
     selectedPetInfo: {
@@ -177,11 +205,13 @@ const styles = StyleSheet.create({
     selectedPetDescription: {
         fontSize: 14,
         color: '#666',
+        marginRight: 10,
         marginBottom: 4,
+        textAlign: 'left',
     },
     exchangeButton: {
         backgroundColor: '#FF6B6B',
-        borderRadius: 20,
+        borderRadius: 4,
         paddingHorizontal: 20,
         paddingVertical: 8,
     },
@@ -216,30 +246,45 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 14,
     },
-    // 右側カルーセル（比率6）
-    carouselContainer: {
+    // 右側スライダー（比率6）
+    sliderContainer: {
         flex: 6,
     },
-    carouselItem: {
-        width: screenWidth * 0.6 * 0.8, // 画面幅の約48%
-        alignItems: 'center',
-        padding: 8,
+    sliderContent: {
+        paddingHorizontal: 8,
     },
-    carouselPetImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+    sliderGrid: {
+        flexDirection: 'column',
+    },
+    sliderRow: {
+        flexDirection: 'row',
         marginBottom: 8,
     },
-    carouselPetName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#333',
+    sliderItem: {
+        alignItems: 'center',
+        padding: 8,
+        marginHorizontal: 4,
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        borderRadius: 8,
+        minWidth: 80,
+    },
+    sliderPetImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         marginBottom: 4,
     },
-    carouselPetPrice: {
-        fontSize: 14,
+    sliderPetName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 2,
+        textAlign: 'center',
+    },
+    sliderPetPrice: {
+        fontSize: 10,
         color: '#666',
+        textAlign: 'center',
     },
     tabBarContainer: {
         position: 'absolute',
