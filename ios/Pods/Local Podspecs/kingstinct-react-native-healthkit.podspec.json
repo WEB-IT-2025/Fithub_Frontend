@@ -1,0 +1,23 @@
+{
+  "name": "kingstinct-react-native-healthkit",
+  "version": "8.7.2",
+  "summary": "React Native bindings for HealthKit",
+  "homepage": "https://github.com/kingstinct/react-native-healthkit#readme",
+  "license": "MIT",
+  "authors": {
+    "name": "Robert Herber",
+    "email": "robert@kingstinct.com",
+    "url": "https://github.com/robertherber"
+  },
+  "platforms": {
+    "ios": "10.0"
+  },
+  "source": {
+    "git": "https://github.com/kingstinct/react-native-healthkit.git",
+    "tag": "8.7.2"
+  },
+  "source_files": "ios/**/*.{h,m,mm,swift}",
+  "dependencies": {
+    "React": []
+  }
+}

@@ -15,7 +15,7 @@ const missions: Mission[] = [
         id: '1',
         type: 'daily',
         title: 'またきたよー',
-        image: '@\assets\images\moukona.jpeg', // アイコン画像URL
+        image: 'https://example.com/running-icon.png', // アイコン画像URL
         description: 'ログインボーナス',
         status: 'completed',
         board:'display'
