@@ -1,16 +1,29 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, Modal, ImageBackground, Image, StatusBar, Platform } from 'react-native'
+
+import { faGithub, faTwitter } from '@fortawesome/free-brands-svg-icons'
+import { faCalendar } from '@fortawesome/free-regular-svg-icons'
+import { faCoffee, faDog, faPerson, faScroll, faUser } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import {
+    Image,
+    ImageBackground,
+    Modal,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { faGithub, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { faCalendar } from "@fortawesome/free-regular-svg-icons";
-import { faCoffee, faDog, faPerson, faScroll, faUser } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+
 import TabBar from '../components/TabBar'
 import MissionBoard from '../components/missionboard'
-import Profile from '../components/profile' // 追加
+import Profile from '../components/profile'
 
+// 追加
 
-const iconStyle = { color: '#1DA1F2', fontSize: 32 };
+const iconStyle = { color: '#1DA1F2', fontSize: 32 }
 
 const PET_NAME = 'くろた'
 const WALK_PERCENT = 0.6
@@ -18,12 +31,13 @@ const WALK_PERCENT = 0.6
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
     const [profileVisible, setProfileVisible] = useState(false) // 追加
+    const [profileKey, setProfileKey] = useState(0) // Profileコンポーネントの強制再レンダリング用
 
     return (
         <ImageBackground
             source={require('@/assets/images/home_bg.png')}
             style={styles.background}
-            resizeMode="cover"
+            resizeMode='cover'
         >
             <View style={styles.container}>
                 <View style={styles.row}>
@@ -31,21 +45,41 @@ const HomeScreen = () => {
                     <View style={styles.sideButtonGroup}>
                         <TouchableOpacity
                             style={styles.circleButton}
-                            onPress={() => setProfileVisible(true)} // プロフィールモーダルを開く
+                            onPress={() => {
+                                setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+                                setProfileVisible(true) // プロフィールモーダルを開く
+                            }}
                         >
-                            <FontAwesomeIcon style={iconStyle} icon={faUser} size={30}  color='black'/>
+                            <FontAwesomeIcon
+                                style={iconStyle}
+                                icon={faUser}
+                                size={30}
+                                color='black'
+                            />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.circleButton}
-                            onPress={() => {/* ペット画面へ遷移など */}}
+                            onPress={() => {
+                                /* ペット画面へ遷移など */
+                            }}
                         >
-                            <FontAwesomeIcon style={iconStyle} icon={faDog} size={30} color='black' />
+                            <FontAwesomeIcon
+                                style={iconStyle}
+                                icon={faDog}
+                                size={30}
+                                color='black'
+                            />
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.circleButton}
                             onPress={() => setModalVisible(true)}
                         >
-                            <FontAwesomeIcon style={iconStyle} icon={faScroll} size={30} color='black' />
+                            <FontAwesomeIcon
+                                style={iconStyle}
+                                icon={faScroll}
+                                size={30}
+                                color='black'
+                            />
                         </TouchableOpacity>
                     </View>
 
@@ -55,7 +89,7 @@ const HomeScreen = () => {
                         <Image
                             source={require('@/assets/images/cat_test.png')}
                             style={styles.petImage}
-                            resizeMode="cover"
+                            resizeMode='cover'
                         />
                         <Text style={styles.label}>今日の歩数</Text>
                         <View style={styles.progressBarBackground}>
@@ -65,28 +99,25 @@ const HomeScreen = () => {
                     </View>
 
                     {/* 右側ボタン（クローン） */}
-                    <View style={styles.sideButtonGroup}>
-                        
-                        
-                    </View>
+                    <View style={styles.sideButtonGroup}></View>
                 </View>
 
                 {/* ミッションボードモーダル */}
                 <Modal
                     visible={modalVisible}
-                    animationType="slide"
+                    animationType='slide'
                     onRequestClose={() => setModalVisible(false)}
                     statusBarTranslucent={true}
-                    presentationStyle="fullScreen"
+                    presentationStyle='fullScreen'
                     hardwareAccelerated={true}
                 >
                     <StatusBar
-                        barStyle="dark-content"
-                        backgroundColor="transparent"
+                        barStyle='dark-content'
+                        backgroundColor='transparent'
                         translucent={true}
                         hidden={Platform.OS === 'android'}
                     />
-                    {Platform.OS === 'ios' ? (
+                    {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
                             <MissionBoard />
                             <TouchableOpacity
@@ -96,11 +127,9 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </SafeAreaView>
-                    ) : (
-                        <View style={[
-                            styles.fullScreenModal,
-                            { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }
-                        ]}>
+                    :   <View
+                            style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
+                        >
                             <MissionBoard />
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
@@ -109,27 +138,27 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    }
                 </Modal>
 
                 {/* プロフィールモーダル */}
                 <Modal
                     visible={profileVisible}
-                    animationType="slide"
+                    animationType='slide'
                     onRequestClose={() => setProfileVisible(false)}
                     statusBarTranslucent={true}
-                    presentationStyle="fullScreen"
+                    presentationStyle='fullScreen'
                     hardwareAccelerated={true}
                 >
                     <StatusBar
-                        barStyle="dark-content"
-                        backgroundColor="transparent"
+                        barStyle='dark-content'
+                        backgroundColor='transparent'
                         translucent={true}
                         hidden={Platform.OS === 'android'}
                     />
-                    {Platform.OS === 'ios' ? (
+                    {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <Profile />
+                            <Profile key={profileKey} />
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
                                 onPress={() => setProfileVisible(false)}
@@ -137,12 +166,10 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </SafeAreaView>
-                    ) : (
-                        <View style={[
-                            styles.fullScreenModal,
-                            { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }
-                        ]}>
-                            <Profile />
+                    :   <View
+                            style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
+                        >
+                            <Profile key={profileKey} />
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
                                 onPress={() => setProfileVisible(false)}
@@ -150,7 +177,7 @@ const HomeScreen = () => {
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
+                    }
                 </Modal>
 
                 {/* TabBarを最下部に固定 */}
@@ -193,7 +220,7 @@ const styles = StyleSheet.create({
     closeModalButtonAbsolute: {
         position: 'absolute',
         left: 16,
-        bottom: 16,
+        bottom: 30,
         backgroundColor: '#b2d8b2',
         width: 64,
         height: 48,
@@ -224,7 +251,7 @@ const styles = StyleSheet.create({
     },
     sideButtonGroup: {
         flex: 1,
-        alignItems: 'flex-start', 
+        alignItems: 'flex-start',
     },
     petInfo: {
         flex: 3,

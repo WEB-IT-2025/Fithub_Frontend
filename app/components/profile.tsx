@@ -54,6 +54,11 @@ const Profile = () => {
     const ageAnim = useRef(new Animated.Value(0)).current
 
     useEffect(() => {
+        // アニメーションをリセットしてから開始
+        healthAnim.setValue(0)
+        sizeAnim.setValue(0)
+        ageAnim.setValue(0)
+
         // すべて同じ秒数（例: 800ms）でアニメーション
         Animated.timing(healthAnim, {
             toValue: paramValues.health,
@@ -109,10 +114,19 @@ const Profile = () => {
                     />
                 </View>
                 {/* 名前＋インジケーター3本（縦並び） */}
-                <View style={styles.petParamInfo}>
+                <View
+                    style={styles.petParamInfo}
+                    collapsable={false}
+                >
                     <Text style={styles.petParamName}>くろた</Text>
-                    <View style={styles.indicatorColumn}>
-                        <View style={styles.indicatorRow}>
+                    <View
+                        style={styles.indicatorColumn}
+                        collapsable={false}
+                    >
+                        <View
+                            style={styles.indicatorRow}
+                            collapsable={false}
+                        >
                             <Text style={styles.indicatorLabel}>健康度</Text>
                             <View style={styles.indicator}>
                                 <Animated.View
@@ -128,7 +142,10 @@ const Profile = () => {
                                 />
                             </View>
                         </View>
-                        <View style={styles.indicatorRow}>
+                        <View
+                            style={styles.indicatorRow}
+                            collapsable={false}
+                        >
                             <Text style={styles.indicatorLabel}>サイズ</Text>
                             <View style={styles.indicator}>
                                 <Animated.View
@@ -144,7 +161,10 @@ const Profile = () => {
                                 />
                             </View>
                         </View>
-                        <View style={styles.indicatorRow}>
+                        <View
+                            style={[styles.indicatorRow, { marginBottom: 0 }]}
+                            collapsable={false}
+                        >
                             <Text style={styles.indicatorLabel}>年齢</Text>
                             <View style={styles.indicator}>
                                 <Animated.View
@@ -316,29 +336,65 @@ const styles = StyleSheet.create({
     },
     petParamInfo: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: Platform.OS === 'android' ? 'flex-start' : 'center', // Androidで上寄せ
         height: responsiveHeight(10), // 80 -> レスポンシブ
+        ...Platform.select({
+            android: {
+                paddingVertical: 0,
+                marginVertical: 0,
+                marginTop: -responsiveHeight(0.5), // Androidで上に少し移動
+            },
+        }),
     },
     petParamName: {
         fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25), // Androidで少し小さく
         fontWeight: 'bold',
         color: '#388e3c',
-        marginBottom: responsiveHeight(1),
-        textAlign: 'center',
+        marginBottom: responsiveHeight(1.5), // 余白を追加（0 → 0.5）
+        textAlign: 'left',
+        ...Platform.select({
+            android: {
+                lineHeight: responsiveFontSize(2.1) * 1.0, // lineHeightをより小さく
+                paddingVertical: 0,
+                marginTop: 0,
+            },
+            ios: {
+                lineHeight: responsiveFontSize(2.25) * 1.1, // iOSも少し小さく
+            },
+        }),
     },
     indicatorColumn: {
         flexDirection: 'column',
         alignItems: 'flex-start',
-        gap: responsiveHeight(0.3), // 6 -> 2.4px に縮小
+        ...Platform.select({
+            android: {
+                justifyContent: 'flex-start',
+                paddingVertical: 0,
+                marginVertical: 0,
+            },
+            ios: {
+                justifyContent: 'flex-start',
+            },
+        }),
     },
     indicatorRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: responsiveHeight(0.3), // 6 -> 2.4px に縮小
         width: '100%',
+        ...Platform.select({
+            android: {
+                height: responsiveHeight(2.5), // さらに高さを増やす（2.0 → 2.5）
+                marginBottom: responsiveHeight(0.3), // マージンを調整
+                margin: 0,
+                padding: 0,
+            },
+            ios: {
+                marginBottom: responsiveHeight(0.5),
+            },
+        }),
     },
     indicatorLabel: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.6) : responsiveFontSize(1.75), // Androidで少し小さく
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.7) : responsiveFontSize(1.75), // Androidで少し小さく
         color: '#333',
         marginRight: responsiveWidth(2.5),
         minWidth: responsiveWidth(15),
