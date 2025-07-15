@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import { useRouter } from 'expo-router'
+
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Animated, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
@@ -61,6 +63,7 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const sliderAnim = useRef(new Animated.Value(0)).current
+    const router = useRouter()
 
     // コントリビューションデータを取得する関数
     const getContributionsData = () => {
@@ -275,8 +278,16 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
 
     return (
         <View style={styles.container}>
-            {/* タイトル */}
-            <Text style={styles.title}>プロフィール</Text>
+            {/* タイトル＋右上ボタン */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.title}>プロフィール</Text>
+                <TouchableOpacity
+                    style={styles.configButton}
+                    onPress={() => router.push('/config')}
+                >
+                    <Text style={styles.configButtonText}>⚙️</Text>
+                </TouchableOpacity>
+            </View>
             <View style={styles.underline} />
             {/* ユーザー名 */}
             <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>
@@ -607,6 +618,13 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
 }
 
 const styles = StyleSheet.create({
+    configButton: {
+        padding: 8,
+        marginRight: 2,
+    },
+    configButtonText: {
+        fontSize: 24,
+    },
     container: {
         flex: 1,
         backgroundColor: '#ffffff',
