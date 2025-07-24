@@ -12,7 +12,7 @@ import {
     useWindowDimensions,
 } from 'react-native'
 
-import missionsData from '../components/mission'
+import missionsData from '../components/Mission'
 
 type MissionType = 'daily' | 'weekly'
 
