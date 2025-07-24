@@ -1,9 +1,30 @@
-import React, { useState, useRef } from 'react'
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Animated, Image, Dimensions, Alert, Modal, FlatList } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import TabBar from '../components/TabBar'
+import React, { useRef, useState } from 'react'
+
+import {
+    faAddressBook,
+    faBars,
+    faCircleInfo,
+    faRepeat,
+    faRightFromBracket,
+    faXmark,
+} from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
-import { faBars, faXmark, faRightFromBracket, faRepeat, faAddressBook, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import {
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    ImageBackground,
+    Modal,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native'
+
+import TabBar from '../../components/TabBar'
 
 // ステータスごとのサイズ
 const statusToSize: Record<number, number> = {
@@ -83,42 +104,35 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
 // ペット出現範囲を計算
 const TABBAR_HEIGHT = 80 // TabBarの高さを正確に設定（必要に応じて調整）
-const PET_AREA_TOP = screenHeight / 4  // 上端をもう少し下に移動
+const PET_AREA_TOP = screenHeight / 4 // 上端をもう少し下に移動
 const PET_AREA_BOTTOM = screenHeight / 1.25 - TABBAR_HEIGHT // TabBarの上端まで
 const PET_AREA_LEFT = 20
 const PET_AREA_RIGHT = screenWidth - 80 // 右端から少し余白
 
 // ランダム位置生成（被りを避ける）
-const getNonOverlappingPositions = (
-    count: number,
-    sizeGetter: (idx: number) => number,
-    maxTry = 100
-) => {
-    const positions: { top: number; left: number }[] = [];
+const getNonOverlappingPositions = (count: number, sizeGetter: (idx: number) => number, maxTry = 100) => {
+    const positions: { top: number; left: number }[] = []
     for (let i = 0; i < count; i++) {
-        let tryCount = 0;
-        let pos;
-        let overlap;
+        let tryCount = 0
+        let pos
+        let overlap
         do {
-            const width = sizeGetter(i);
-            const height = sizeGetter(i);
-            const top = Math.random() * (PET_AREA_BOTTOM - PET_AREA_TOP - height) + PET_AREA_TOP;
-            const left = Math.random() * (PET_AREA_RIGHT - PET_AREA_LEFT - width) + PET_AREA_LEFT;
-            pos = { top, left };
+            const width = sizeGetter(i)
+            const height = sizeGetter(i)
+            const top = Math.random() * (PET_AREA_BOTTOM - PET_AREA_TOP - height) + PET_AREA_TOP
+            const left = Math.random() * (PET_AREA_RIGHT - PET_AREA_LEFT - width) + PET_AREA_LEFT
+            pos = { top, left }
             overlap = positions.some((p, j) => {
-                const w2 = sizeGetter(j);
-                const h2 = sizeGetter(j);
-                return (
-                    Math.abs(p.left - left) < (width + w2) / 2 &&
-                    Math.abs(p.top - top) < (height + h2) / 2
-                );
-            });
-            tryCount++;
-        } while (overlap && tryCount < maxTry);
-        positions.push(pos);
+                const w2 = sizeGetter(j)
+                const h2 = sizeGetter(j)
+                return Math.abs(p.left - left) < (width + w2) / 2 && Math.abs(p.top - top) < (height + h2) / 2
+            })
+            tryCount++
+        } while (overlap && tryCount < maxTry)
+        positions.push(pos)
     }
-    return positions;
-};
+    return positions
+}
 
 // --- 既存のroomNamesマッピングを削除し、group.tsxのrooms配列と同じ内容で定義 ---
 const rooms = [
@@ -135,7 +149,7 @@ const RoomScreen = () => {
     const router = useRouter()
 
     // --- RoomScreen内で部屋名を取得 ---
-    const room = rooms.find(r => String(r.id) === String(roomId))
+    const room = rooms.find((r) => String(r.id) === String(roomId))
     const roomName = room ? room.name : 'ルーム'
 
     const [menuOpen, setMenuOpen] = useState(false)
@@ -201,14 +215,11 @@ const RoomScreen = () => {
 
     // ペットのランダム位置を初期化
     const [petPositions] = useState(() =>
-        getNonOverlappingPositions(
-            groupUsers.length,
-            idx => statusToSize[groupUsers[idx].pet.pet_size] || 64
-        )
+        getNonOverlappingPositions(groupUsers.length, (idx) => statusToSize[groupUsers[idx].pet.pet_size] || 64)
     )
 
     const toggleMenu = () => {
-        setMenuOpen(prev => {
+        setMenuOpen((prev) => {
             if (!prev) {
                 Animated.timing(anim, {
                     toValue: 1,
@@ -230,16 +241,16 @@ const RoomScreen = () => {
         <ImageBackground
             source={require('@/assets/images/home_bg.png')}
             style={styles.background}
-            resizeMode="cover"
+            resizeMode='cover'
         >
             <View style={styles.container}>
                 {/* 部屋名 */}
                 <View style={styles.roomTitleContainer}>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/group')}>
-                        <Image 
+                        <Image
                             source={require('@/assets/images/Vector.png')}
                             style={styles.backIcon}
-                            resizeMode="contain"
+                            resizeMode='contain'
                         />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.push('/(tabs)/group')}>
@@ -257,7 +268,7 @@ const RoomScreen = () => {
                                     position: 'absolute',
                                     top: petPositions[idx].top,
                                     left: petPositions[idx].left,
-                                }
+                                },
                             ]}
                             onPress={() => handleShowUserDetail(user)}
                         >
@@ -268,16 +279,19 @@ const RoomScreen = () => {
                                     {
                                         width: statusToSize[user.pet.pet_size] || 64, // 万一undefinedなら64
                                         height: statusToSize[user.pet.pet_size] || 64,
-                                    }
+                                    },
                                 ]}
-                                resizeMode="contain"
+                                resizeMode='contain'
                             />
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 {/* フローティングメニュー */}
-                <View pointerEvents="box-none" style={styles.menuArea}>
+                <View
+                    pointerEvents='box-none'
+                    style={styles.menuArea}
+                >
                     {[...menuItems].reverse().map((item, idx) => {
                         const translateY = anim.interpolate({
                             inputRange: [0, 1],
@@ -303,19 +317,33 @@ const RoomScreen = () => {
                                     style={styles.floatingButtonInner}
                                     onPress={item.onPress}
                                 >
-                                    <FontAwesomeIcon icon={item.icon} size={32} color="#fff" />
+                                    <FontAwesomeIcon
+                                        icon={item.icon}
+                                        size={32}
+                                        color='#fff'
+                                    />
                                 </TouchableOpacity>
                                 <Text style={styles.floatingButtonLabel}>{item.label}</Text>
                             </Animated.View>
                         )
                     })}
                     {/* ハンバーガー/クローズボタン */}
-                    <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
-                        {menuOpen ? (
-                            <FontAwesomeIcon icon={faXmark} size={32} color="#000" />
-                        ) : (
-                            <FontAwesomeIcon icon={faBars} size={32} color="#000" />
-                        )}
+                    <TouchableOpacity
+                        style={styles.menuButton}
+                        onPress={toggleMenu}
+                    >
+                        {menuOpen ?
+                            <FontAwesomeIcon
+                                icon={faXmark}
+                                size={32}
+                                color='#000'
+                            />
+                        :   <FontAwesomeIcon
+                                icon={faBars}
+                                size={32}
+                                color='#000'
+                            />
+                        }
                     </TouchableOpacity>
                 </View>
 
@@ -327,33 +355,37 @@ const RoomScreen = () => {
                 <Modal
                     visible={membersModalVisible}
                     transparent={true}
-                    animationType="fade"
+                    animationType='fade'
                     onRequestClose={() => setMembersModalVisible(false)}
                 >
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
                                 <Text style={styles.modalTitle}>メンバー一覧</Text>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => setMembersModalVisible(false)}
                                     style={styles.closeButton}
                                 >
-                                    <FontAwesomeIcon icon={faXmark} size={24} color="#333" />
+                                    <FontAwesomeIcon
+                                        icon={faXmark}
+                                        size={24}
+                                        color='#333'
+                                    />
                                 </TouchableOpacity>
                             </View>
-                            
+
                             <FlatList
                                 data={groupUsers}
                                 keyExtractor={(item) => item.user_id}
                                 renderItem={({ item }) => (
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.memberItem}
                                         onPress={() => handleShowUserDetail(item)}
                                     >
-                                        <Image 
+                                        <Image
                                             source={require('@/assets/images/cat_test.png')}
                                             style={styles.memberPetImage}
-                                            resizeMode="contain"
+                                            resizeMode='contain'
                                         />
                                         <View style={styles.memberInfo}>
                                             <Text style={styles.memberName}>{item.name}</Text>
@@ -373,27 +405,31 @@ const RoomScreen = () => {
                 <Modal
                     visible={userDetailModalVisible}
                     transparent={true}
-                    animationType="slide"
+                    animationType='slide'
                     onRequestClose={() => setUserDetailModalVisible(false)}
                 >
                     <View style={styles.modalOverlay}>
                         <View style={styles.userDetailContent}>
                             <View style={styles.modalHeader}>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => setUserDetailModalVisible(false)}
                                     style={styles.closeButton}
                                 >
-                                    <FontAwesomeIcon icon={faXmark} size={24} color="#333" />
+                                    <FontAwesomeIcon
+                                        icon={faXmark}
+                                        size={24}
+                                        color='#333'
+                                    />
                                 </TouchableOpacity>
                                 <Text style={styles.userDetailTitle}>プロフィール</Text>
                                 <View style={styles.placeholder} />
                             </View>
-                            
+
                             {selectedUser && (
                                 <View style={styles.userDetailBody}>
                                     {/* ユーザー名 */}
                                     <Text style={styles.userDetailName}>{selectedUser.name}</Text>
-                                    
+
                                     {/* 今週のコントリビューション */}
                                     <Text style={styles.userDetailSectionLabel}>今週のコントリビューション</Text>
                                     <View style={styles.userDetailContributionBoard}>
@@ -403,13 +439,21 @@ const RoomScreen = () => {
                                                     key={idx}
                                                     style={[
                                                         styles.userDetailContributionBox,
-                                                        { backgroundColor: ['#EFEFF4', '#ACEEBB', '#4BC16B', '#2BA44E', '#136229'][Math.max(0, Math.min(count, 4))] }
+                                                        {
+                                                            backgroundColor: [
+                                                                '#EFEFF4',
+                                                                '#ACEEBB',
+                                                                '#4BC16B',
+                                                                '#2BA44E',
+                                                                '#136229',
+                                                            ][Math.max(0, Math.min(count, 4))],
+                                                        },
                                                     ]}
                                                 />
                                             ))}
                                         </View>
                                     </View>
-                                    
+
                                     {/* ペットのパラメータ */}
                                     <Text style={styles.userDetailSectionLabel}>ペットのパラメータ</Text>
                                     <View style={styles.userDetailPetParamRow}>
@@ -417,7 +461,7 @@ const RoomScreen = () => {
                                             <Image
                                                 source={require('@/assets/images/cat_test.png')}
                                                 style={styles.userDetailPetImage}
-                                                resizeMode="contain"
+                                                resizeMode='contain'
                                             />
                                         </View>
                                         <View style={styles.userDetailPetInfo}>
@@ -426,25 +470,37 @@ const RoomScreen = () => {
                                                 <View style={styles.userDetailIndicatorRow}>
                                                     <Text style={styles.userDetailIndicatorLabel}>健康度</Text>
                                                     <View style={styles.userDetailIndicator}>
-                                                        <View style={[styles.userDetailIndicatorFill, { width: `${selectedUser.pet.pet_state * 25}%` }]} />
+                                                        <View
+                                                            style={[
+                                                                styles.userDetailIndicatorFill,
+                                                                { width: `${selectedUser.pet.pet_state * 25}%` },
+                                                            ]}
+                                                        />
                                                     </View>
                                                 </View>
                                                 <View style={styles.userDetailIndicatorRow}>
                                                     <Text style={styles.userDetailIndicatorLabel}>サイズ</Text>
                                                     <View style={styles.userDetailIndicator}>
-                                                        <View style={[styles.userDetailIndicatorFill, { width: `${selectedUser.pet.pet_size * 33}%` }]} />
+                                                        <View
+                                                            style={[
+                                                                styles.userDetailIndicatorFill,
+                                                                { width: `${selectedUser.pet.pet_size * 33}%` },
+                                                            ]}
+                                                        />
                                                     </View>
                                                 </View>
                                                 <View style={styles.userDetailIndicatorRow}>
                                                     <Text style={styles.userDetailIndicatorLabel}>年齢</Text>
                                                     <View style={styles.userDetailIndicator}>
-                                                        <View style={[styles.userDetailIndicatorFill, { width: '60%' }]} />
+                                                        <View
+                                                            style={[styles.userDetailIndicatorFill, { width: '60%' }]}
+                                                        />
                                                     </View>
                                                 </View>
                                             </View>
                                         </View>
                                     </View>
-                                    
+
                                     {/* 運動グラフ */}
                                     <Text style={styles.userDetailSectionLabel}>ユーザーの運動グラフ</Text>
                                     <View style={styles.userDetailGraphPlaceholder}>

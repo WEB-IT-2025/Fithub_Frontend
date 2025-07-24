@@ -17,7 +17,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import TabBar from '../components/TabBar'
+import TabBar from '../../components/TabBar'
 import MissionBoard from '../components/missionboard'
 import Profile from '../components/profile'
 
