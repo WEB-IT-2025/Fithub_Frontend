@@ -1,7 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Animated, useWindowDimensions } from 'react-native'
-import { Ionicons } from '@expo/vector-icons';
-import missionsData from './mission'
+import React, { useEffect, useRef, useState } from 'react'
+
+import { Ionicons } from '@expo/vector-icons'
+import {
+    Animated,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
+} from 'react-native'
+
+import missionsData from '../components/mission'
 
 type MissionType = 'daily' | 'weekly'
 
@@ -45,26 +56,20 @@ const MissionBoard = () => {
                 duration: 600,
                 useNativeDriver: true,
             }),
-            Animated.delay(400)
+            Animated.delay(400),
         ]).start(() => {
             setClearedId(null)
-            setMissions(prev =>
-                prev.map(m =>
-                    m.id === id && m.status === 'completed'
-                        ? { ...m, board: 'hidden' }
-                        : m
-                )
+            setMissions((prev) =>
+                prev.map((m) => (m.id === id && m.status === 'completed' ? { ...m, board: 'hidden' } : m))
             )
         })
     }
 
     // すべて受け取る
     const handleReceiveAll = () => {
-        setMissions(prev =>
-            prev.map(m =>
-                m.type === type && m.status === 'completed' && m.board === 'display'
-                    ? { ...m, board: 'hidden' }
-                    : m
+        setMissions((prev) =>
+            prev.map((m) =>
+                m.type === type && m.status === 'completed' && m.board === 'display' ? { ...m, board: 'hidden' } : m
             )
         )
     }
@@ -87,7 +92,7 @@ const MissionBoard = () => {
                             alignSelf: 'center',
                             marginBottom: 16,
                         }}
-                        onLayout={e => setToggleWidth(e.nativeEvent.layout.width)}
+                        onLayout={(e) => setToggleWidth(e.nativeEvent.layout.width)}
                     >
                         <View style={[styles.toggleBackgroundShadow, { top: 4, left: 0 }]} />
                         <View style={styles.toggleBackground}>
@@ -105,41 +110,35 @@ const MissionBoard = () => {
                                 onPress={() => setType('daily')}
                                 activeOpacity={1}
                             >
-                                <Text style={[
-                                    styles.toggleText,
-                                    type === 'daily' && styles.activeToggleText
-                                ]}>デイリー</Text>
+                                <Text style={[styles.toggleText, type === 'daily' && styles.activeToggleText]}>
+                                    デイリー
+                                </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.toggleTouchable}
                                 onPress={() => setType('weekly')}
                                 activeOpacity={1}
                             >
-                                <Text style={[
-                                    styles.toggleText,
-                                    type === 'weekly' && styles.activeToggleText
-                                ]}>ウィークリー</Text>
+                                <Text style={[styles.toggleText, type === 'weekly' && styles.activeToggleText]}>
+                                    ウィークリー
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
 
                 {/* デイリー/ウィークリーラベル */}
-                <Text style={styles.sectionLabel}>
-                    {type === 'daily' ? 'デイリー' : 'ウィークリー'}
-                </Text>
+                <Text style={styles.sectionLabel}>{type === 'daily' ? 'デイリー' : 'ウィークリー'}</Text>
                 <View style={styles.Spacer} />
 
                 {/* ミッションリスト */}
                 <ScrollView style={styles.missionList}>
                     {filteredMissions.map((mission: any, idx: number) => (
-                        <View key={idx} style={{ position: 'relative', marginBottom: 16 }}>
-                            <View
-                                style={[
-                                    styles.missionItemShadow,
-                                    { top: 1 }
-                                ]}
-                            />
+                        <View
+                            key={idx}
+                            style={{ position: 'relative', marginBottom: 16 }}
+                        >
+                            <View style={[styles.missionItemShadow, { top: 1 }]} />
                             <TouchableOpacity
                                 style={styles.missionItem}
                                 disabled={mission.status !== 'completed'}
@@ -148,15 +147,17 @@ const MissionBoard = () => {
                             >
                                 {/* 右上に達成数表示 */}
                                 <View style={{ position: 'absolute', top: 8, right: 12, zIndex: 2 }}>
-                                    <Text style={{
-                                        fontSize: 13,
-                                        color: mission.status === 'completed' ? '#388e3c' : '#888',
-                                        fontWeight: 'bold',
-                                        backgroundColor: 'rgba(255,255,255,0.7)',
-                                        borderRadius: 8,
-                                        paddingHorizontal: 8,
-                                        paddingVertical: 2,
-                                    }}>
+                                    <Text
+                                        style={{
+                                            fontSize: 13,
+                                            color: mission.status === 'completed' ? '#388e3c' : '#888',
+                                            fontWeight: 'bold',
+                                            backgroundColor: 'rgba(255,255,255,0.7)',
+                                            borderRadius: 8,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 2,
+                                        }}
+                                    >
                                         {mission.status === 'completed' ? '1/1' : '0/1'}
                                     </Text>
                                 </View>
@@ -164,11 +165,11 @@ const MissionBoard = () => {
                                     <Image
                                         source={
                                             mission.image.startsWith('http')
-                                                // ? { uri: mission.image }
-                                                // : require(`${mission.image}`)
+                                            // ? { uri: mission.image }
+                                            // : require(`${mission.image}`)
                                         }
                                         style={styles.missionImage}
-                                        resizeMode="cover"
+                                        resizeMode='cover'
                                     />
                                 )}
                                 <View style={styles.missionTextContainer}>
@@ -185,7 +186,7 @@ const MissionBoard = () => {
                                                 styles.progressBarFill,
                                                 {
                                                     width: mission.status === 'completed' ? '100%' : '0%',
-                                                }
+                                                },
                                             ]}
                                         />
                                     </View>
@@ -200,13 +201,13 @@ const MissionBoard = () => {
                                                     {
                                                         scale: clearAnim.interpolate({
                                                             inputRange: [0, 1],
-                                                            outputRange: [0.7, 1.4]
-                                                        })
-                                                    }
-                                                ]
-                                            }
+                                                            outputRange: [0.7, 1.4],
+                                                        }),
+                                                    },
+                                                ],
+                                            },
                                         ]}
-                                        pointerEvents="none"
+                                        pointerEvents='none'
                                     >
                                         <Text style={styles.clearText}>Clear!</Text>
                                     </Animated.View>
@@ -219,7 +220,10 @@ const MissionBoard = () => {
                 {/* 下部ボタン */}
                 <View style={styles.bottomButtons}>
                     <View style={{ flex: 1 }} />
-                    <TouchableOpacity style={styles.receiveAllButton} onPress={handleReceiveAll}>
+                    <TouchableOpacity
+                        style={styles.receiveAllButton}
+                        onPress={handleReceiveAll}
+                    >
                         <Text style={styles.receiveAllText}>すべて受け取る</Text>
                     </TouchableOpacity>
                 </View>
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     Spacer: {
-        height: 12, 
+        height: 12,
     },
     missionList: {
         flex: 1,

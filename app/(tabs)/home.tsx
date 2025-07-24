@@ -18,8 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
-import MissionBoard from '../components/missionboard'
-import Profile from '../components/profile'
+import Profile from '../profile'
+import MissionBoard from '../missionboard'
 
 // 追加
 
