@@ -25,7 +25,7 @@ const LoginScreen = () => {
     }
 
     const handleRegister = () => {
-        router.push('/(auth)/register')
+        router.push('../index.tsx')
     }
 
     // const handleDevLogin = () => {

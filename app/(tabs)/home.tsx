@@ -18,8 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
-import Profile from '../profile'
 import MissionBoard from '../missionboard'
+import Profile from '../profile'
 
 // 追加
 
@@ -47,7 +47,9 @@ const HomeScreen = () => {
                             style={styles.circleButton}
                             onPress={() => {
                                 setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
-                                setProfileVisible(true) // プロフィールモーダルを開く
+                                setTimeout(() => {
+                                    setProfileVisible(true) // プロフィールモーダルを0.5秒後に開く
+                                }, 200)
                             }}
                         >
                             <FontAwesomeIcon
