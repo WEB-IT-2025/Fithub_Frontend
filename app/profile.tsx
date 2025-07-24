@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Animated, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, Image, Platform, Text, TouchableOpacity, View } from 'react-native'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import Svg, { Circle, Path } from 'react-native-svg'
+
+import styles from './style/profile.styles'
 
 // ストレージキー
 const STORAGE_KEYS = {
@@ -71,14 +73,14 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
             // 週表示：曜日別コントリビューション（月〜日）
             if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
                 const weeklyContributions = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
-                
-                userData.recent_contributions.forEach(contribution => {
+
+                userData.recent_contributions.forEach((contribution) => {
                     const date = new Date(contribution.day)
                     const dayOfWeek = (date.getDay() + 6) % 7 // 日曜=0を月曜=0に変換
                     const count = parseInt(contribution.count, 10)
                     weeklyContributions[dayOfWeek] = Math.min(Math.max(count, 0), 4) // 0-4の範囲にクランプ
                 })
-                
+
                 return weeklyContributions
             } else {
                 // デフォルトデータ（曜日別）
@@ -90,7 +92,7 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
                 const sortedContributions = [...userData.recent_contributions].sort(
                     (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
                 )
-                
+
                 // APIから取得した実際のデータのみを使用（補完しない）
                 return sortedContributions.map((day) => {
                     const count = parseInt(day.count, 10)
@@ -283,30 +285,26 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
 
             {/* コントリビューション */}
             <Text style={styles.sectionLabel}>
-                {period === '日' ? '今日のコントリビューション' : 
-                 period === '週' ? '今週のコントリビューション' : 
-                 '今月のコントリビューション'}
+                {period === '日' ?
+                    '今日のコントリビューション'
+                : period === '週' ?
+                    '今週のコントリビューション'
+                :   '今月のコントリビューション'}
             </Text>
             {/* コントリビューションデータ */}
-            <View style={[
-                styles.contributionBoard,
-                period === '月' && { maxWidth: '100%', flexWrap: 'wrap' }
-            ]}>
-                <View style={[
-                    styles.contributionRow,
-                    period === '月' && { flexWrap: 'wrap', maxWidth: '100%' }
-                ]}>
+            <View style={[styles.contributionBoard, period === '月' && { maxWidth: '100%', flexWrap: 'wrap' }]}>
+                <View style={[styles.contributionRow, period === '月' && { flexWrap: 'wrap', maxWidth: '100%' }]}>
                     {getContributionsData().map((count, idx) => (
                         <View
                             key={idx}
                             style={[
                                 styles.contributionBox,
                                 { backgroundColor: contributionColors[Math.max(0, Math.min(count, 4))] },
-                                period === '月' && { 
-                                    width: responsiveWidth(6), 
+                                period === '月' && {
+                                    width: responsiveWidth(6),
                                     height: responsiveWidth(6),
-                                    margin: responsiveWidth(0.3)
-                                }
+                                    margin: responsiveWidth(0.3),
+                                },
                             ]}
                         />
                     ))}
@@ -513,14 +511,14 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
                                     // 直線パスを生成
                                     const createStraightPath = (points: any[]) => {
                                         if (points.length < 2) return ''
-                                        
+
                                         let path = `M ${points[0].x} ${points[0].y}`
-                                        
+
                                         for (let i = 1; i < points.length; i++) {
                                             const currentPoint = points[i]
                                             path += ` L ${currentPoint.x} ${currentPoint.y}`
                                         }
-                                        
+
                                         return path
                                     }
 
@@ -605,447 +603,5 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
         </View>
     )
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#ffffff',
-        borderRadius: responsiveWidth(5), // 20 -> レスポンシブ
-        padding: responsiveWidth(6), // 24 -> レスポンシブ
-        paddingTop: Platform.OS === 'ios' ? responsiveHeight(6) : responsiveHeight(0), // iOS用に上部パディング増加
-    },
-    title: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(3), // Androidで少し小さく
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: responsiveHeight(0.25),
-        color: '#388e3c',
-    },
-    underline: {
-        height: responsiveHeight(0.125), // 1 -> レスポンシブ
-        backgroundColor: '#ccc',
-        width: '150%',
-        alignSelf: 'center',
-        marginBottom: responsiveHeight(1.25), // 10 -> レスポンシブ
-        opacity: 0.5,
-    },
-    userName: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25), // Androidで少し小さく
-        fontWeight: 'bold',
-        color: '#000',
-        marginBottom: responsiveHeight(1.25),
-        textAlign: 'left',
-    },
-    sectionLabel: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.9) : responsiveFontSize(2), // Androidで少し小さく
-        color: '#000',
-        fontWeight: 'bold',
-        marginBottom: responsiveHeight(1),
-        textAlign: 'left',
-        alignSelf: 'flex-start',
-    },
-    contributionBoard: {
-        backgroundColor: '#fff',
-        borderRadius: responsiveWidth(4),
-        paddingVertical: responsiveHeight(1.25),
-        paddingHorizontal: responsiveWidth(4),
-        marginBottom: responsiveHeight(2),
-        alignSelf: 'flex-start',
-        // プラットフォーム別シャドウ
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.75) },
-                shadowOpacity: 0.18,
-                shadowRadius: responsiveWidth(3),
-            },
-            android: {
-                elevation: 6, // Androidではelevationを少し下げる
-            },
-        }),
-    },
-    contributionRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-    },
-    contributionBox: {
-        width: responsiveWidth(9), // 36 -> レスポンシブ
-        height: responsiveWidth(9), // 36 -> レスポンシブ（正方形を維持）
-        borderRadius: responsiveWidth(2), // 8 -> レスポンシブ
-        marginLeft: responsiveWidth(1), // 4 -> レスポンシブ
-        marginRight: responsiveWidth(1), // 4 -> レスポンシブ
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    Spacer: {
-        height: responsiveHeight(1.5), // 12 -> レスポンシブ
-    },
-    petParamRow: {
-        flexDirection: 'row',
-        alignItems: 'stretch',
-        marginBottom: responsiveHeight(3), // 24 -> レスポンシブ
-        width: '100%',
-    },
-    petParamImageWrapper: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: responsiveHeight(10), // 80 -> レスポンシブ
-        marginRight: responsiveWidth(4), // 16 -> レスポンシブ
-    },
-    petParamImage: {
-        width: responsiveWidth(25), // 100 -> レスポンシブ
-        height: responsiveWidth(25), // 100 -> レスポンシブ（正方形を維持）
-    },
-    petParamInfo: {
-        flex: 1,
-        justifyContent: Platform.OS === 'android' ? 'flex-start' : 'center', // Androidで上寄せ
-        height: responsiveHeight(10), // 80 -> レスポンシブ
-        ...Platform.select({
-            android: {
-                paddingVertical: 0,
-                marginVertical: 0,
-                marginTop: -responsiveHeight(0.5), // Androidで上に少し移動
-            },
-        }),
-    },
-    petParamName: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25), // Androidで少し小さく
-        fontWeight: 'bold',
-        color: '#388e3c',
-        marginBottom: responsiveHeight(1.5), // 余白を追加（0 → 0.5）
-        textAlign: 'left',
-        ...Platform.select({
-            android: {
-                lineHeight: responsiveFontSize(2.1) * 1.0, // lineHeightをより小さく
-                paddingVertical: 0,
-                marginTop: 0,
-            },
-            ios: {
-                lineHeight: responsiveFontSize(2.25) * 1.1, // iOSも少し小さく
-            },
-        }),
-    },
-    indicatorColumn: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        ...Platform.select({
-            android: {
-                justifyContent: 'flex-start',
-                paddingVertical: 0,
-                marginVertical: 0,
-            },
-            ios: {
-                justifyContent: 'flex-start',
-            },
-        }),
-    },
-    indicatorRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        ...Platform.select({
-            android: {
-                height: responsiveHeight(2.5), // さらに高さを増やす（2.0 → 2.5）
-                marginBottom: responsiveHeight(0.3), // マージンを調整
-                margin: 0,
-                padding: 0,
-            },
-            ios: {
-                marginBottom: responsiveHeight(0.5),
-            },
-        }),
-    },
-    indicatorLabel: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(1.7) : responsiveFontSize(1.75), // Androidで少し小さく
-        color: '#333',
-        marginRight: responsiveWidth(2.5),
-        minWidth: responsiveWidth(15),
-        textAlign: 'right',
-    },
-    indicator: {
-        height: responsiveHeight(1.25),
-        borderRadius: responsiveWidth(1.25),
-        flex: 1,
-        minWidth: 0,
-        backgroundColor: '#fff',
-        // プラットフォーム別シャドウ
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
-                shadowOpacity: 0.18,
-                shadowRadius: responsiveWidth(1),
-            },
-            android: {
-                elevation: 2, // Androidではelevationを少し下げる
-            },
-        }),
-        overflow: 'visible',
-        position: 'relative',
-    },
-    toggleContainer: {
-        alignItems: 'center',
-        marginBottom: responsiveHeight(2), // 16 -> レスポンシブ
-        width: '100%',
-    },
-    toggleBackground: {
-        width: '100%',
-        maxWidth: responsiveWidth(100),
-        height: responsiveHeight(5.5),
-        backgroundColor: '#fff',
-        borderRadius: responsiveHeight(2.75),
-        flexDirection: 'row',
-        alignItems: 'center',
-        position: 'relative',
-        // プラットフォーム別シャドウ
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
-                shadowOpacity: 0.12,
-                shadowRadius: responsiveWidth(1.5),
-            },
-            android: {
-                elevation: 3, // Androidではelevationを少し下げる
-            },
-        }),
-    },
-    toggleSlider: {
-        position: 'absolute',
-        top: responsiveHeight(0.5), // 4 -> レスポンシブ
-        height: responsiveHeight(4.5), // 36 -> レスポンシブ
-        backgroundColor: '#136229',
-        borderRadius: responsiveHeight(2.25), // 18 -> レスポンシブ
-        zIndex: 1,
-    },
-    toggleTouchable: {
-        flex: 1,
-        height: responsiveHeight(5.5), // 44 -> レスポンシブ
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2,
-    },
-    toggleText: {
-        color: '#136229',
-        fontWeight: 'bold',
-        fontSize: responsiveFontSize(2), // 16 -> レスポンシブ
-    },
-    activeToggleText: {
-        color: '#fff',
-    },
-    totalRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: responsiveHeight(1), // 8 -> レスポンシブ
-        gap: responsiveWidth(2), // 8 -> レスポンシブ
-    },
-    totalLabel: {
-        fontSize: responsiveFontSize(1.5), // 12 -> レスポンシブ
-        color: '#666',
-        marginBottom: responsiveHeight(0.25), // 2 -> レスポンシブ
-    },
-    totalValue: {
-        fontWeight: 'bold',
-        color: '#000',
-        fontSize: responsiveFontSize(2.5), // 20 -> レスポンシブ
-    },
-    totalNumber: {
-        fontSize: responsiveFontSize(4), // 32 -> レスポンシブ
-        fontWeight: 'bold',
-        color: '#000',
-    },
-    totalUnit: {
-        fontSize: responsiveFontSize(2), // 16 -> レスポンシブ
-        fontWeight: 'bold',
-        color: '#000',
-    },
-    graphPlaceholder: {
-        height: responsiveHeight(22.5), // 180 -> レスポンシブ
-        width: '100%',
-        backgroundColor: '#f4f4f4',
-        borderRadius: responsiveWidth(3), // 12 -> レスポンシブ
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: responsiveHeight(3), // 24 -> レスポンシブ
-    },
-    // ローディング用のスタイル
-  loadingContainer: {
-      
-        height: responsiveHeight(20),
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f9f9f9',
-        borderRadius: responsiveWidth(3),
-        marginBottom: responsiveHeight(3),
-    },
-    loadingText: {
-        fontSize: responsiveFontSize(1.8),
-        color: '#666',
-        fontWeight: '500',
-    },
-    // グラフ用のスタイル
-    chartContainer: {
-        width: '100%',
-        marginBottom: responsiveHeight(3),
-    },
-    chartArea: {
-        height: responsiveHeight(20),
-        backgroundColor: '#FAFAFA',
-        borderRadius: responsiveWidth(2),
-        padding: responsiveWidth(3),
-        position: 'relative',
-        flexDirection: 'row',
-        // プラットフォーム別シャドウ
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.5) },
-                shadowOpacity: 0.15,
-                shadowRadius: responsiveWidth(2),
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
-    },
-    // Y軸ラベル
-    yAxisLabels: {
-        width: responsiveWidth(12),
-        height: responsiveHeight(15),
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        paddingRight: responsiveWidth(2),
-        marginTop: responsiveHeight(1),
-    },
-    yAxisLabel: {
-        fontSize: responsiveFontSize(1.1),
-        color: '#666',
-        textAlign: 'right',
-    },
-    // SVGコンテナ
-    svgContainer: {
-        flex: 1,
-        height: responsiveHeight(15),
-        marginTop: responsiveHeight(1),
-        position: 'relative',
-        // プラットフォーム別シャドウ（軽め）
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
-                shadowOpacity: 0.08,
-                shadowRadius: responsiveWidth(1),
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
-    },
-    svgGraph: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-    },
-    // データラベル
-    dataLabels: {
-        position: 'absolute',
-        bottom: responsiveHeight(1),
-        left: responsiveWidth(15),
-        right: responsiveWidth(3),
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    labelColumn: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    // グリッド線
-    gridLines: {
-        position: 'absolute',
-        top: responsiveHeight(1),
-        left: responsiveWidth(15),
-        right: responsiveWidth(3),
-        height: responsiveHeight(15),
-    },
-    gridLine: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        height: 1,
-        backgroundColor: '#E0E0E0',
-        opacity: 0.5,
-    },
-    chartPoints: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        width: '100%',
-        height: '100%',
-        zIndex: 1,
-    },
-    chartPoint: {
-        flex: 1,
-        alignItems: 'center',
-        marginHorizontal: responsiveWidth(0.2),
-        height: '100%',
-        justifyContent: 'space-between',
-    },
-    stepValue: {
-        fontSize: responsiveFontSize(1.2),
-        color: '#888888',
-        fontWeight: '600',
-        marginBottom: responsiveHeight(0.5),
-        textAlign: 'center',
-    },
-    pointContainer: {
-        width: '100%',
-        height: responsiveHeight(12),
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-    },
-    dataPoint: {
-        width: responsiveWidth(2.5),
-        height: responsiveWidth(2.5),
-        borderRadius: responsiveWidth(1.25),
-        position: 'absolute',
-        zIndex: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    connectionLine: {
-        position: 'absolute',
-        backgroundColor: '#4BC16B',
-        height: 2,
-        left: responsiveWidth(1.25),
-        transformOrigin: 'left center',
-        zIndex: 1,
-    },
-    connectionLines: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        paddingHorizontal: responsiveWidth(2),
-        paddingVertical: responsiveHeight(1),
-        zIndex: 2,
-    },
-    verticalLine: {
-        width: responsiveWidth(0.5),
-        backgroundColor: '#4BC16B',
-        borderRadius: responsiveWidth(0.25),
-        opacity: 0.6,
-    },
-    dateLabel: {
-        fontSize: responsiveFontSize(1.1),
-        color: '#888',
-        textAlign: 'center',
-    },
-})
 
 export default Profile
