@@ -299,9 +299,9 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
     const sliderCount = 3
     const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
 
-  return (
+    return (
         // SafeAreaInsetsが準備できるまでローディング表示
-        <View style={[styles.container, { paddingTop: responsiveHeight(2) }]}>
+        <View style={[styles.container, { paddingTop: responsiveHeight(0.5) }]}>
             {/* タイトル */}
             <Text style={styles.title}>プロフィール</Text>
             <View style={styles.underline} />

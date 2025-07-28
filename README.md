@@ -62,6 +62,7 @@ fithub/
 - ESLint + Prettier
 
 # Fithub バックエンド
+
 **バージョン情報**
 
 - **Expo v53.0.9**
@@ -72,11 +73,10 @@ fithub/
 - **npx v10.2.2**
 - **tailwind-react-native-classnames v3.0.1**
 
-
 ```bash
 #環境構築手順
 #nodemoduleインストール
-npm install 
+npm install
 
 #expoインストール
 npm i --global expo-cli
@@ -101,8 +101,12 @@ npx expo run:ios --device
 
 #QRコードが表示されたら成功
 
+# 本番環境モード（最適化モード）で実行
+npx expo start --no-dev --minify
 ```
+
 ## Tailwind CSS IntelliSenseを適用させる設定
+
 setting.jsonに以下を追加
 
 ```
@@ -114,6 +118,7 @@ setting.jsonに以下を追加
     "classnames\\(([^)]*)\\)"
 ]
 ```
+
 もしうまくいかない場合はAIに上手い感じに書いてもらう
 
 #　AWESOMEアイコン用
@@ -122,14 +127,12 @@ npm install @fortawesome/fontawesome-svg-core
 
 npm install @fortawesome/free-brands-svg-icons
 npm install @fortawesome/free-regular-svg-icons　//使わないかも
-npm install @fortawesome/free-solid-svg-icons    //使わないかも
-
+npm install @fortawesome/free-solid-svg-icons //使わないかも
 
 npm install @fortawesome/free-brands-svg-icons
 
-npm install @fortawesome/free-regular-svg-icons  //使わないかも
+npm install @fortawesome/free-regular-svg-icons //使わないかも
 
-npm install @fortawesome/free-solid-svg-icons   //使わないかも
+npm install @fortawesome/free-solid-svg-icons //使わないかも
 
 npm install @fortawesome/react-native-fontawesome @fortawesome/fontawesome-svg-core @fortawesome/free-solid-svg-icons @fortawesome/free-regular-svg-icons @fortawesome/free-brands-svg-icons
-
