@@ -1,22 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react'
 
+import { useRouter } from 'expo-router'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native'
 
-
-import { router } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-
-
-
-import Button from '@/components/common/Button';
-import Input from '@/components/common/Input';
-
-
-
-
+import Button from '@/components/common/Button'
+import Input from '@/components/common/Input'
 
 const LoginScreen = () => {
+    const router = useRouter()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+
+    // 画面ロード時に自動で任意の画面へ遷移（開発用）
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.replace('/(tabs)/shop')
+        }, 0)
+        return () => clearTimeout(timer)
+    }, [])
 
     const handleLogin = () => {
         // const url = VITE_API_BASE_URL
