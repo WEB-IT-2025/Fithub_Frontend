@@ -17,70 +17,81 @@ import TabBar from '../../components/TabBar'
 
 const { width: screenWidth } = Dimensions.get('window')
 
-// 仮のペットデータ
-const pets = [
+// 猫のペットデータ
+const catPets = [
     {
         id: 1,
-        name: 'ペットA',
-        image: require('@/assets/images/fithub_cat.png'),
+        name: 'クロネコ',
+        image: require('@/assets/images/cat1.png'),
         price: 500,
         description: '鼻がチャームの黒猫。基本懐かない。',
     },
     {
         id: 2,
-        name: 'ペットB',
-        image: require('@/assets/images/moukona.jpeg'),
+        name: 'ブチネコ',
+        image: require('@/assets/images/cat2.png'),
         price: 800,
         description: '丸い体型が特徴的。甘えん坊な性格。',
     },
     {
         id: 3,
-        name: 'ペットC',
-        image: require('@/assets/images/fithub_cat.png'),
+        name: 'ミケネコ',
+        image: require('@/assets/images/cat3.png'),
         price: 1200,
         description: '元気いっぱいな猫。遊ぶのが大好き。',
     },
     {
         id: 4,
-        name: 'ペットD',
-        image: require('@/assets/images/fithub_cat.png'),
+        name: 'キジトラ',
+        image: require('@/assets/images/cat4.png'),
         price: 500,
         description: '静かで落ち着いた性格。読書のお供。',
     },
     {
         id: 5,
-        name: 'ペットE',
-        image: require('@/assets/images/moukona.jpeg'),
+        name: 'アメショ',
+        image: require('@/assets/images/cat5.png'),
         price: 800,
         description: '食いしん坊な猫。おやつが大好き。',
     },
+]
+
+// 犬のペットデータ
+const dogPets = [
     {
-        id: 6,
-        name: 'ペットF',
-        image: require('@/assets/images/fithub_cat.png'),
-        price: 1200,
-        description: '賢くて学習能力が高い。トリック得意。',
+        id: 1,
+        name: 'シバイヌ',
+        image: require('@/assets/images/dog1.png'),
+        price: 600,
+        description: '温厚で優しい性格。家族想いの犬。',
     },
     {
-        id: 7,
-        name: 'ペットG',
-        image: require('@/assets/images/fithub_cat.png'),
-        price: 500,
-        description: '人懐っこい性格。誰とでも仲良し。',
+        id: 2,
+        name: 'チワワ',
+        image: require('@/assets/images/dog2.png'),
+        price: 900,
+        description: '賢くて従順。しつけのしやすい犬。',
     },
     {
-        id: 8,
-        name: 'ペットH',
-        image: require('@/assets/images/moukona.jpeg'),
+        id: 3,
+        name: 'ポメラニアン',
+        image: require('@/assets/images/dog3.png'),
+        price: 700,
+        description: '短い脚がチャーミング。好奇心旺盛。',
+    },
+    {
+        id: 4,
+        name: 'プードル',
+        image: require('@/assets/images/dog4.png'),
         price: 800,
-        description: '夜行性で活発。夜中に大運動会。',
+        description: '元気いっぱいで活発。散歩が大好き。',
     },
     {
-        id: 9,
-        name: 'ペットI',
-        image: require('@/assets/images/fithub_cat.png'),
-        price: 1200,
-        description: '美しい毛色が自慢。グルーミング趣味。',
+        id: 5,
+        name: 'ブルドッグ',
+        image: require('@/assets/images/dog5.png'),
+        price: 1000,
+        description: '短い脚で一生懸命走る姿が愛らしい。',
     },
 ]
 
@@ -88,8 +99,21 @@ const ShopScreen = () => {
     const [selectedPetIndex, setSelectedPetIndex] = useState(0)
     const [showExchangeModal, setShowExchangeModal] = useState(false)
     const [userPoints, setUserPoints] = useState(1000) // 保有ポイントをステートで管理
+    const [animalType, setAnimalType] = useState<'cat' | 'dog'>('cat') // 選択された動物タイプ
+    const [pets, setPets] = useState(catPets) // 現在表示するペットデータ
     const selectedPet = pets[selectedPetIndex]
     const canExchange = userPoints >= selectedPet.price // 交換可能かどうか
+
+    // 動物タイプ切り替え関数
+    const switchAnimalType = (type: 'cat' | 'dog') => {
+        setAnimalType(type)
+        if (type === 'cat') {
+            setPets(catPets)
+        } else if (type === 'dog') {
+            setPets(dogPets)
+        }
+        setSelectedPetIndex(0) // 選択インデックスをリセット
+    }
 
     const handleExchange = () => {
         if (canExchange) {
@@ -168,16 +192,29 @@ const ShopScreen = () => {
                 <View style={styles.petMenuContainer}>
                     {/* 左側：縦並びボタン（比率1） */}
                     <View style={styles.menuButtons}>
-                        <TouchableOpacity style={styles.menuButton}>
+                        <TouchableOpacity 
+                            style={styles.menuButton}
+                            onPress={() => switchAnimalType('dog')}
+                        >
                             <FontAwesome5
                                 name='dog'
                                 size={20}
-                                color='black'
+                                color={animalType === 'dog' ? '#FF6B6B' : 'black'}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={styles.menuButton}
+                            onPress={() => switchAnimalType('cat')}
+                        >
+                            <FontAwesome5
+                                name='cat'
+                                size={20}
+                                color={animalType === 'cat' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.menuButton}>
                             <FontAwesome5
-                                name='cat'
+                                name='fish'
                                 size={20}
                                 color='black'
                             />
@@ -185,13 +222,6 @@ const ShopScreen = () => {
                         <TouchableOpacity style={styles.menuButton}>
                             <FontAwesome5
                                 name='horse'
-                                size={20}
-                                color='black'
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.menuButton}>
-                            <FontAwesome5
-                                name='fish'
                                 size={20}
                                 color='black'
                             />

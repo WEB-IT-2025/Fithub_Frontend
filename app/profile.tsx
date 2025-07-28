@@ -342,7 +342,7 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
                 {/* ペット画像 */}
                 <View style={styles.petParamImageWrapper}>
                     <Image
-                        source={require('@/assets/images/moukona.jpeg')}
+                        source={require('@/assets/images/cat1.png')}
                         style={styles.petParamImage}
                         resizeMode='cover'
                     />

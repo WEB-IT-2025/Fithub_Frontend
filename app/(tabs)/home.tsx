@@ -89,7 +89,7 @@ const HomeScreen = () => {
                     <View style={styles.petInfo}>
                         <Text style={styles.petName}>{PET_NAME}</Text>
                         <Image
-                            source={require('@/assets/images/cat_test.png')}
+                            source={require('@/assets/images/cat1.png')}
                             style={styles.petImage}
                             resizeMode='cover'
                         />

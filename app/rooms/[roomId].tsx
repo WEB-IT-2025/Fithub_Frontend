@@ -273,7 +273,7 @@ const RoomScreen = () => {
                             onPress={() => handleShowUserDetail(user)}
                         >
                             <Image
-                                source={require('@/assets/images/cat_test.png')}
+                                source={require('@/assets/images/cat1.png')}
                                 style={[
                                     styles.petImage,
                                     {
@@ -383,7 +383,7 @@ const RoomScreen = () => {
                                         onPress={() => handleShowUserDetail(item)}
                                     >
                                         <Image
-                                            source={require('@/assets/images/cat_test.png')}
+                                            source={require('@/assets/images/cat1.png')}
                                             style={styles.memberPetImage}
                                             resizeMode='contain'
                                         />
@@ -459,7 +459,7 @@ const RoomScreen = () => {
                                     <View style={styles.userDetailPetParamRow}>
                                         <View style={styles.userDetailPetImageWrapper}>
                                             <Image
-                                                source={require('@/assets/images/cat_test.png')}
+                                                source={require('@/assets/images/cat1.png')}
                                                 style={styles.userDetailPetImage}
                                                 resizeMode='contain'
                                             />
