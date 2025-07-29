@@ -71,7 +71,7 @@ const dogPets = [
         name: 'チワワ',
         image: require('@/assets/images/dog2.png'),
         price: 900,
-        description: '賢くて従順。しつけのしやすい犬。',
+        description: '警戒心が強い。よく吠える。',
     },
     {
         id: 3,
@@ -92,7 +92,7 @@ const dogPets = [
         name: 'ブルドッグ',
         image: require('@/assets/images/dog5.png'),
         price: 1000,
-        description: '短い脚で一生懸命走る姿が愛らしい。',
+        description: '癒し系。とっても優しい。',
     },
 ]
 
@@ -129,7 +129,7 @@ const fishPets = [
 ]
 
 // その他のペットデータ
-const otherPets = [
+const anymorePets = [
     {
         id: 1,
         name: 'シマウマ',
@@ -142,14 +142,14 @@ const otherPets = [
         name: 'ウサギ',
         image: require('@/assets/images/anymore2.png'),
         price: 1800,
-        description: '警戒心がつよい。',
+        description: '警戒心がつよい。ジャンプが得意',
     },
     {
         id: 3,
         name: 'チンパンジー',
         image: require('@/assets/images/anymore3.png'),
         price: 2000,
-        description: 'とてもかしこい。',
+        description: 'とてもかしこい。おだやかな性格。',
     },
     {
         id: 4,
@@ -179,7 +179,7 @@ const ShopScreen = () => {
         } else if (type === 'fish') {
             setPets(fishPets)
         } else if (type === 'other') {
-            setPets(otherPets)
+            setPets(anymorePets)
         }
         setSelectedPetIndex(0) // 選択インデックスをリセット
     }
@@ -263,22 +263,22 @@ const ShopScreen = () => {
                     <View style={styles.menuButtons}>
                         <TouchableOpacity 
                             style={styles.menuButton}
-                            onPress={() => switchAnimalType('dog')}
-                        >
-                            <FontAwesome5
-                                name='dog'
-                                size={20}
-                                color={animalType === 'dog' ? '#FF6B6B' : 'black'}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={styles.menuButton}
                             onPress={() => switchAnimalType('cat')}
                         >
                             <FontAwesome5
                                 name='cat'
                                 size={20}
                                 color={animalType === 'cat' ? '#FF6B6B' : 'black'}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={styles.menuButton}
+                            onPress={() => switchAnimalType('dog')}
+                        >
+                            <FontAwesome5
+                                name='dog'
+                                size={20}
+                                color={animalType === 'dog' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
                         <TouchableOpacity 
