@@ -7,9 +7,10 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        paddingTop: 48,
+        // paddingTop: 48,
+        paddingTop: '8%',
         paddingHorizontal: 16,
-        paddingBottom: 64,
+        paddingBottom: '10%',
     },
     shopPanel: {
         width: '100%',
@@ -41,8 +42,11 @@ const styles = StyleSheet.create({
     selectedPetContainer: {
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 6,
+        paddingBottom: '-1%',
+        paddingTop: '1%',
+        paddingLeft: '5%',
+        paddingRight: '5%',
+        marginBottom: '2%',
         alignItems: 'center', // 中央寄せに変更
         flex: 1,
     },
@@ -104,8 +108,8 @@ const styles = StyleSheet.create({
     petMenuContainer: {
         flex: 1, // ← そのまま
         flexDirection: 'row',
-        marginTop: 16, // ← TabBarの少し上に余白を追加
-        marginBottom: 70, // ← TabBarとの隙間を縮小（100→70）
+        marginTop: '5%', // ← TabBarの少し上に余白を追加
+        marginBottom: '25%', // ← TabBarとの隙間を縮小（100→70）
     },
     // 左側ボタン（比率1）
     menuButtons: {
@@ -148,11 +152,12 @@ const styles = StyleSheet.create({
     },
     sliderItem: {
         alignItems: 'center',
-        padding: 10,
+        padding: 8,
         marginHorizontal: 4,
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 12,
-        minWidth: 120,
+        minWidth: '36%',
+        minHeight: '36%',
     },
     sliderPetImage: {
         width: 65,
