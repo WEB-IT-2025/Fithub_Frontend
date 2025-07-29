@@ -421,7 +421,6 @@ const RoomScreen = () => {
                                         color='#333'
                                     />
                                 </TouchableOpacity>
-                                <Text style={styles.userDetailTitle}>プロフィール</Text>
                                 <View style={styles.placeholder} />
                             </View>
 
