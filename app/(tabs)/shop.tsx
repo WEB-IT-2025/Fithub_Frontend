@@ -96,22 +96,90 @@ const dogPets = [
     },
 ]
 
+// 魚のペットデータ
+const fishPets = [
+    {
+        id: 1,
+        name: 'GINGIN',
+        image: require('@/assets/images/fish1.png'),
+        price: 300,
+        description: 'いつもみなぎっている。朝にめっぽう強い。',
+    },
+    {
+        id: 2,
+        name: 'ミズダコ',
+        image: require('@/assets/images/fish2.png'),
+        price: 400,
+        description: 'ふわふわ泳ぐのが好き。',
+    },
+    {
+        id: 3,
+        name: 'ペンギン',
+        image: require('@/assets/images/fish3.png'),
+        price: 350,
+        description: '寒いところが好き。まだまだ親が恋しい。',
+    },
+    {
+        id: 4,
+        name: 'スラリー',
+        image: require('@/assets/images/fish4.png'),
+        price: 450,
+        description: '工業用排水から生まれた。わるいやつではない。',
+    },
+]
+
+// その他のペットデータ
+const otherPets = [
+    {
+        id: 1,
+        name: 'シマウマ',
+        image: require('@/assets/images/anymore1.png'),
+        price: 1500,
+        description: '足が速い。群れでいるのが好き。',
+    },
+    {
+        id: 2,
+        name: 'ウサギ',
+        image: require('@/assets/images/anymore2.png'),
+        price: 1800,
+        description: '警戒心がつよい。',
+    },
+    {
+        id: 3,
+        name: 'チンパンジー',
+        image: require('@/assets/images/anymore3.png'),
+        price: 2000,
+        description: 'とてもかしこい。',
+    },
+    {
+        id: 4,
+        name: 'パンダ',
+        image: require('@/assets/images/anymore4.png'),
+        price: 5500,
+        description: 'みんなのアイドル。とても希少。',
+    },
+]
+
 const ShopScreen = () => {
     const [selectedPetIndex, setSelectedPetIndex] = useState(0)
     const [showExchangeModal, setShowExchangeModal] = useState(false)
     const [userPoints, setUserPoints] = useState(1000) // 保有ポイントをステートで管理
-    const [animalType, setAnimalType] = useState<'cat' | 'dog'>('cat') // 選択された動物タイプ
+    const [animalType, setAnimalType] = useState<'cat' | 'dog' | 'fish' | 'other'>('cat') // 選択された動物タイプ
     const [pets, setPets] = useState(catPets) // 現在表示するペットデータ
     const selectedPet = pets[selectedPetIndex]
     const canExchange = userPoints >= selectedPet.price // 交換可能かどうか
 
     // 動物タイプ切り替え関数
-    const switchAnimalType = (type: 'cat' | 'dog') => {
+    const switchAnimalType = (type: 'cat' | 'dog' | 'fish' | 'other') => {
         setAnimalType(type)
         if (type === 'cat') {
             setPets(catPets)
         } else if (type === 'dog') {
             setPets(dogPets)
+        } else if (type === 'fish') {
+            setPets(fishPets)
+        } else if (type === 'other') {
+            setPets(otherPets)
         }
         setSelectedPetIndex(0) // 選択インデックスをリセット
     }
@@ -213,18 +281,24 @@ const ShopScreen = () => {
                                 color={animalType === 'cat' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.menuButton}>
+                        <TouchableOpacity 
+                            style={styles.menuButton}
+                            onPress={() => switchAnimalType('fish')}
+                        >
                             <FontAwesome5
                                 name='fish'
                                 size={20}
-                                color='black'
+                                color={animalType === 'fish' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.menuButton}>
+                        <TouchableOpacity 
+                            style={styles.menuButton}
+                            onPress={() => switchAnimalType('other')}
+                        >
                             <FontAwesome5
                                 name='horse'
                                 size={20}
-                                color='black'
+                                color={animalType === 'other' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
                     </View>
