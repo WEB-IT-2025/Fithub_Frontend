@@ -205,44 +205,19 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
         return <View style={{ flex: 1, backgroundColor: '#fff' }} />
     }
 
-    // コントリビューションデータを取得する関数
+    // コントリビューションデータは週のみ
     const getContributionsData = () => {
-        if (period === '日') {
-            // 日表示：今日のコントリビューション
-            return userData?.today.contributions ? [userData.today.contributions] : [0]
-        } else if (period === '週') {
-            // 週表示：曜日別コントリビューション（月〜日）
-            if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
-                const weeklyContributions = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
-
-                userData.recent_contributions.forEach((contribution) => {
-                    const date = new Date(contribution.day)
-                    const dayOfWeek = (date.getDay() + 6) % 7 // 日曜=0を月曜=0に変換
-                    const count = parseInt(contribution.count, 10)
-                    weeklyContributions[dayOfWeek] = Math.min(Math.max(count, 0), 4) // 0-4の範囲にクランプ
-                })
-
-                return weeklyContributions
-            } else {
-                // デフォルトデータ（曜日別）
-                return [2, 0, 4, 3, 2, 4, 3]
-            }
+        if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
+            const weeklyContributions = new Array(7).fill(0)
+            userData.recent_contributions.forEach((contribution) => {
+                const date = new Date(contribution.day)
+                const dayOfWeek = (date.getDay() + 6) % 7
+                const count = parseInt(contribution.count, 10)
+                weeklyContributions[dayOfWeek] = Math.min(Math.max(count, 0), 4)
+            })
+            return weeklyContributions
         } else {
-            // 月表示：APIから取得した実際のコントリビューションデータのみ
-            if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
-                const sortedContributions = [...userData.recent_contributions].sort(
-                    (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-                )
-
-                // APIから取得した実際のデータのみを使用（補完しない）
-                return sortedContributions.map((day) => {
-                    const count = parseInt(day.count, 10)
-                    return Math.min(Math.max(count, 0), 4) // 0-4の範囲にクランプ
-                })
-            } else {
-                // APIデータがない場合は空配列
-                return []
-            }
+            return [2, 0, 4, 3, 2, 4, 3]
         }
     }
 
@@ -308,28 +283,16 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
             {/* ユーザー名 */}
             <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>
 
-            {/* コントリビューション */}
-            <Text style={styles.sectionLabel}>
-                {period === '日' ?
-                    '今日のコントリビューション'
-                : period === '週' ?
-                    '今週のコントリビューション'
-                :   '今月のコントリビューション'}
-            </Text>
-            {/* コントリビューションデータ */}
-            <View style={[styles.contributionBoard, period === '月' && { maxWidth: '100%', flexWrap: 'wrap' }]}>
-                <View style={[styles.contributionRow, period === '月' && { flexWrap: 'wrap', maxWidth: '100%' }]}>
+            {/* コントリビューション（週のみ） */}
+            <Text style={styles.sectionLabel}>今週のコントリビューション</Text>
+            <View style={styles.contributionBoard}>
+                <View style={styles.contributionRow}>
                     {getContributionsData().map((count, idx) => (
                         <View
                             key={idx}
                             style={[
                                 styles.contributionBox,
                                 { backgroundColor: contributionColors[Math.max(0, Math.min(count, 4))] },
-                                period === '月' && {
-                                    width: responsiveWidth(6),
-                                    height: responsiveWidth(6),
-                                    margin: responsiveWidth(0.3),
-                                },
                             ]}
                         />
                     ))}
