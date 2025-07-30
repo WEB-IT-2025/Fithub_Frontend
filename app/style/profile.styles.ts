@@ -1,5 +1,9 @@
-import { Platform, StyleSheet } from 'react-native'
-import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
+import { Platform, StyleSheet } from 'react-native';
+import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
+
+
+
+
 
 const styles = StyleSheet.create({
     container: {
@@ -429,6 +433,24 @@ const styles = StyleSheet.create({
     dateLabel: {
         fontSize: responsiveFontSize(1.1),
         color: '#888',
+        textAlign: 'center',
+    },
+    closeModalButtonAbsolute: {
+        position: 'absolute',
+        left: 16,
+        bottom: 30,
+        backgroundColor: '#b2d8b2',
+        width: 64,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    closeModalButtonText: {
+        color: '#388e3c',
+        fontSize: 32,
+        fontWeight: 'bold',
         textAlign: 'center',
     },
 })
