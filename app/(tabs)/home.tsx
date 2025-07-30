@@ -121,24 +121,12 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <MissionBoard />
-                            <TouchableOpacity
-                                style={styles.closeModalButtonAbsolute}
-                                onPress={() => setModalVisible(false)}
-                            >
-                                <Text style={styles.closeModalButtonText}>✕</Text>
-                            </TouchableOpacity>
+                            <MissionBoard onClose={() => setModalVisible(false)} />
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <MissionBoard />
-                            <TouchableOpacity
-                                style={styles.closeModalButtonAbsolute}
-                                onPress={() => setModalVisible(false)}
-                            >
-                                <Text style={styles.closeModalButtonText}>✕</Text>
-                            </TouchableOpacity>
+                            <MissionBoard onClose={() => setModalVisible(false)} />
                         </View>
                     }
                 </Modal>
@@ -161,23 +149,11 @@ const HomeScreen = () => {
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
                             <Profile key={profileKey} />
-                            <TouchableOpacity
-                                style={styles.closeModalButtonAbsolute}
-                                onPress={() => setProfileVisible(false)}
-                            >
-                                <Text style={styles.closeModalButtonText}>✕</Text>
-                            </TouchableOpacity>
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
                             <Profile key={profileKey} />
-                            <TouchableOpacity
-                                style={styles.closeModalButtonAbsolute}
-                                onPress={() => setProfileVisible(false)}
-                            >
-                                <Text style={styles.closeModalButtonText}>✕</Text>
-                            </TouchableOpacity>
                         </View>
                     }
                 </Modal>
@@ -218,24 +194,6 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    closeModalButtonAbsolute: {
-        position: 'absolute',
-        left: 16,
-        bottom: 30,
-        backgroundColor: '#b2d8b2',
-        width: 64,
-        height: 48,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-    },
-    closeModalButtonText: {
-        color: '#388e3c',
-        fontSize: 32,
-        fontWeight: 'bold',
-        textAlign: 'center',
     },
     tabBarContainer: {
         position: 'absolute',

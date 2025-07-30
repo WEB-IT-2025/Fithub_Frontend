@@ -16,7 +16,11 @@ import missionsData from '../components/Mission'
 
 type MissionType = 'daily' | 'weekly'
 
-const MissionBoard = () => {
+interface MissionBoardProps {
+    onClose?: () => void
+}
+
+const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const [missions, setMissions] = useState(missionsData)
     const [type, setType] = useState<MissionType>('daily')
     const [toggleWidth, setToggleWidth] = useState(0)
@@ -227,6 +231,16 @@ const MissionBoard = () => {
                         <Text style={styles.receiveAllText}>すべて受け取る</Text>
                     </TouchableOpacity>
                 </View>
+
+                {/* 閉じるボタン */}
+                {onClose && (
+                    <TouchableOpacity
+                        style={styles.closeModalButtonAbsolute}
+                        onPress={onClose}
+                    >
+                        <Text style={styles.closeModalButtonText}>✕</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     )
@@ -429,6 +443,24 @@ const styles = StyleSheet.create({
         textShadowColor: '#fff',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
+    },
+    closeModalButtonAbsolute: {
+        position: 'absolute',
+        left: 16,
+        bottom: 30,
+        backgroundColor: '#b2d8b2',
+        width: 64,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    closeModalButtonText: {
+        color: '#388e3c',
+        fontSize: 32,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 })
 
