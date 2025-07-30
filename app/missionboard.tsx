@@ -1,18 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 
-import { Ionicons } from '@expo/vector-icons'
-import {
-    Animated,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
-} from 'react-native'
 
-import missionsData from '../components/Mission'
+
+import { Ionicons } from '@expo/vector-icons';
+import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+
+
+
+import missionsData from '../components/Mission';
+
+
+
+
 
 type MissionType = 'daily' | 'weekly'
 
@@ -447,7 +446,7 @@ const styles = StyleSheet.create({
     closeModalButtonAbsolute: {
         position: 'absolute',
         left: 16,
-        bottom: 30,
+        bottom: '1%',
         backgroundColor: '#b2d8b2',
         width: 64,
         height: 48,

@@ -148,12 +148,18 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <Profile key={profileKey} />
+                            <Profile
+                                key={profileKey}
+                                onClose={() => setProfileVisible(false)}
+                            />
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <Profile key={profileKey} />
+                            <Profile
+                                key={profileKey}
+                                onClose={() => setProfileVisible(false)}
+                            />
                         </View>
                     }
                 </Modal>

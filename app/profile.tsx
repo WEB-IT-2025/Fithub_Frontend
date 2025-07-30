@@ -44,6 +44,7 @@ interface User {
 interface ProfileProps {
     userName?: string
     userData?: UserData | null
+    onClose?: () => void
 }
 
 const contributions = [2, 0, 4, 3, 2, 4, 3] // 0〜4の値のみ使うようにしてください
@@ -57,7 +58,7 @@ const contributionColors = [
     '#136229', // 4
 ]
 
-const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
+const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps) => {
     const insets = useSafeAreaInsets()
     const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
     const [period, setPeriod] = useState<'日' | '週' | '月'>('日')
@@ -588,6 +589,40 @@ const Profile = ({ userName, userData: externalUserData }: ProfileProps) => {
                     </View>
                 </View>
             }
+
+            {/* 左下のプロフィールを閉じるボタン */}
+            <TouchableOpacity
+                style={{
+                    position: 'absolute',
+                    left: 16,
+                    bottom: '1%' ,
+                    backgroundColor: '#b2d8b2',
+                    width: 64,
+                    height: 48,
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10,
+                    // ミッションボードと同じ
+                }}
+                onPress={() => {
+                    if (typeof onClose === 'function') {
+                        onClose()
+                    }
+                }}
+                activeOpacity={0.8}
+            >
+                <Text
+                    style={{
+                        color: '#388e3c',
+                        fontSize: 32,
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                    }}
+                >
+                    ✕
+                </Text>
+            </TouchableOpacity>
         </View>
     )
 }
