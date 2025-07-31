@@ -25,7 +25,7 @@ import Profile from '../profile'
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 }
 
-const PET_NAME = 'くろた'
+const PET_NAME = 'とりゃー'
 const WALK_PERCENT = 0.6
 
 const HomeScreen = () => {

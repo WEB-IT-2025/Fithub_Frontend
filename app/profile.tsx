@@ -556,7 +556,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                     style={styles.petParamInfo}
                     collapsable={false}
                 >
-                    <Text style={styles.petParamName}>くろた</Text>
+                    <Text style={styles.petParamName}>とりゃー</Text>
                     <View
                         style={styles.indicatorColumn}
                         collapsable={false}
