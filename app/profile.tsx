@@ -201,12 +201,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         }).start()
     }, [healthAnim, sizeAnim, ageAnim])
 
-    // SafeAreaInsetsが準備できるまでローディング表示
-    if (!isSafeAreaReady) {
-        return <View style={{ flex: 1, backgroundColor: '#fff' }} />
-    }
-
-    // コントリビューションデータは週のみ
+    // コントリビューションデータ取得メソッド
     const getContributionsData = () => {
         if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
             const weeklyContributions = new Array(7).fill(0)
@@ -222,49 +217,61 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         }
     }
 
-    // 歩数データを期間別に取得する関数（過去データ含む）
-    const getStepsData = () => {
-        switch (period) {
-            case '日':
-                return userData ? [userData.today.steps] : [5000]
+    // 日別歩数データ取得メソッド
+    const getDailyStepsData = () => {
+        return userData ? [userData.today.steps] : [5000]
+    }
 
-            case '週':
-                if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
-                    // 曜日別にデータを整理（月曜=0, 火曜=1, ..., 日曜=6）
-                    const weeklySteps = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
-
-                    userData.recent_exercise.forEach((exercise) => {
-                        const date = new Date(exercise.day)
-                        const dayOfWeek = (date.getDay() + 6) % 7 // 日曜=0を月曜=0に変換
-                        weeklySteps[dayOfWeek] = exercise.exercise_quantity
-                    })
-
-                    return weeklySteps
-                } else {
-                    // ダミーデータ（月〜日の7日分）
-                    return [3200, 4100, 2900, 5800, 4700, 3600, userData?.today.steps || 5000]
-                }
-
-            case '月':
-                if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
-                    // recent_exerciseを日付順にソート（古い順から新しい順）
-                    const sortedExercise = [...userData.recent_exercise].sort(
-                        (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-                    )
-
-                    // 実際に取得できたデータのみを使用
-                    return sortedExercise.map((day) => day.exercise_quantity)
-                } else {
-                    // データがない場合は空配列
-                    return []
-                }
-
-            default:
-                return userData ? [userData.today.steps] : [5000]
+    // 週別歩数データ取得メソッド
+    const getWeeklyStepsData = () => {
+        if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
+            // 曜日別にデータを整理（月曜=0, 火曜=1, ..., 日曜=6）
+            const weeklySteps = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
+            userData.recent_exercise.forEach((exercise) => {
+                const date = new Date(exercise.day)
+                const dayOfWeek = (date.getDay() + 6) % 7 // 日曜=0を月曜=0に変換
+                weeklySteps[dayOfWeek] = exercise.exercise_quantity
+            })
+            return weeklySteps
+        } else {
+            // ダミーデータ（月〜日の7日分）
+            return [3200, 4100, 2900, 5800, 4700, 3600, userData?.today.steps || 5000]
         }
     }
 
-    // 合計または平均歩数を計算する関数
+    // 月別歩数データ取得メソッド
+    const getMonthlyStepsData = () => {
+        if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
+            // recent_exerciseを日付順にソート（古い順から新しい順）
+            const sortedExercise = [...userData.recent_exercise].sort(
+                (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
+            )
+            // 実際に取得できたデータのみを使用
+            return sortedExercise.map((day) => day.exercise_quantity)
+        } else {
+            // ダミーデータ（30日分）
+            return [
+                3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600,
+                3800, 5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 6300, 4400, 4500,
+            ]
+        }
+    }
+
+    // 期間別歩数データ取得メソッド
+    const getStepsData = () => {
+        switch (period) {
+            case '日':
+                return getDailyStepsData()
+            case '週':
+                return getWeeklyStepsData()
+            case '月':
+                return getMonthlyStepsData()
+            default:
+                return getDailyStepsData()
+        }
+    }
+
+    // 表示用歩数計算メソッド（合計・平均）
     const getDisplaySteps = () => {
         const stepsData = getStepsData()
         if (period === '週' || period === '月') {
@@ -275,6 +282,168 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
             // 合計歩数
             return stepsData.reduce((sum, steps) => sum + steps, 0)
         }
+    }
+
+    // 期間別ラベル取得メソッド
+    const getChartLabels = () => {
+        switch (period) {
+            case '日':
+                return ['今日']
+            case '週':
+                return ['月', '火', '水', '木', '金', '土', '日']
+            case '月': {
+                // 1,8,15,22,29日だけ表示し、それ以外は空文字
+                const len = getStepsData().length
+                return Array.from({ length: len }, (_, i) => {
+                    return (i % 7 === 0) ? `${i + 1}日` : ''
+                })
+            }
+            default:
+                return ['今日']
+        }
+    }
+
+    // 共通チャート設定取得メソッド
+    const getCommonChartConfig = () => ({
+        backgroundColor: '#fff',
+        backgroundGradientFrom: '#fff',
+        backgroundGradientTo: '#fff',
+        decimalPlaces: 0,
+        labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
+        style: {
+            borderRadius: 16,
+        },
+        propsForBackgroundLines: {
+            stroke: '#E0E0E0',
+            strokeDasharray: '',
+        },
+    })
+
+    // 日別グラフレンダリングメソッド
+    const renderDailyChart = () => (
+        <LineChart
+            data={{
+                labels: getChartLabels(),
+                datasets: [
+                    {
+                        data: getDailyStepsData(),
+                        color: () => '#4BC16B',
+                        strokeWidth: 3,
+                    },
+                ],
+            }}
+            width={responsiveWidth(81)}
+            height={responsiveHeight(20)}
+            yAxisSuffix=''
+            yAxisInterval={1}
+            chartConfig={{
+                ...getCommonChartConfig(),
+                color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
+                propsForDots: {
+                    r: '5',
+                    strokeWidth: '2',
+                    stroke: '#fff',
+                },
+            }}
+            bezier
+            style={{
+                borderRadius: 16,
+            }}
+            fromZero
+        />
+    )
+
+    // 週別グラフレンダリングメソッド
+    const renderWeeklyChart = () => (
+        <BarChart
+            yAxisLabel=''
+            data={{
+                labels: getChartLabels(),
+                datasets: [
+                    {
+                        data: getWeeklyStepsData(),
+                        color: () => '#2BA44E',
+                    },
+                ],
+            }}
+            width={responsiveWidth(90)}
+            height={responsiveHeight(20)}
+            yAxisSuffix=''
+            yAxisInterval={1}
+            chartConfig={{
+                ...getCommonChartConfig(),
+                color: () => '#2BA44E',
+                fillShadowGradient: '#2BA44E',
+                fillShadowGradientOpacity: 1,
+                fillShadowGradientFrom: '#2BA44E',
+                fillShadowGradientFromOpacity: 1,
+                fillShadowGradientTo: '#2BA44E',
+                fillShadowGradientToOpacity: 1,
+                barPercentage: 0.7,
+            }}
+            style={{
+                borderRadius: 16,
+            }}
+            fromZero
+            showBarTops={true}
+            withInnerLines={true}
+        />
+    )
+
+    // 月別グラフレンダリングメソッド
+    const renderMonthlyChart = () => (
+        <BarChart
+            yAxisLabel=''
+            data={{
+                labels: getChartLabels(),
+                datasets: [
+                    {
+                        data: getMonthlyStepsData(),
+                        color: () => '#2BA44E',
+                    },
+                ],
+            }}
+            width={responsiveWidth(90)}
+            height={responsiveHeight(20)}
+            yAxisSuffix=''
+            yAxisInterval={1}
+            chartConfig={{
+                ...getCommonChartConfig(),
+                color: () => '#2BA44E',
+                fillShadowGradient: '#2BA44E',
+                fillShadowGradientOpacity: 1,
+                fillShadowGradientFrom: '#2BA44E',
+                fillShadowGradientFromOpacity: 1,
+                fillShadowGradientTo: '#2BA44E',
+                fillShadowGradientToOpacity: 1,
+                barPercentage: 0.1, // 月別は棒をより細く
+            }}
+            style={{
+                borderRadius: 16,
+            }}
+            fromZero
+            showBarTops={true}
+            withInnerLines={true}
+        />
+    )
+
+    // 期間別グラフレンダリングメソッド
+    const renderChart = () => {
+        switch (period) {
+            case '日':
+                return renderDailyChart()
+            case '週':
+                return renderWeeklyChart()
+            case '月':
+                return renderMonthlyChart()
+            default:
+                return renderDailyChart()
+        }
+    }
+
+    // SafeAreaInsetsが準備できるまでローディング表示
+    if (!isSafeAreaReady) {
+        return <View style={{ flex: 1, backgroundColor: '#fff' }} />
     }
 
     // レスポンシブなスライダーマージン
@@ -438,7 +607,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 </View>
             </View>
 
-            {/* グラフ表示（週は棒グラフ、それ以外は折れ線） */}
+            {/* グラフ表示 */}
             {isLoading ?
                 <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>データを読み込み中...</Text>
@@ -460,101 +629,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                             marginBottom: 0,
                         }}
                     >
-                        {period === '週' ?
-                            // BarChartの部分のみ抜粋（chartConfigに barPercentage を追加）
-                            <BarChart
-                                yAxisLabel=''
-                                data={{
-                                    labels: ['月', '火', '水', '木', '金', '土', '日'],
-                                    datasets: [
-                                        {
-                                            data: getStepsData(),
-                                            color: () => '#2BA44E',
-                                        },
-                                    ],
-                                }}
-                                width={responsiveWidth(90)}
-                                height={responsiveHeight(20)}
-                                yAxisSuffix=''
-                                yAxisInterval={1}
-                                chartConfig={{
-                                    backgroundColor: '#fff',
-                                    backgroundGradientFrom: '#fff',
-                                    backgroundGradientTo: '#fff',
-                                    decimalPlaces: 0,
-                                    color: () => '#2BA44E',
-                                    fillShadowGradient: '#2BA44E',
-                                    fillShadowGradientOpacity: 1,
-                                    fillShadowGradientFrom: '#2BA44E',
-                                    fillShadowGradientFromOpacity: 1,
-                                    fillShadowGradientTo: '#2BA44E',
-                                    fillShadowGradientToOpacity: 1,
-                                    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
-                                    style: {
-                                        borderRadius: 16,
-                                    },
-                                    propsForBackgroundLines: {
-                                        stroke: '#E0E0E0',
-                                        strokeDasharray: '',
-                                    },
-                                    // 棒の幅を調整（0.1 = 10%, 0.5 = 50%, 0.8 = 80%）
-                                    barPercentage: 0.7, // この値を小さくすると棒が細くなります
-                                }}
-                                style={{
-                                    borderRadius: 16,
-                                }}
-                                fromZero
-                                showBarTops={true}
-                                withInnerLines={true}
-                            />
-                        :   <LineChart
-                                data={{
-                                    labels:
-                                        period === '日' ? ['今日']
-                                        : userData?.recent_exercise && userData.recent_exercise.length > 0 ?
-                                            userData.recent_exercise
-                                                .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime())
-                                                .map((d, i) => (i % 5 === 0 ? `${new Date(d.day).getDate()}日` : ''))
-                                        :   [],
-                                    datasets: [
-                                        {
-                                            data: getStepsData(),
-                                            color: () => '#4BC16B',
-                                            strokeWidth: 3,
-                                        },
-                                    ],
-                                }}
-                                width={responsiveWidth(81)}
-                                height={responsiveHeight(20)}
-                                yAxisSuffix=''
-                                yAxisInterval={1}
-                                chartConfig={{
-                                    backgroundColor: '#fff',
-                                    backgroundGradientFrom: '#fff',
-                                    backgroundGradientTo: '#fff',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
-                                    style: {
-                                        borderRadius: 16,
-                                    },
-                                    propsForDots: {
-                                        r: '5',
-                                        strokeWidth: '2',
-                                        stroke: '#fff',
-                                    },
-                                    propsForBackgroundLines: {
-                                        stroke: '#E0E0E0',
-                                        strokeDasharray: '',
-                                    },
-                                }}
-                                bezier
-                                style={{
-                                    borderRadius: 16,
-                                }}
-                                fromZero
-                            />
-                        }
+                        {renderChart()}
                     </View>
                 </View>
             }
