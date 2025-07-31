@@ -62,7 +62,7 @@ const contributionColors = [
 const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps) => {
     const insets = useSafeAreaInsets()
     const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
-    const [period, setPeriod] = useState<'日' | '週' | '月'>('日')
+    const [period, setPeriod] = useState<'日' | '週' | '月'>('週')
     const [toggleWidth, setToggleWidth] = useState(0)
     const [userData, setUserData] = useState<UserData | null>(externalUserData || null)
     const [user, setUser] = useState<User | null>(null)
