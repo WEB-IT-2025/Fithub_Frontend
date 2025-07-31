@@ -454,6 +454,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                         }}
                     >
                         {period === '週' ?
+                            // BarChartの部分のみ抜粋（chartConfigに barPercentage を追加）
                             <BarChart
                                 yAxisLabel=''
                                 data={{
@@ -465,7 +466,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                                         },
                                     ],
                                 }}
-                                width={responsiveWidth(85)}
+                                width={responsiveWidth(90)}
                                 height={responsiveHeight(20)}
                                 yAxisSuffix=''
                                 yAxisInterval={1}
@@ -485,6 +486,8 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                                         stroke: '#E0E0E0',
                                         strokeDasharray: '',
                                     },
+                                    // 棒の幅を調整（0.1 = 10%, 0.5 = 50%, 0.8 = 80%）
+                                    barPercentage: 0.7, // この値を小さくすると棒が細くなります
                                 }}
                                 style={{
                                     borderRadius: 16,
