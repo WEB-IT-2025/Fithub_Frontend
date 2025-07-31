@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { faGithub, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faCoffee, faDog, faPerson, faScroll, faUser } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
     Image,
     ImageBackground,
@@ -26,12 +27,46 @@ import Profile from '../profile'
 const iconStyle = { color: '#1DA1F2', fontSize: 32 }
 
 const PET_NAME = 'とりゃー'
-const WALK_PERCENT = 0.6
+const WALK_GOAL = 5000 // 目標歩数
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
-    const [profileVisible, setProfileVisible] = useState(false) // 追加
-    const [profileKey, setProfileKey] = useState(0) // Profileコンポーネントの強制再レンダリング用
+    const [profileVisible, setProfileVisible] = useState(false)
+    const [profileKey, setProfileKey] = useState(0)
+    const [steps, setSteps] = useState<number | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+    // APIから今日の歩数データを取得
+    useEffect(() => {
+        const fetchSteps = async () => {
+            setIsLoading(true)
+            try {
+                const token = await AsyncStorage.getItem('session_token')
+                if (!token) return
+                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(
+                    /\/+$/,
+                    ''
+                )
+                const res = await fetch(`${API_BASE_URL}/api/data/user`, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.success && data.data && data.data.today && typeof data.data.today.steps === 'number') {
+                        setSteps(data.data.today.steps)
+                    }
+                }
+            } catch (e) {
+                // エラーは無視
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchSteps()
+    }, [])
 
     return (
         <ImageBackground
@@ -94,10 +129,57 @@ const HomeScreen = () => {
                             resizeMode='cover'
                         />
                         <Text style={styles.label}>今日の歩数</Text>
-                        <View style={styles.progressBarBackground}>
-                            <View style={[styles.progressBarFill, { width: `${WALK_PERCENT * 100}%` }]} />
+                        <View style={[styles.progressBarBackground, { position: 'relative' }]}>
+                            <View
+                                style={[
+                                    styles.progressBarFill,
+                                    {
+                                        width: `${steps !== null ? Math.min(steps / WALK_GOAL, 1) * 100 : 0}%`,
+                                    },
+                                ]}
+                            />
+                            {steps !== null && (
+                                <View
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        right: 0,
+                                        top: 0,
+                                        bottom: 0,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        zIndex: 2,
+                                    }}
+                                    pointerEvents='none'
+                                >
+                                    <Text
+                                        style={{
+                                            color: '#fff',
+                                            fontWeight: 'bold',
+                                            fontSize: 14,
+                                            textAlign: 'center',
+                                            includeFontPadding: false,
+                                            textShadowColor: 'rgba(0,0,0,0.15)',
+                                            textShadowOffset: { width: 0, height: 1 },
+                                            textShadowRadius: 1,
+                                        }}
+                                        numberOfLines={1}
+                                    >
+                                        {steps.toLocaleString()}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
-                        <Text style={styles.percentText}>5000歩まであと40％</Text>
+                        {isLoading ?
+                            <Text style={styles.percentText}>読込中...</Text>
+                        : steps !== null ?
+                            steps >= WALK_GOAL ?
+                                <Text style={styles.percentText}>目標達成！</Text>
+                            :   <Text style={styles.percentText}>
+                                    目標まであと{100 - Math.floor((steps / WALK_GOAL) * 100)}％
+                                </Text>
+
+                        :   <Text style={styles.percentText}>データなし</Text>}
                     </View>
 
                     {/* 右側ボタン（クローン） */}
@@ -263,7 +345,7 @@ const styles = StyleSheet.create({
     },
     progressBarBackground: {
         width: 180,
-        height: 20,
+        height: 26,
         backgroundColor: '#e0e0e0',
         borderRadius: 10,
         overflow: 'hidden',
