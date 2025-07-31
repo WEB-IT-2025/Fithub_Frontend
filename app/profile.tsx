@@ -49,13 +49,14 @@ interface ProfileProps {
 
 const contributions = [2, 0, 4, 3, 2, 4, 3] // 0〜4の値のみ使うようにしてください
 
-// コントリビューションの色分け
+// コントリビューションの色分け（0, 1-4, 5-9, 10-14, 15-19, 20+）
 const contributionColors = [
     '#EFEFF4', // 0
-    '#ACEEBB', // 1
-    '#4BC16B', // 2
-    '#2BA44E', // 3
-    '#136229', // 4
+    '#ACEEBB', // 1-4
+    '#4BC16B', // 5-9
+    '#2BA44E', // 10-14
+    '#136229', // 15-19
+    '#0B3D1B', // 20+
 ]
 
 const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps) => {
@@ -209,11 +210,11 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 const date = new Date(contribution.day)
                 const dayOfWeek = (date.getDay() + 6) % 7
                 const count = parseInt(contribution.count, 10)
-                weeklyContributions[dayOfWeek] = Math.min(Math.max(count, 0), 4)
+                weeklyContributions[dayOfWeek] = count
             })
             return weeklyContributions
         } else {
-            return [2, 0, 4, 3, 2, 4, 3]
+            return [2, 0, 7, 12, 17, 22, 4] // ダミー値も段階に合わせて
         }
     }
 
@@ -520,15 +521,22 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
             <Text style={styles.sectionLabel}>今週のコントリビューション</Text>
             <View style={styles.contributionBoard}>
                 <View style={styles.contributionRow}>
-                    {getContributionsData().map((count, idx) => (
-                        <View
-                            key={idx}
-                            style={[
-                                styles.contributionBox,
-                                { backgroundColor: contributionColors[Math.max(0, Math.min(count, 4))] },
-                            ]}
-                        />
-                    ))}
+                    {getContributionsData().map((count, idx) => {
+                        // 0:0, 1:1-4, 2:5-9, 3:10-14, 4:15-19, 5:20+
+                        let colorIdx = 0
+                        if (count >= 20) colorIdx = 5
+                        else if (count >= 15) colorIdx = 4
+                        else if (count >= 10) colorIdx = 3
+                        else if (count >= 5) colorIdx = 2
+                        else if (count >= 1) colorIdx = 1
+                        // 0はcolorIdx=0
+                        return (
+                            <View
+                                key={idx}
+                                style={[styles.contributionBox, { backgroundColor: contributionColors[colorIdx] }]}
+                            />
+                        )
+                    })}
                 </View>
             </View>
             <View style={styles.Spacer} />
