@@ -218,8 +218,17 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
     }
 
     // 日別歩数データ取得メソッド
+    // 日別歩数データ取得メソッド（2時間ごと12本のダミーデータ）
     const getDailyStepsData = () => {
-        return userData ? [userData.today.steps] : [5000]
+        // 実データがあれば分割して返す（例: userData.today.stepsを13分割）
+        if (userData && typeof userData.today.steps === 'number') {
+            const steps = userData.today.steps
+            // 朝少なめ、昼〜夕方ピーク、夜減少の現実的な配分
+            const pattern = [0.04, 0.05, 0.06, 0.09, 0.12, 0.13, 0.13, 0.12, 0.09, 0.07, 0.05, 0.03, 0.02]
+            return pattern.map((ratio) => Math.round(steps * ratio))
+        }
+        // ダミーデータ（朝少なめ→昼多め→夜減少の現実的な推移）
+        return [200, 300, 400, 700, 1000, 1100, 1200, 1100, 900, 600, 400, 200, 100]
     }
 
     // 週別歩数データ取得メソッド
@@ -288,14 +297,15 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
     const getChartLabels = () => {
         switch (period) {
             case '日':
-                return ['今日']
+                // 2時間ごと+24時
+                return ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24']
             case '週':
                 return ['月', '火', '水', '木', '金', '土', '日']
             case '月': {
                 // 1,8,15,22,29日だけ表示し、それ以外は空文字
                 const len = getStepsData().length
                 return Array.from({ length: len }, (_, i) => {
-                    return (i % 7 === 0) ? `${i + 1}日` : ''
+                    return i % 7 === 0 ? `${i + 1}日` : ''
                 })
             }
             default:
@@ -319,39 +329,94 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         },
     })
 
-    // 日別グラフレンダリングメソッド
-    const renderDailyChart = () => (
-        <LineChart
-            data={{
-                labels: getChartLabels(),
-                datasets: [
-                    {
-                        data: getDailyStepsData(),
-                        color: () => '#4BC16B',
-                        strokeWidth: 3,
-                    },
-                ],
-            }}
-            width={responsiveWidth(81)}
-            height={responsiveHeight(20)}
-            yAxisSuffix=''
-            yAxisInterval={1}
-            chartConfig={{
-                ...getCommonChartConfig(),
-                color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
-                propsForDots: {
-                    r: '5',
-                    strokeWidth: '2',
-                    stroke: '#fff',
-                },
-            }}
-            bezier
-            style={{
-                borderRadius: 16,
-            }}
-            fromZero
-        />
-    )
+    // 日別グラフレンダリングメソッド（ハイブリッド: 棒＋折れ線）
+    const renderDailyChart = () => {
+        const barData = getDailyStepsData()
+        // 累積値を作成
+        const lineData = barData.reduce<number[]>((acc, cur, i) => {
+            acc.push((acc[i - 1] || 0) + cur)
+            return acc
+        }, [])
+        const labels = getChartLabels()
+        const chartWidth = responsiveWidth(95)
+        const chartHeight = responsiveHeight(20)
+        return (
+            <View style={{ width: chartWidth, height: chartHeight }}>
+                {/* 棒グラフ（BarChart）: 通常配置で下に表示 */}
+                <BarChart
+                    data={{
+                        labels,
+                        datasets: [
+                            {
+                                data: barData,
+                                color: () => '#2BA44E',
+                            },
+                        ],
+                    }}
+                    width={chartWidth}
+                    height={chartHeight}
+                    yAxisLabel=''
+                    yAxisSuffix=''
+                    yAxisInterval={1}
+                    chartConfig={{
+                        ...getCommonChartConfig(),
+                        color: () => '#2BA44E',
+                        fillShadowGradient: '#2BA44E',
+                        fillShadowGradientOpacity: 1,
+                        fillShadowGradientFrom: '#2BA44E',
+                        fillShadowGradientFromOpacity: 1,
+                        fillShadowGradientTo: '#2BA44E',
+                        fillShadowGradientToOpacity: 1,
+                        barPercentage: 0.7,
+                    }}
+                    style={{
+                        borderRadius: 16,
+                        // position: 'absolute',
+                        // left: 0,
+                        // top: 0,
+                    }}
+                    fromZero
+                    showBarTops={true}
+                    withInnerLines={true}
+                />
+                {/* 折れ線グラフ（LineChart, 累積値）: 上に重ねる */}
+                <LineChart
+                    data={{
+                        labels,
+                        datasets: [
+                            {
+                                data: lineData,
+                                color: () => '#4BC16B',
+                                strokeWidth: 3,
+                            },
+                        ],
+                    }}
+                    width={chartWidth}
+                    height={chartHeight}
+                    yAxisLabel=''
+                    yAxisSuffix=''
+                    yAxisInterval={1}
+                    chartConfig={{
+                        ...getCommonChartConfig(),
+                        color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
+                        propsForDots: {
+                            r: '5',
+                            strokeWidth: '2',
+                            stroke: '#fff',
+                        },
+                    }}
+                    bezier
+                    style={{
+                        borderRadius: 16,
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                    }}
+                    fromZero
+                />
+            </View>
+        )
+    }
 
     // 週別グラフレンダリングメソッド
     const renderWeeklyChart = () => (
@@ -612,7 +677,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>データを読み込み中...</Text>
                 </View>
-            :   <View style={{ alignItems: 'center', marginBottom: responsiveHeight(3) }}>
+            :   <View style={{ alignItems: 'center', marginBottom: responsiveHeight(6) }}>
                     <View
                         style={{
                             width: '100%',
