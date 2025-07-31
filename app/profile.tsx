@@ -250,20 +250,11 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
 
     // 月別歩数データ取得メソッド
     const getMonthlyStepsData = () => {
-        if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
-            // recent_exerciseを日付順にソート（古い順から新しい順）
-            const sortedExercise = [...userData.recent_exercise].sort(
-                (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-            )
-            // 実際に取得できたデータのみを使用
-            return sortedExercise.map((day) => day.exercise_quantity)
-        } else {
-            // ダミーデータ（30日分）
-            return [
-                3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600,
-                3800, 5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 6300, 4400, 4500,
-            ]
-        }
+        // 一時的にAPIデータを使わず、常にダミーデータ（30日分）を返す
+        return [
+            3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600, 3800,
+            5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 6300, 4400, 4500,
+        ]
     }
 
     // 期間別歩数データ取得メソッド
@@ -547,7 +538,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 {/* ペット画像 */}
                 <View style={styles.petParamImageWrapper}>
                     <Image
-                        source={require('@/assets/images/cat1.png')}
+                        source={require('@/assets/images/gifcat.gif')}
                         style={styles.petParamImage}
                         resizeMode='cover'
                     />
