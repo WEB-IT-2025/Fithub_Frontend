@@ -264,10 +264,17 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         }
     }
 
-    // 合計歩数を計算する関数
-    const getTotalSteps = () => {
+    // 合計または平均歩数を計算する関数
+    const getDisplaySteps = () => {
         const stepsData = getStepsData()
-        return stepsData.reduce((sum, steps) => sum + steps, 0)
+        if (period === '週' || period === '月') {
+            if (stepsData.length === 0) return 0
+            // 平均歩数
+            return Math.round(stepsData.reduce((sum, steps) => sum + steps, 0) / stepsData.length)
+        } else {
+            // 合計歩数
+            return stepsData.reduce((sum, steps) => sum + steps, 0)
+        }
     }
 
     // レスポンシブなスライダーマージン
@@ -415,15 +422,15 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 </View>
             </View>
 
-            {/* 合計・歩数 */}
+            {/* 合計・歩数 or 平均・歩数 */}
             <View style={styles.totalRow}>
                 <View>
-                    <Text style={styles.totalLabel}>合計</Text>
+                    <Text style={styles.totalLabel}>{period === '週' || period === '月' ? '平均' : '合計'}</Text>
                     <Text style={styles.totalValue}>
                         {isLoading ?
                             <Text style={styles.totalNumber}>読込中...</Text>
                         :   <>
-                                <Text style={styles.totalNumber}>{getTotalSteps().toLocaleString()}</Text>
+                                <Text style={styles.totalNumber}>{getDisplaySteps().toLocaleString()}</Text>
                                 <Text style={styles.totalUnit}>歩</Text>
                             </>
                         }
@@ -478,6 +485,10 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                                     color: () => '#2BA44E',
                                     fillShadowGradient: '#2BA44E',
                                     fillShadowGradientOpacity: 1,
+                                    fillShadowGradientFrom: '#2BA44E',
+                                    fillShadowGradientFromOpacity: 1,
+                                    fillShadowGradientTo: '#2BA44E',
+                                    fillShadowGradientToOpacity: 1,
                                     labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
                                     style: {
                                         borderRadius: 16,
