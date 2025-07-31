@@ -14,7 +14,7 @@ const LoginScreen = () => {
     // 画面ロード時に自動で任意の画面へ遷移（開発用）
     useEffect(() => {
         const timer = setTimeout(() => {
-            router.replace('/(tabs)/shop')
+            router.replace('/(tabs)/home')
         }, 0)
         return () => clearTimeout(timer)
     }, [])

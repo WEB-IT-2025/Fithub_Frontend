@@ -1,9 +1,5 @@
-import { Platform, StyleSheet } from 'react-native';
-import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
-
-
-
-
+import { Platform, StyleSheet } from 'react-native'
+import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 
 const styles = StyleSheet.create({
     container: {
@@ -34,7 +30,7 @@ const styles = StyleSheet.create({
         fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25),
         fontWeight: 'bold',
         color: '#000',
-        marginVertical: responsiveHeight(0.5),
+        marginVertical: responsiveHeight(0),
         textAlign: 'left',
     },
     sectionLabel: {
@@ -268,7 +264,7 @@ const styles = StyleSheet.create({
         marginBottom: responsiveHeight(3),
     },
     loadingContainer: {
-        height: responsiveHeight(20),
+        height: responsiveHeight(10),
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f9f9f9',
@@ -279,161 +275,6 @@ const styles = StyleSheet.create({
         fontSize: responsiveFontSize(1.8),
         color: '#666',
         fontWeight: '500',
-    },
-    chartContainer: {
-        width: '100%',
-        marginBottom: responsiveHeight(3),
-    },
-    chartArea: {
-        height: responsiveHeight(20),
-        backgroundColor: '#FAFAFA',
-        borderRadius: responsiveWidth(2),
-        padding: responsiveWidth(3),
-        position: 'relative',
-        flexDirection: 'row',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.5) },
-                shadowOpacity: 0.15,
-                shadowRadius: responsiveWidth(2),
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
-    },
-    yAxisLabels: {
-        width: responsiveWidth(12),
-        height: responsiveHeight(15),
-        justifyContent: 'space-between',
-        alignItems: 'flex-end',
-        paddingRight: responsiveWidth(2),
-        marginTop: responsiveHeight(1),
-    },
-    yAxisLabel: {
-        fontSize: responsiveFontSize(1.1),
-        color: '#666',
-        textAlign: 'right',
-    },
-    svgContainer: {
-        flex: 1,
-        height: responsiveHeight(15),
-        marginTop: responsiveHeight(1),
-        position: 'relative',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: responsiveHeight(0.25) },
-                shadowOpacity: 0.08,
-                shadowRadius: responsiveWidth(1),
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
-    },
-    svgGraph: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-    },
-    dataLabels: {
-        position: 'absolute',
-        bottom: responsiveHeight(1),
-        left: responsiveWidth(15),
-        right: responsiveWidth(3),
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    labelColumn: {
-        alignItems: 'center',
-        flex: 1,
-    },
-    gridLines: {
-        position: 'absolute',
-        top: responsiveHeight(1),
-        left: responsiveWidth(15),
-        right: responsiveWidth(3),
-        height: responsiveHeight(15),
-    },
-    gridLine: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        height: 1,
-        backgroundColor: '#E0E0E0',
-        opacity: 0.5,
-    },
-    chartPoints: {
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        width: '100%',
-        height: '100%',
-        zIndex: 1,
-    },
-    chartPoint: {
-        flex: 1,
-        alignItems: 'center',
-        marginHorizontal: responsiveWidth(0.2),
-        height: '100%',
-        justifyContent: 'space-between',
-    },
-    stepValue: {
-        fontSize: responsiveFontSize(1.2),
-        color: '#888888',
-        fontWeight: '600',
-        marginBottom: responsiveHeight(0.5),
-        textAlign: 'center',
-    },
-    pointContainer: {
-        width: '100%',
-        height: responsiveHeight(12),
-        position: 'relative',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-    },
-    dataPoint: {
-        width: responsiveWidth(2.5),
-        height: responsiveWidth(2.5),
-        borderRadius: responsiveWidth(1.25),
-        position: 'absolute',
-        zIndex: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    connectionLine: {
-        position: 'absolute',
-        backgroundColor: '#4BC16B',
-        height: 2,
-        left: responsiveWidth(1.25),
-        transformOrigin: 'left center',
-        zIndex: 1,
-    },
-    connectionLines: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        paddingHorizontal: responsiveWidth(2),
-        paddingVertical: responsiveHeight(1),
-        zIndex: 2,
-    },
-    verticalLine: {
-        width: responsiveWidth(0.5),
-        backgroundColor: '#4BC16B',
-        borderRadius: responsiveWidth(0.25),
-        opacity: 0.6,
-    },
-    dateLabel: {
-        fontSize: responsiveFontSize(1.1),
-        color: '#888',
-        textAlign: 'center',
     },
     closeModalButtonAbsolute: {
         position: 'absolute',

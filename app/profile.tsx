@@ -2,9 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Animated, Image, Platform, Text, TouchableOpacity, View } from 'react-native'
+import { BarChart, LineChart } from 'react-native-chart-kit'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Svg, { Circle, Path } from 'react-native-svg'
 
 import styles from './style/profile.styles'
 
@@ -431,161 +431,116 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 </View>
             </View>
 
-            {/* SVGベースの滑らかな折れ線グラフ */}
+            {/* グラフ表示（週は棒グラフ、それ以外は折れ線） */}
             {isLoading ?
                 <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>データを読み込み中...</Text>
                 </View>
-            :   <View style={styles.chartContainer}>
-                    <View style={styles.chartArea}>
-                        {/* Y軸のラベル（左側） */}
-                        <View style={styles.yAxisLabels}>
-                            {(() => {
-                                const stepsData = getStepsData()
-                                const maxSteps = Math.max(...stepsData, 1)
-                                const labels = [
-                                    maxSteps,
-                                    Math.round(maxSteps * 0.75),
-                                    Math.round(maxSteps * 0.5),
-                                    Math.round(maxSteps * 0.25),
-                                    0,
-                                ]
-                                return labels.map((value, index) => (
-                                    <Text
-                                        key={index}
-                                        style={styles.yAxisLabel}
-                                    >
-                                        {value >= 1000 ? `${Math.round(value / 100) / 10}k` : value.toString()}
-                                    </Text>
-                                ))
-                            })()}
-                        </View>
-
-                        {/* グリッド線（背景） */}
-                        <View style={styles.gridLines}>
-                            {[0, 0.25, 0.5, 0.75, 1.0].map((ratio, index) => (
-                                <View
-                                    key={index}
-                                    style={[
-                                        styles.gridLine,
+            :   <View style={{ alignItems: 'center', marginBottom: responsiveHeight(3) }}>
+                    <View
+                        style={{
+                            width: '100%',
+                            backgroundColor: '#fff',
+                            borderRadius: 24,
+                            paddingVertical: responsiveHeight(0.5),
+                            paddingLeft: responsiveWidth(0),
+                            paddingRight: responsiveWidth(0),
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.08,
+                            shadowRadius: 12,
+                            elevation: 4,
+                            marginBottom: 0,
+                        }}
+                    >
+                        {period === '週' ?
+                            <BarChart
+                                yAxisLabel=''
+                                data={{
+                                    labels: ['月', '火', '水', '木', '金', '土', '日'],
+                                    datasets: [
                                         {
-                                            bottom: ratio * responsiveHeight(15),
+                                            data: getStepsData(),
+                                            color: () => '#2BA44E',
                                         },
-                                    ]}
-                                />
-                            ))}
-                        </View>
-
-                        {/* SVGグラフエリア */}
-                        <View style={styles.svgContainer}>
-                            <Svg
-                                width={responsiveWidth(70)}
-                                height={responsiveHeight(15)}
-                                style={styles.svgGraph}
-                            >
-                                {(() => {
-                                    const stepsData = getStepsData()
-                                    const maxSteps = Math.max(...stepsData, 1)
-                                    const width = responsiveWidth(70)
-                                    const height = responsiveHeight(15)
-                                    const padding = 10
-
-                                    // データポイントの座標を計算
-                                    const points = stepsData.map((steps, index) => {
-                                        const x = padding + (index * (width - 2 * padding)) / (stepsData.length - 1)
-                                        const y = height - padding - (steps / maxSteps) * (height - 2 * padding)
-                                        return { x, y, steps }
-                                    })
-
-                                    // 直線パスを生成
-                                    const createStraightPath = (points: any[]) => {
-                                        if (points.length < 2) return ''
-
-                                        let path = `M ${points[0].x} ${points[0].y}`
-
-                                        for (let i = 1; i < points.length; i++) {
-                                            const currentPoint = points[i]
-                                            path += ` L ${currentPoint.x} ${currentPoint.y}`
-                                        }
-
-                                        return path
-                                    }
-
-                                    const pathData = createStraightPath(points)
-
-                                    return (
-                                        <>
-                                            {/* 直線の折れ線 */}
-                                            <Path
-                                                d={pathData}
-                                                stroke='#888888'
-                                                strokeWidth='3'
-                                                fill='none'
-                                                strokeLinecap='round'
-                                                strokeLinejoin='round'
-                                            />
-
-                                            {/* データポイント */}
-                                            {points.map((point, index) => (
-                                                <Circle
-                                                    key={index}
-                                                    cx={point.x}
-                                                    cy={point.y}
-                                                    r='6'
-                                                    fill='#888888'
-                                                    stroke='#FFF'
-                                                    strokeWidth='2'
-                                                />
-                                            ))}
-                                        </>
-                                    )
-                                })()}
-                            </Svg>
-                        </View>
-
-                        {/* データポイントの値と日付ラベル */}
-                        <View style={styles.dataLabels}>
-                            {getStepsData().map((steps, index) => (
-                                <View
-                                    key={index}
-                                    style={styles.labelColumn}
-                                >
-                                    {/* 歩数値 */}
-                                    <Text style={styles.stepValue}>
-                                        {steps >= 1000 ? `${Math.round(steps / 100) / 10}k` : steps.toString()}
-                                    </Text>
-
-                                    {/* 日付ラベル */}
-                                    <Text style={styles.dateLabel}>
-                                        {period === '日' ?
-                                            '今日'
-                                        : period === '週' ?
-                                            (() => {
-                                                // 固定の曜日表示（月〜日）
-                                                const dayNames = ['月', '火', '水', '木', '金', '土', '日']
-                                                return dayNames[index] || ''
-                                            })()
-                                        : index % 5 === 0 ?
-                                            `${(() => {
-                                                // APIから取得した実際の日付データを使用
-                                                if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
-                                                    const sortedExercise = [...userData.recent_exercise].sort(
-                                                        (a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()
-                                                    )
-                                                    // 実際のデータ数に基づいて処理
-                                                    if (sortedExercise[index]) {
-                                                        const date = new Date(sortedExercise[index].day)
-                                                        return `${date.getDate()}日`
-                                                    }
-                                                }
-                                                // データがない場合は空文字
-                                                return ''
-                                            })()}`
-                                        :   ''}
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
+                                    ],
+                                }}
+                                width={responsiveWidth(85)}
+                                height={responsiveHeight(20)}
+                                yAxisSuffix=''
+                                yAxisInterval={1}
+                                chartConfig={{
+                                    backgroundColor: '#fff',
+                                    backgroundGradientFrom: '#fff',
+                                    backgroundGradientTo: '#fff',
+                                    decimalPlaces: 0,
+                                    color: () => '#2BA44E',
+                                    fillShadowGradient: '#2BA44E',
+                                    fillShadowGradientOpacity: 1,
+                                    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                    },
+                                    propsForBackgroundLines: {
+                                        stroke: '#E0E0E0',
+                                        strokeDasharray: '',
+                                    },
+                                }}
+                                style={{
+                                    borderRadius: 16,
+                                }}
+                                fromZero
+                                showBarTops={true}
+                                withInnerLines={true}
+                            />
+                        :   <LineChart
+                                data={{
+                                    labels:
+                                        period === '日' ? ['今日']
+                                        : userData?.recent_exercise && userData.recent_exercise.length > 0 ?
+                                            userData.recent_exercise
+                                                .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime())
+                                                .map((d, i) => (i % 5 === 0 ? `${new Date(d.day).getDate()}日` : ''))
+                                        :   [],
+                                    datasets: [
+                                        {
+                                            data: getStepsData(),
+                                            color: () => '#4BC16B',
+                                            strokeWidth: 3,
+                                        },
+                                    ],
+                                }}
+                                width={responsiveWidth(81)}
+                                height={responsiveHeight(20)}
+                                yAxisSuffix=''
+                                yAxisInterval={1}
+                                chartConfig={{
+                                    backgroundColor: '#fff',
+                                    backgroundGradientFrom: '#fff',
+                                    backgroundGradientTo: '#fff',
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
+                                    labelColor: (opacity = 1) => `rgba(102, 102, 102, ${opacity})`,
+                                    style: {
+                                        borderRadius: 16,
+                                    },
+                                    propsForDots: {
+                                        r: '5',
+                                        strokeWidth: '2',
+                                        stroke: '#fff',
+                                    },
+                                    propsForBackgroundLines: {
+                                        stroke: '#E0E0E0',
+                                        strokeDasharray: '',
+                                    },
+                                }}
+                                bezier
+                                style={{
+                                    borderRadius: 16,
+                                }}
+                                fromZero
+                            />
+                        }
                     </View>
                 </View>
             }
@@ -595,7 +550,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                 style={{
                     position: 'absolute',
                     left: 16,
-                    bottom: '1%' ,
+                    bottom: '1%',
                     backgroundColor: '#b2d8b2',
                     width: 64,
                     height: 48,
