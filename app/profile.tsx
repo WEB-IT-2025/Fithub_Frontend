@@ -5,6 +5,7 @@ import { Animated, Image, Platform, Text, TouchableOpacity, View } from 'react-n
 import { BarChart, LineChart } from 'react-native-chart-kit'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg'
 
 import styles from './style/profile.styles'
 
@@ -71,6 +72,270 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
     const healthAnim = useRef(new Animated.Value(0)).current
     const sizeAnim = useRef(new Animated.Value(0)).current
     const ageAnim = useRef(new Animated.Value(0)).current
+
+    // カスタムSVGバーチャートコンポーネント
+    const CustomBarChart = ({
+        data,
+        labels,
+        width,
+        height,
+        period = '月',
+    }: {
+        data: number[]
+        labels: string[]
+        width: number
+        height: number
+        period?: '日' | '週' | '月'
+    }) => {
+        // データの最大値に応じて上限を決定
+        const dataMax = Math.max(...data)
+        let maxValue: number
+        let yAxisSteps: number[]
+
+        if (period === '週') {
+            // 週別: デフォルト7.5k、データが7.5kを超えていた場合は10k
+            maxValue = dataMax > 7500 ? 10000 : 7500
+            yAxisSteps = maxValue === 10000 ? [0, 2500, 5000, 7500, 10000] : [0, 2500, 5000, 7500]
+        } else {
+            // 月別: デフォルト7.5k、データが7.5kを超えていた場合は10k
+            maxValue = dataMax > 7500 ? 10000 : 7500
+            yAxisSteps = maxValue === 10000 ? [0, 2500, 5000, 7500, 10000] : [0, 2500, 5000, 7500]
+        }
+
+        const chartPadding = { left: 50, right: 20, top: 20, bottom: 30 }
+        const chartWidth = width - chartPadding.left - chartPadding.right
+        const chartHeight = height - chartPadding.top - chartPadding.bottom
+        const barWidth = (chartWidth / data.length) * 0.6
+        const barSpacing = chartWidth / data.length
+
+        return (
+            <Svg
+                width={width}
+                height={height}
+            >
+                {/* Y軸の固定メモリライン */}
+                {yAxisSteps.map((value, index) => {
+                    const y = chartPadding.top + chartHeight - (value / maxValue) * chartHeight
+                    return (
+                        <G key={value}>
+                            <Line
+                                x1={chartPadding.left}
+                                y1={y}
+                                x2={width - chartPadding.right}
+                                y2={y}
+                                stroke='#E0E0E0'
+                                strokeWidth='1'
+                            />
+                            <SvgText
+                                x={chartPadding.left - 10}
+                                y={y + 4}
+                                fontSize='11'
+                                fill='#666'
+                                textAnchor='end'
+                            >
+                                {value === 0 ? '0' : `${(value / 1000).toFixed(1)}K`}
+                            </SvgText>
+                        </G>
+                    )
+                })}
+
+                {/* データバー */}
+                {data.map((value, index) => {
+                    const barHeight = Math.max((Math.min(value, maxValue) / maxValue) * chartHeight, 1)
+                    const x = chartPadding.left + index * barSpacing + (barSpacing - barWidth) / 2
+                    const y = chartPadding.top + chartHeight - barHeight
+
+                    return (
+                        <Rect
+                            key={index}
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={barHeight}
+                            fill='#2BA44E'
+                            rx={1}
+                        />
+                    )
+                })}
+
+                {/* X軸ラベル */}
+                {labels.map((label, index) => {
+                    if (!label) return null
+                    const x = chartPadding.left + index * barSpacing + barSpacing / 2
+                    const y = height - chartPadding.bottom + 15
+
+                    return (
+                        <SvgText
+                            key={index}
+                            x={x}
+                            y={y}
+                            fontSize='11'
+                            fill='#666'
+                            textAnchor='middle'
+                        >
+                            {label}
+                        </SvgText>
+                    )
+                })}
+            </Svg>
+        )
+    }
+
+    // 日別用カスタムSVGハイブリッドチャートコンポーネント（棒グラフ + 折れ線グラフ）
+    const CustomHybridChart = ({
+        barData,
+        lineData,
+        labels,
+        width,
+        height,
+    }: {
+        barData: number[]
+        lineData: number[]
+        labels: string[]
+        width: number
+        height: number
+    }) => {
+        // 両データの最大値を取得して上限を決定
+        const barMax = Math.max(...barData)
+        const lineMax = Math.max(...lineData)
+        const dataMax = Math.max(barMax, lineMax)
+
+        // 日別は累積値なので上限を高めに設定
+        let maxValue: number
+        let yAxisSteps: number[]
+
+        if (dataMax > 10000) {
+            maxValue = 15000
+            yAxisSteps = [0, 3750, 7500, 11250, 15000]
+        } else if (dataMax > 7500) {
+            maxValue = 10000
+            yAxisSteps = [0, 2500, 5000, 7500, 10000]
+        } else {
+            maxValue = 7500
+            yAxisSteps = [0, 2500, 5000, 7500]
+        }
+
+        const chartPadding = { left: 50, right: 20, top: 20, bottom: 30 }
+        const chartWidth = width - chartPadding.left - chartPadding.right
+        const chartHeight = height - chartPadding.top - chartPadding.bottom
+        const barWidth = (chartWidth / barData.length) * 0.6
+        const barSpacing = chartWidth / barData.length
+
+        // 折れ線グラフのパスを生成
+        const generateLinePath = () => {
+            let path = ''
+            lineData.forEach((value, index) => {
+                const x = chartPadding.left + index * barSpacing + barSpacing / 2
+                const y = chartPadding.top + chartHeight - (Math.min(value, maxValue) / maxValue) * chartHeight
+
+                if (index === 0) {
+                    path += `M ${x} ${y}`
+                } else {
+                    path += ` L ${x} ${y}`
+                }
+            })
+            return path
+        }
+
+        return (
+            <Svg
+                width={width}
+                height={height}
+            >
+                {/* Y軸の固定メモリライン */}
+                {yAxisSteps.map((value, index) => {
+                    const y = chartPadding.top + chartHeight - (value / maxValue) * chartHeight
+                    return (
+                        <G key={value}>
+                            <Line
+                                x1={chartPadding.left}
+                                y1={y}
+                                x2={width - chartPadding.right}
+                                y2={y}
+                                stroke='#E0E0E0'
+                                strokeWidth='1'
+                            />
+                            <SvgText
+                                x={chartPadding.left - 10}
+                                y={y + 4}
+                                fontSize='11'
+                                fill='#666'
+                                textAnchor='end'
+                            >
+                                {value === 0 ? '0' : `${(value / 1000).toFixed(1)}K`}
+                            </SvgText>
+                        </G>
+                    )
+                })}
+
+                {/* 棒グラフ */}
+                {barData.map((value, index) => {
+                    const barHeight = Math.max((Math.min(value, maxValue) / maxValue) * chartHeight, 1)
+                    const x = chartPadding.left + index * barSpacing + (barSpacing - barWidth) / 2
+                    const y = chartPadding.top + chartHeight - barHeight
+
+                    return (
+                        <Rect
+                            key={`bar-${index}`}
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={barHeight}
+                            fill='#2BA44E'
+                            rx={1}
+                        />
+                    )
+                })}
+
+                {/* 折れ線グラフ */}
+                <Path
+                    d={generateLinePath()}
+                    stroke='#4BC16B'
+                    strokeWidth='3'
+                    fill='none'
+                />
+
+                {/* 折れ線グラフの点 */}
+                {lineData.map((value, index) => {
+                    const x = chartPadding.left + index * barSpacing + barSpacing / 2
+                    const y = chartPadding.top + chartHeight - (Math.min(value, maxValue) / maxValue) * chartHeight
+
+                    return (
+                        <G key={`dot-${index}`}>
+                            <Circle
+                                cx={x}
+                                cy={y}
+                                r='5'
+                                fill='#4BC16B'
+                                stroke='#fff'
+                                strokeWidth='2'
+                            />
+                        </G>
+                    )
+                })}
+
+                {/* X軸ラベル */}
+                {labels.map((label, index) => {
+                    if (!label) return null
+                    const x = chartPadding.left + index * barSpacing + barSpacing / 2
+                    const y = height - chartPadding.bottom + 15
+
+                    return (
+                        <SvgText
+                            key={index}
+                            x={x}
+                            y={y}
+                            fontSize='11'
+                            fill='#666'
+                            textAnchor='middle'
+                        >
+                            {label}
+                        </SvgText>
+                    )
+                })}
+            </Svg>
+        )
+    }
 
     // APIからユーザーデータを取得する関数
     const fetchUserData = useCallback(async () => {
@@ -252,10 +517,13 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
     // 月別歩数データ取得メソッド
     const getMonthlyStepsData = () => {
         // 一時的にAPIデータを使わず、常にダミーデータ（30日分）を返す
-        return [
+        // データを10000歩以下に制限
+        const rawData = [
             3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600, 3800,
-            5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 6300, 4400, 4500,
+            5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500,
         ]
+        // 10000歩を超える値は10000に制限
+        return rawData.map((steps) => Math.min(steps, 10000))
     }
 
     // 期間別歩数データ取得メソッド
@@ -321,7 +589,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         },
     })
 
-    // 日別グラフレンダリングメソッド（ハイブリッド: 棒＋折れ線）
+    // 日別グラフレンダリングメソッド（SVGカスタムハイブリッドチャート）
     const renderDailyChart = () => {
         const barData = getDailyStepsData()
         // 累積値を作成
@@ -332,157 +600,111 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
         const labels = getChartLabels()
         const chartWidth = responsiveWidth(95)
         const chartHeight = responsiveHeight(20)
+
         return (
-            <View style={{ width: chartWidth, height: chartHeight }}>
-                {/* 棒グラフ（BarChart）: 通常配置で下に表示 */}
-                <BarChart
-                    data={{
-                        labels,
-                        datasets: [
-                            {
-                                data: barData,
-                                color: () => '#2BA44E',
-                            },
-                        ],
-                    }}
+            <View style={{ alignItems: 'center' }}>
+                <CustomHybridChart
+                    barData={barData}
+                    lineData={lineData}
+                    labels={labels}
                     width={chartWidth}
                     height={chartHeight}
-                    yAxisLabel=''
-                    yAxisSuffix=''
-                    yAxisInterval={1}
-                    chartConfig={{
-                        ...getCommonChartConfig(),
-                        color: () => '#2BA44E',
-                        fillShadowGradient: '#2BA44E',
-                        fillShadowGradientOpacity: 1,
-                        fillShadowGradientFrom: '#2BA44E',
-                        fillShadowGradientFromOpacity: 1,
-                        fillShadowGradientTo: '#2BA44E',
-                        fillShadowGradientToOpacity: 1,
-                        barPercentage: 0.7,
-                    }}
-                    style={{
-                        borderRadius: 16,
-                        // position: 'absolute',
-                        // left: 0,
-                        // top: 0,
-                    }}
-                    fromZero
-                    showBarTops={true}
-                    withInnerLines={true}
-                />
-                {/* 折れ線グラフ（LineChart, 累積値）: 上に重ねる */}
-                <LineChart
-                    data={{
-                        labels,
-                        datasets: [
-                            {
-                                data: lineData,
-                                color: () => '#4BC16B',
-                                strokeWidth: 3,
-                            },
-                        ],
-                    }}
-                    width={chartWidth}
-                    height={chartHeight}
-                    yAxisLabel=''
-                    yAxisSuffix=''
-                    yAxisInterval={1}
-                    chartConfig={{
-                        ...getCommonChartConfig(),
-                        color: (opacity = 1) => `rgba(44, 130, 77, ${opacity})`,
-                        propsForDots: {
-                            r: '5',
-                            strokeWidth: '2',
-                            stroke: '#fff',
-                        },
-                    }}
-                    bezier
-                    style={{
-                        borderRadius: 16,
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                    }}
-                    fromZero
                 />
             </View>
         )
     }
 
-    // 週別グラフレンダリングメソッド
-    const renderWeeklyChart = () => (
-        <BarChart
-            yAxisLabel=''
-            data={{
-                labels: getChartLabels(),
-                datasets: [
-                    {
-                        data: getWeeklyStepsData(),
-                        color: () => '#2BA44E',
-                    },
-                ],
-            }}
-            width={responsiveWidth(90)}
-            height={responsiveHeight(20)}
-            yAxisSuffix=''
-            yAxisInterval={1}
-            chartConfig={{
-                ...getCommonChartConfig(),
-                color: () => '#2BA44E',
-                fillShadowGradient: '#2BA44E',
-                fillShadowGradientOpacity: 1,
-                fillShadowGradientFrom: '#2BA44E',
-                fillShadowGradientFromOpacity: 1,
-                fillShadowGradientTo: '#2BA44E',
-                fillShadowGradientToOpacity: 1,
-                barPercentage: 0.7,
-            }}
-            style={{
-                borderRadius: 16,
-            }}
-            fromZero
-            showBarTops={true}
-            withInnerLines={true}
-        />
-    )
+    // 週別グラフレンダリングメソッド（SVGカスタムチャート）
+    const renderWeeklyChart = () => {
+        const weeklyData = getWeeklyStepsData()
+        const labels = getChartLabels()
+        const chartWidth = responsiveWidth(90)
+        const chartHeight = responsiveHeight(20)
 
-    // 月別グラフレンダリングメソッド
-    const renderMonthlyChart = () => (
-        <BarChart
-            yAxisLabel=''
-            data={{
-                labels: getChartLabels(),
-                datasets: [
-                    {
-                        data: getMonthlyStepsData(),
-                        color: () => '#2BA44E',
-                    },
-                ],
-            }}
-            width={responsiveWidth(90)}
-            height={responsiveHeight(20)}
-            yAxisSuffix=''
-            yAxisInterval={1}
-            chartConfig={{
-                ...getCommonChartConfig(),
-                color: () => '#2BA44E',
-                fillShadowGradient: '#2BA44E',
-                fillShadowGradientOpacity: 1,
-                fillShadowGradientFrom: '#2BA44E',
-                fillShadowGradientFromOpacity: 1,
-                fillShadowGradientTo: '#2BA44E',
-                fillShadowGradientToOpacity: 1,
-                barPercentage: 0.1, // 月別は棒をより細く
-            }}
-            style={{
-                borderRadius: 16,
-            }}
-            fromZero
-            showBarTops={true}
-            withInnerLines={true}
-        />
-    )
+        return (
+            <View style={{ alignItems: 'center' }}>
+                <CustomBarChart
+                    data={weeklyData}
+                    labels={labels}
+                    width={chartWidth}
+                    height={chartHeight}
+                    period='週'
+                />
+            </View>
+        )
+    }
+
+    // 月別グラフレンダリングメソッド（SVGカスタムチャート）
+    const renderMonthlyChart = () => {
+        const monthlyData = getMonthlyStepsData()
+        const labels = getChartLabels()
+        const chartWidth = responsiveWidth(90)
+        const chartHeight = responsiveHeight(20)
+
+        return (
+            <View style={{ alignItems: 'center' }}>
+                <CustomBarChart
+                    data={monthlyData}
+                    labels={labels}
+                    width={chartWidth}
+                    height={chartHeight}
+                    period='月'
+                />
+            </View>
+        )
+    }
+
+    // 従来のreact-native-chart-kit版（コメントアウト）
+    /*
+    const renderMonthlyChart = () => {
+        const monthlyData = getMonthlyStepsData()
+        // Y軸を固定するために、最大値10000を含むデータセットを作成
+        const chartData = {
+            labels: getChartLabels(),
+            datasets: [
+                {
+                    data: monthlyData,
+                    color: () => '#2BA44E',
+                },
+                {
+                    // 非表示のダミーデータで最大値を10000に固定
+                    data: [10000, 0], // 最大値と最小値を設定
+                    color: () => 'rgba(0,0,0,0)', // 透明にして非表示
+                    withDots: false,
+                },
+            ],
+        }
+
+        return (
+            <BarChart
+                yAxisLabel=''
+                data={chartData}
+                width={responsiveWidth(90)}
+                height={responsiveHeight(20)}
+                yAxisSuffix=''
+                yAxisInterval={1}
+                segments={4}
+                chartConfig={{
+                    ...getCommonChartConfig(),
+                    color: () => '#2BA44E',
+                    fillShadowGradient: '#2BA44E',
+                    fillShadowGradientOpacity: 1,
+                    fillShadowGradientFrom: '#2BA44E',
+                    fillShadowGradientFromOpacity: 1,
+                    fillShadowGradientTo: '#2BA44E',
+                    fillShadowGradientToOpacity: 1,
+                    barPercentage: 0.1, // 月別は棒をより細く
+                }}
+                style={{
+                    borderRadius: 16,
+                }}
+                fromZero
+                showBarTops={true}
+                withInnerLines={true}
+            />
+        )
+    }
+    */
 
     // 期間別グラフレンダリングメソッド
     const renderChart = () => {
@@ -576,6 +798,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                                             inputRange: [0, 1],
                                             outputRange: ['0%', '100%'],
                                         }),
+                                        marginRight: '30%', // 5px -> レスポンシブ
                                     }}
                                 />
                             </View>
@@ -603,7 +826,7 @@ const Profile = ({ userName, userData: externalUserData, onClose }: ProfileProps
                             style={[styles.indicatorRow, { marginBottom: 0 }]}
                             collapsable={false}
                         >
-                            <Text style={styles.indicatorLabel}>年齢</Text>
+                            <Text style={styles.indicatorLabel}>親密度</Text>
                             <View style={styles.indicator}>
                                 <Animated.View
                                     style={{

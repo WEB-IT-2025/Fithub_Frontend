@@ -1,5 +1,9 @@
-import { Platform, StyleSheet } from 'react-native'
-import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
+import { Platform, StyleSheet } from 'react-native';
+import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions';
+
+
+
+
 
 const styles = StyleSheet.create({
     container: {
@@ -32,6 +36,7 @@ const styles = StyleSheet.create({
         color: '#000',
         marginVertical: responsiveHeight(0),
         textAlign: 'left',
+        marginLeft: '3%',
     },
     sectionLabel: {
         fontSize: Platform.OS === 'android' ? responsiveFontSize(1.9) : responsiveFontSize(2),
@@ -40,6 +45,7 @@ const styles = StyleSheet.create({
         marginBottom: responsiveHeight(1),
         textAlign: 'left',
         alignSelf: 'flex-start',
+        marginLeft: '3%',
     },
     contributionBoard: {
         backgroundColor: '#fff',
@@ -121,6 +127,7 @@ const styles = StyleSheet.create({
                 lineHeight: responsiveFontSize(2.25) * 1.1,
             },
         }),
+        marginLeft: '5%',
     },
     indicatorColumn: {
         flexDirection: 'column',
@@ -135,6 +142,7 @@ const styles = StyleSheet.create({
                 justifyContent: 'flex-start',
             },
         }),
+        marginRight: '5%',
     },
     indicatorRow: {
         flexDirection: 'row',
