@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
 import MissionBoard from '../missionboard'
+import PetChange from '../petchange'
 import Profile from '../profile'
 
 // 追加
@@ -32,6 +33,7 @@ const WALK_GOAL = 5000 // 目標歩数
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
     const [profileVisible, setProfileVisible] = useState(false)
+    const [petChangeVisible, setPetChangeVisible] = useState(false)
     const [profileKey, setProfileKey] = useState(0)
     const [steps, setSteps] = useState<number | null>(null)
     const [isLoading, setIsLoading] = useState(false)
@@ -97,7 +99,7 @@ const HomeScreen = () => {
                         <TouchableOpacity
                             style={styles.circleButton}
                             onPress={() => {
-                                /* ペット画面へ遷移など */
+                                setPetChangeVisible(true)
                             }}
                         >
                             <FontAwesomeIcon
@@ -242,6 +244,33 @@ const HomeScreen = () => {
                                 key={profileKey}
                                 onClose={() => setProfileVisible(false)}
                             />
+                        </View>
+                    }
+                </Modal>
+
+                {/* ペット変更モーダル */}
+                <Modal
+                    visible={petChangeVisible}
+                    animationType='slide'
+                    onRequestClose={() => setPetChangeVisible(false)}
+                    statusBarTranslucent={true}
+                    presentationStyle='fullScreen'
+                    hardwareAccelerated={true}
+                >
+                    <StatusBar
+                        barStyle='dark-content'
+                        backgroundColor='transparent'
+                        translucent={true}
+                        hidden={Platform.OS === 'android'}
+                    />
+                    {Platform.OS === 'ios' ?
+                        <SafeAreaView style={styles.fullScreenModal}>
+                            <PetChange onClose={() => setPetChangeVisible(false)} />
+                        </SafeAreaView>
+                    :   <View
+                            style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
+                        >
+                            <PetChange onClose={() => setPetChangeVisible(false)} />
                         </View>
                     }
                 </Modal>
