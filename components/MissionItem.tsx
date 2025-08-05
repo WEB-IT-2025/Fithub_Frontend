@@ -1,7 +1,5 @@
 import React, { useRef } from 'react'
-
 import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-
 import { Mission } from './Mission'
 
 interface MissionItemProps {
@@ -37,7 +35,9 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                         {mission.status === 'completed' ? '1/1' : '0/1'}
                     </Text>
                 </View>
-                {mission.image && <View style={styles.missionImage} />}
+                {mission.image && (
+                    <View style={styles.missionImage} />
+                )}
                 <View style={styles.missionTextContainer}>
                     {/* タイトル */}
                     <Text style={styles.missionTitleCustom}>{mission.title}</Text>
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#ACEEBB',
         borderRadius: 10,
-        padding: 18,
+        padding: 10,
         marginBottom: 10,
     },
     missionItemShadow: {
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
         zIndex: 0,
     },
     missionImage: {
-        width: 48,
-        height: 48,
+        width: 68,
+        height: 68,
         borderRadius: 8,
         marginRight: 12,
         backgroundColor: '#b2d8b2',
