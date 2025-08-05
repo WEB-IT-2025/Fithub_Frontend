@@ -1,19 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react'
 
+import { Ionicons } from '@expo/vector-icons'
+import { faShoePrints } from '@fortawesome/free-solid-svg-icons'
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
+    Animated,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
+} from 'react-native'
 
-
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-
-
-
-import missionsData, { Mission } from '../components/Mission';
-import MissionList from '../components/MissionList';
-
-
-
-
+import missionsData, { Mission } from '../components/Mission'
+import MissionList from '../components/MissionList'
 
 type MissionType = 'daily' | 'weekly'
 
@@ -152,19 +156,21 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
             type: mission.mission_category,
             status: mission.clear_status === 1 ? ('completed' as const) : ('not achieved' as const),
             board: 'display' as const,
-            image: getImageForMissionType(mission.mission_type),
+            image: null, // FontAwesome アイコンを使用するため null に設定
         }))
     }
 
-    // ミッションタイプに応じた画像URLを取得
-    const getImageForMissionType = (missionType: string): string | null => {
+    // ミッションタイプに応じたアイコンを取得
+    const getIconForMissionType = (missionType: string) => {
         switch (missionType) {
             case 'step':
-                return 'https://example.com/step-icon.png'
-            case 'contribution':
-                return 'https://example.com/contribution-icon.png'
+                return faShoePrints // 靴跡アイコン
+            case 'github':
+                return faGithub // GitHub アイコン
+            case 'contribution': // GitHubのcontributionもこちらで処理
+                return faGithub // GitHub アイコン
             default:
-                return 'https://example.com/default-mission-icon.png'
+                return faShoePrints // デフォルトアイコン
         }
     }
 
@@ -271,9 +277,6 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionLabel}>{type === 'daily' ? 'デイリー' : 'ウィークリー'}</Text>
                     {loading && <Text style={styles.loadingText}>読み込み中...</Text>}
-                    {apiMissions.length > 0 && (
-                        <Text style={styles.dataSourceText}>API連携済み ({apiMissions.length}件)</Text>
-                    )}
                 </View>
                 <View style={styles.Spacer} />
 
@@ -283,6 +286,8 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                     clearedId={clearedId}
                     clearAnim={clearAnim}
                     onReceive={handleReceive}
+                    getIconForMissionType={getIconForMissionType}
+                    apiMissions={apiMissions}
                 />
 
                 {/* 下部ボタン */}

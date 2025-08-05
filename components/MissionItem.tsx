@@ -1,5 +1,9 @@
 import React, { useRef } from 'react'
+
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+
 import { Mission } from './Mission'
 
 interface MissionItemProps {
@@ -7,25 +11,73 @@ interface MissionItemProps {
     onReceive: (id: string) => void
     clearedId: string | null
     clearAnim: Animated.Value
+    missionIcon?: IconDefinition
 }
 
-const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId, clearAnim }) => {
-    // FontAwesomeアイコン用import
+const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId, clearAnim, missionIcon }) => {
+    // FontAwesomeアイコン用import（フォールバック用）
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { faPerson, faG } = require('@fortawesome/free-solid-svg-icons')
-    const { FontAwesomeIcon } = require('@fortawesome/react-native-fontawesome')
 
     // 画像表示ロジック
     const renderMissionImage = () => {
-        if (!mission.image) return null
+        // プロパティで渡されたアイコンを優先
+        if (missionIcon) {
+            return (
+                <View style={[styles.missionImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <FontAwesomeIcon
+                        icon={missionIcon}
+                        size={32}
+                        color='#388e3c'
+                    />
+                </View>
+            )
+        }
+
+        // フォールバック: 画像がない場合
+        if (!mission.image) {
+            return (
+                <View style={[styles.missionImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <FontAwesomeIcon
+                        icon={faPerson}
+                        size={32}
+                        color='#388e3c'
+                    />
+                </View>
+            )
+        }
+
+        // 従来のロジック（文字列ベース）
         if (mission.image === 'faPerson') {
-            return <FontAwesomeIcon icon={faPerson} size={48} style={styles.missionImage} />
+            return (
+                <View style={[styles.missionImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <FontAwesomeIcon
+                        icon={faPerson}
+                        size={32}
+                        color='#388e3c'
+                    />
+                </View>
+            )
         }
         if (mission.image === 'faG') {
-            return <FontAwesomeIcon icon={faG} size={48} style={styles.missionImage} />
+            return (
+                <View style={[styles.missionImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <FontAwesomeIcon
+                        icon={faG}
+                        size={32}
+                        color='#388e3c'
+                    />
+                </View>
+            )
         }
+
         // URLの場合はImage
-        return <Image source={{ uri: mission.image }} style={styles.missionImage} />
+        return (
+            <Image
+                source={{ uri: mission.image }}
+                style={styles.missionImage}
+            />
+        )
     }
 
     return (
