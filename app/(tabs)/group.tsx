@@ -1,18 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react'
 
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
-
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-
-
-import TabBar from '../../components/TabBar';
-
-
-
-
+import TabBar from '../../components/TabBar'
 
 const rooms = [
     {
