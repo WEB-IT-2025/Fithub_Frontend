@@ -30,6 +30,7 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.4.3",
     "@react-navigation/native": "^7.1.6",
+    "blue": "^1.1.1",
     "expo": "^53.0.19",
     "expo-blur": "~14.1.5",
     "expo-crypto": "~14.1.5",
@@ -57,7 +58,9 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "^13.13.5",
-    "tailwind-react-native-classnames": "^3.0.1"
+    "tailwind-react-native-classnames": "^3.0.1",
+    "victory-native": "^41.18.0",
+    "view": "^1.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

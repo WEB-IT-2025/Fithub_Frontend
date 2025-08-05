@@ -218,7 +218,7 @@ const ConfigScreen = () => {
             console.log('Client time (JST):', getJSTTime())
             console.log('Client timestamp:', Math.floor(Date.now() / 1000))
             console.log('📋 トークン長:', token.length)
-            console.log('📋 トークンプレビュー:', `${token.substring(0, 20)}...${token.substring(token.length - 20)}`)
+            console.log('📋 トークン全文:', token)
 
             // まず、JWTトークンからユーザー情報をデコード
             const payload = parseJwtPayload(token)
@@ -1091,7 +1091,7 @@ const ConfigScreen = () => {
             console.log('📊 AsyncStorage読み込み結果:', {
                 hasToken: !!token,
                 tokenLength: token?.length || 0,
-                tokenPreview: token ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` : 'なし',
+                tokenFull: token || 'なし',
                 hasUserId: !!userId,
                 userId: userId || 'なし',
             })

@@ -5,6 +5,7 @@ import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faCoffee, faDog, faPerson, faScroll, faUser } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { BlurView } from 'expo-blur'
 import {
     Image,
     ImageBackground,
@@ -161,9 +162,14 @@ const HomeScreen = () => {
                                             fontSize: 14,
                                             textAlign: 'center',
                                             includeFontPadding: false,
-                                            textShadowColor: 'rgba(0,0,0,0.15)',
-                                            textShadowOffset: { width: 0, height: 1 },
-                                            textShadowRadius: 1,
+                                            textShadowColor: 'rgba(0,0,0,0.5)',
+                                            textShadowOffset: { width: 0, height: 2 },
+                                            textShadowRadius: 3,
+                                            elevation: 4, // Android用の影
+                                            shadowColor: '#000', // iOS用の影
+                                            shadowOffset: { width: 0, height: 2 },
+                                            shadowOpacity: 0.1,
+                                            shadowRadius: 2,
                                         }}
                                         numberOfLines={1}
                                     >
@@ -177,9 +183,17 @@ const HomeScreen = () => {
                         : steps !== null ?
                             steps >= WALK_GOAL ?
                                 <Text style={styles.percentText}>目標達成！</Text>
-                            :   <Text style={styles.percentText}>
-                                    目標まであと{100 - Math.floor((steps / WALK_GOAL) * 100)}％
-                                </Text>
+                            :   <View style={styles.goalContainer}>
+                                    <BlurView
+                                        intensity={5}
+                                        tint='light'
+                                        style={styles.blurBackground}
+                                    >
+                                        <Text style={styles.goalText}>
+                                            目標まであと{100 - Math.floor((steps / WALK_GOAL) * 100)}％
+                                        </Text>
+                                    </BlurView>
+                                </View>
 
                         :   <Text style={styles.percentText}>データなし</Text>}
                     </View>
@@ -371,16 +385,20 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#fff',
         marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
     },
     progressBarBackground: {
         width: 180,
         height: 26,
         backgroundColor: '#e0e0e0',
-        borderRadius: 10,
+        borderRadius: 25,
         overflow: 'hidden',
         marginBottom: 12,
         borderWidth: 2,
-        borderColor: '#fff',
+        borderColor: '#e0e0e0',
     },
     progressBarFill: {
         height: '100%',
@@ -391,9 +409,28 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
     },
+    goalContainer: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginTop: 4,
+    },
+    blurBackground: {
+        paddingHorizontal: 1,
+        paddingVertical: 1,
+        borderRadius: 1,
+    },
+    goalText: {
+        fontSize: 16,
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        textShadowColor: 'rgba(0,0,0,0.7)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
+    },
     fullScreenModal: {
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#fff',
         position: 'relative',
     },
 })

@@ -23,35 +23,35 @@ const catPets = [
     {
         id: 1,
         name: 'クロネコ',
-        image: require('@/assets/images/cat1.png'),
+        image: require('@/assets/images/black_cat.png'),
         price: 500,
         description: '鼻がチャームの黒猫。基本懐かない。',
     },
     {
         id: 2,
         name: 'ブチネコ',
-        image: require('@/assets/images/cat2.png'),
+        image: require('@/assets/images/vitiligo_cat.png'),
         price: 800,
         description: '丸い体型が特徴的。甘えん坊な性格。',
     },
     {
         id: 3,
         name: 'ミケネコ',
-        image: require('@/assets/images/cat3.png'),
+        image: require('@/assets/images/mike_cat.png'),
         price: 1200,
         description: '元気いっぱいな猫。',
     },
     {
         id: 4,
         name: 'キジトラ',
-        image: require('@/assets/images/cat4.png'),
+        image: require('@/assets/images/tora_cat.png'),
         price: 500,
         description: '静かで落ち着いた性格。',
     },
     {
         id: 5,
         name: 'アメショ',
-        image: require('@/assets/images/cat5.png'),
+        image: require('@/assets/images/ameshort_cat.png'),
         price: 800,
         description: '食いしん坊な猫。',
     },
@@ -62,35 +62,35 @@ const dogPets = [
     {
         id: 1,
         name: 'シバイヌ',
-        image: require('@/assets/images/dog1.png'),
+        image: require('@/assets/images/shiba_dog.png'),
         price: 600,
         description: '温厚で優しい性格。',
     },
     {
         id: 2,
         name: 'チワワ',
-        image: require('@/assets/images/dog2.png'),
+        image: require('@/assets/images/chihuahua.png'),
         price: 900,
         description: '気が強く、よく吠える。',
     },
     {
         id: 3,
         name: 'ポメラニアン',
-        image: require('@/assets/images/dog3.png'),
+        image: require('@/assets/images/pome.png'),
         price: 700,
         description: '短い脚がチャーミング。',
     },
     {
         id: 4,
         name: 'プードル',
-        image: require('@/assets/images/dog4.png'),
+        image: require('@/assets/images/toipo.png'),
         price: 800,
         description: '元気いっぱいで活発。',
     },
     {
         id: 5,
         name: 'ブルドッグ',
-        image: require('@/assets/images/dog5.png'),
+        image: require('@/assets/images/bulldog.png'),
         price: 1000,
         description: '癒し系。とっても優しい。',
     },
@@ -101,28 +101,28 @@ const fishPets = [
     {
         id: 1,
         name: 'GINGIN',
-        image: require('@/assets/images/fish1.png'),
+        image: require('@/assets/images/gingin_penguin.png'),
         price: 300,
         description: 'いつもみなぎっている。',
     },
     {
         id: 2,
         name: 'ミズダコ',
-        image: require('@/assets/images/fish2.png'),
+        image: require('@/assets/images/takopee.png'),
         price: 400,
         description: 'ふわふわ泳ぐのが好き。',
     },
     {
         id: 3,
         name: 'ペンギン',
-        image: require('@/assets/images/fish3.png'),
+        image: require('@/assets/images/penguin.png'),
         price: 350,
         description: '寒いところが好き。',
     },
     {
         id: 4,
         name: 'スラリー',
-        image: require('@/assets/images/fish4.png'),
+        image: require('@/assets/images/slime.png'),
         price: 450,
         description: '工業用排水から生まれた。',
     },
@@ -133,28 +133,28 @@ const anymorePets = [
     {
         id: 1,
         name: 'シマウマ',
-        image: require('@/assets/images/anymore1.png'),
+        image: require('@/assets/images/zebra.png'),
         price: 1500,
         description: '群れでいるのが好き。',
     },
     {
         id: 2,
         name: 'ウサギ',
-        image: require('@/assets/images/anymore2.png'),
+        image: require('@/assets/images/rabbit.png'),
         price: 1800,
         description: '警戒心がつよい。',
     },
     {
         id: 3,
         name: 'チンパンジー',
-        image: require('@/assets/images/anymore3.png'),
+        image: require('@/assets/images/chinpan.png'),
         price: 2000,
         description: 'とてもかしこい。',
     },
     {
         id: 4,
         name: 'パンダ',
-        image: require('@/assets/images/anymore4.png'),
+        image: require('@/assets/images/panda.png'),
         price: 5500,
         description: 'みんなのアイドル。',
     },
@@ -261,7 +261,7 @@ const ShopScreen = () => {
                 <View style={styles.petMenuContainer}>
                     {/* 左側：縦並びボタン（比率1） */}
                     <View style={styles.menuButtons}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.menuButton}
                             onPress={() => switchAnimalType('cat')}
                         >
@@ -271,7 +271,7 @@ const ShopScreen = () => {
                                 color={animalType === 'cat' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.menuButton}
                             onPress={() => switchAnimalType('dog')}
                         >
@@ -281,7 +281,7 @@ const ShopScreen = () => {
                                 color={animalType === 'dog' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.menuButton}
                             onPress={() => switchAnimalType('fish')}
                         >
@@ -291,7 +291,7 @@ const ShopScreen = () => {
                                 color={animalType === 'fish' ? '#FF6B6B' : 'black'}
                             />
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.menuButton}
                             onPress={() => switchAnimalType('other')}
                         >

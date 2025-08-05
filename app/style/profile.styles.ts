@@ -11,10 +11,10 @@ const styles = StyleSheet.create({
         // paddingBottom: responsiveHeight(6),
     },
     title: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(3),
+        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(2.25),
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 1,
+        marginBottom: '2%',
         marginTop: 0,
         color: '#388e3c',
     },
@@ -32,6 +32,8 @@ const styles = StyleSheet.create({
         color: '#000',
         marginVertical: responsiveHeight(0),
         textAlign: 'left',
+        marginLeft: '3%',
+        marginBottom: '3%',
     },
     sectionLabel: {
         fontSize: Platform.OS === 'android' ? responsiveFontSize(1.9) : responsiveFontSize(2),
@@ -40,13 +42,14 @@ const styles = StyleSheet.create({
         marginBottom: responsiveHeight(1),
         textAlign: 'left',
         alignSelf: 'flex-start',
+        marginLeft: '3%',
     },
     contributionBoard: {
         backgroundColor: '#fff',
         borderRadius: responsiveWidth(4),
         paddingVertical: responsiveHeight(1.25),
         paddingHorizontal: '2%',
-        marginBottom: responsiveHeight(2),
+        marginBottom: '3%',
         alignSelf: 'center',
         ...Platform.select({
             ios: {
@@ -80,7 +83,7 @@ const styles = StyleSheet.create({
     petParamRow: {
         flexDirection: 'row',
         alignItems: 'stretch',
-        marginBottom: responsiveHeight(3),
+        marginBottom: '4%',
         width: '100%',
     },
     petParamImageWrapper: {
@@ -109,7 +112,7 @@ const styles = StyleSheet.create({
         fontSize: Platform.OS === 'android' ? responsiveFontSize(2.1) : responsiveFontSize(2.25),
         fontWeight: 'bold',
         color: '#388e3c',
-        marginBottom: responsiveHeight(1.5),
+        marginBottom: '1%',
         textAlign: 'left',
         ...Platform.select({
             android: {
@@ -121,6 +124,7 @@ const styles = StyleSheet.create({
                 lineHeight: responsiveFontSize(2.25) * 1.1,
             },
         }),
+        marginLeft: '5%',
     },
     indicatorColumn: {
         flexDirection: 'column',
@@ -135,6 +139,7 @@ const styles = StyleSheet.create({
                 justifyContent: 'flex-start',
             },
         }),
+        marginRight: '5%',
     },
     indicatorRow: {
         flexDirection: 'row',
