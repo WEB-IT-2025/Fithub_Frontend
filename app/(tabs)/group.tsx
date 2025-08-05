@@ -1,17 +1,25 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 
-import { Ionicons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
-import { Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 
-import TabBar from '../../components/TabBar'
+
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { Animated, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+
+
+import TabBar from '../../components/TabBar';
+
+
+
+
 
 const rooms = [
     {
         id: 1,
         name: 'ダイエット部',
         type: 'home',
-        image: require('@/assets/images/cat1.png'),
+        image: require('@/assets/images/black_cat.png'),
         createdDate: '2024/01/15',
         memberCount: 5,
         maxMembers: 10,
@@ -20,7 +28,7 @@ const rooms = [
         id: 2,
         name: '筋トレ部',
         type: 'home',
-        image: require('@/assets/images/cat2.png'),
+        image: require('@/assets/images/vitiligo_cat.png'),
         createdDate: '2024/02/03',
         memberCount: 5,
         maxMembers: 10,
@@ -29,7 +37,7 @@ const rooms = [
         id: 3,
         name: '同期',
         type: 'home',
-        image: require('@/assets/images/cat3.png'),
+        image: require('@/assets/images/mike_cat.png'),
         createdDate: '2024/01/20',
         memberCount: 5,
         maxMembers: 10,
@@ -38,7 +46,7 @@ const rooms = [
         id: 4,
         name: '開発チーム',
         type: 'search',
-        image: require('@/assets/images/dog1.png'),
+        image: require('@/assets/images/shiba_dog.png'),
         createdDate: '2024/03/10',
         memberCount: 5,
         maxMembers: 10,
@@ -47,7 +55,7 @@ const rooms = [
         id: 5,
         name: 'ECC',
         type: 'search',
-        image: require('@/assets/images/dog2.png'),
+        image: require('@/assets/images/chihuahua.png'),
         createdDate: '2024/02/28',
         memberCount: 5,
         maxMembers: 10,
@@ -56,7 +64,7 @@ const rooms = [
         id: 6,
         name: '女子会',
         type: 'search',
-        image: require('@/assets/images/dog3.png'),
+        image: require('@/assets/images/pome.png'),
         createdDate: '2024/03/05',
         memberCount: 10,
         maxMembers: 10,

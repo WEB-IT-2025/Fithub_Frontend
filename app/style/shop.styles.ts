@@ -51,9 +51,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     selectedPetImage: {
-        width: 120,
-        height: 120,
+        width: 130, // 340pxの50%サイズ
+        height: undefined,
+        aspectRatio: 1, // 正方形を維持
         marginBottom: 12,
+        resizeMode: 'contain', // 画像の縦横比を保持しつつ完全に表示
     },
     selectedPetInfo: {
         flex: 1,
@@ -156,19 +158,21 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 12,
-        minWidth: '36%',
-        minHeight: '36%',
+        width: 115, // 固定幅を設定
+        height: 115, // 固定高さを設定して正方形に
+        justifyContent: 'center', // 中央揃えを追加
     },
     sliderPetImage: {
-        width: 65,
-        height: 65,
-        marginBottom: 8,
+        width: 70, // 画像サイズを小さく調整
+        height: 70, // 正方形を維持
+        marginBottom: 4, // マージンを小さく
+        resizeMode: 'contain', // 画像の縦横比を保持しつつ完全に表示
     },
     sliderPetName: {
-        fontSize: 14,
+        fontSize: 12, // フォントサイズを小さく
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 4,
+        marginBottom: 2, // マージンを小さく
         textAlign: 'center',
     },
     tabBarContainer: {
@@ -216,9 +220,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     modalPetImage: {
-        width: 80,
-        height: 80,
+        width: 100,
+        height: undefined,
+        aspectRatio: 1, // 正方形を維持
         marginBottom: 12,
+        resizeMode: 'contain', // 画像の縦横比を保持しつつ完全に表示
     },
     modalPetName: {
         fontSize: 18,
