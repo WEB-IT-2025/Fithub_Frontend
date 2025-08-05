@@ -10,6 +10,24 @@ interface MissionItemProps {
 }
 
 const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId, clearAnim }) => {
+    // FontAwesomeアイコン用import
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { faPerson, faG } = require('@fortawesome/free-solid-svg-icons')
+    const { FontAwesomeIcon } = require('@fortawesome/react-native-fontawesome')
+
+    // 画像表示ロジック
+    const renderMissionImage = () => {
+        if (!mission.image) return null
+        if (mission.image === 'faPerson') {
+            return <FontAwesomeIcon icon={faPerson} size={48} style={styles.missionImage} />
+        }
+        if (mission.image === 'faG') {
+            return <FontAwesomeIcon icon={faG} size={48} style={styles.missionImage} />
+        }
+        // URLの場合はImage
+        return <Image source={{ uri: mission.image }} style={styles.missionImage} />
+    }
+
     return (
         <View style={{ position: 'relative', marginBottom: 16 }}>
             <View style={[styles.missionItemShadow, { top: 1 }]} />
@@ -35,9 +53,8 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                         {mission.status === 'completed' ? '1/1' : '0/1'}
                     </Text>
                 </View>
-                {mission.image && (
-                    <View style={styles.missionImage} />
-                )}
+                {/* 左側に画像 or アイコン表示 */}
+                {renderMissionImage()}
                 <View style={styles.missionTextContainer}>
                     {/* タイトル */}
                     <Text style={styles.missionTitleCustom}>{mission.title}</Text>
@@ -111,7 +128,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     missionTitleCustom: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#000',
         textAlign: 'left',
