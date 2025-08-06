@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+import { faG, faPerson } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -15,10 +16,6 @@ interface MissionItemProps {
 }
 
 const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId, clearAnim, missionIcon }) => {
-    // FontAwesomeアイコン用import（フォールバック用）
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { faPerson, faG } = require('@fortawesome/free-solid-svg-icons')
-
     // 画像表示ロジック
     const renderMissionImage = () => {
         // プロパティで渡されたアイコンを優先
@@ -80,21 +77,31 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
         )
     }
 
+    // ミッションがクリア可能かどうかを判定
+    const isClaimable = () => {
+        // progressPercentageが存在する場合はそれを優先
+        if (mission.progressPercentage !== undefined) {
+            return mission.progressPercentage >= 100
+        }
+        // フォールバック: 従来のロジック
+        return mission.status === 'completed'
+    }
+
     return (
         <View style={{ position: 'relative', marginBottom: 16 }}>
             <View style={[styles.missionItemShadow, { top: 1 }]} />
             <TouchableOpacity
                 style={styles.missionItem}
-                disabled={mission.status !== 'completed'}
+                disabled={!isClaimable()}
                 onPress={() => onReceive(mission.id)}
-                activeOpacity={mission.status === 'completed' ? 0.7 : 1}
+                activeOpacity={isClaimable() ? 0.7 : 1}
             >
                 {/* 右上に達成数表示 */}
                 <View style={{ position: 'absolute', top: 8, right: 12, zIndex: 2 }}>
                     <Text
                         style={{
                             fontSize: 13,
-                            color: mission.status === 'completed' ? '#388e3c' : '#888',
+                            color: isClaimable() ? '#388e3c' : '#888',
                             fontWeight: 'bold',
                             backgroundColor: 'rgba(255,255,255,0.7)',
                             borderRadius: 8,
@@ -102,7 +109,11 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                             paddingVertical: 2,
                         }}
                     >
-                        {mission.status === 'completed' ? '1/1' : '0/1'}
+                        {mission.currentStatus !== undefined && mission.missionGoal !== undefined ?
+                            `${mission.currentStatus}/${mission.missionGoal}`
+                        : isClaimable() ?
+                            '1/1'
+                        :   '0/1'}
                     </Text>
                 </View>
                 {/* 左側に画像 or アイコン表示 */}
@@ -111,7 +122,10 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                     {/* タイトル */}
                     <Text style={styles.missionTitleCustom}>{mission.title}</Text>
                     {/* 説明 */}
-                    <Text style={styles.missionDescCustom}>{mission.description}</Text>
+                    <Text style={styles.missionDescCustom}>
+                        {mission.description}
+                        {mission.missionGoal !== undefined && ` (目標: ${mission.missionGoal})`}
+                    </Text>
                     {/* 1行空白 */}
                     <View style={{ height: 8 }} />
                     {/* プログレスバー */}
@@ -120,7 +134,19 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                             style={[
                                 styles.progressBarFill,
                                 {
-                                    width: mission.status === 'completed' ? '100%' : '0%',
+                                    width: (() => {
+                                        if (mission.currentStatus !== undefined && mission.missionGoal !== undefined) {
+                                            // APIから取得した進捗データを使用
+                                            const progress = Math.min(
+                                                (mission.currentStatus / mission.missionGoal) * 100,
+                                                100
+                                            )
+                                            return `${progress}%`
+                                        } else {
+                                            // フォールバック: clearTimeまたはstatusベースのロジック
+                                            return isClaimable() ? '100%' : '0%'
+                                        }
+                                    })(),
                                 },
                             ]}
                         />

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { Ionicons } from '@expo/vector-icons'
-import { faShoePrints } from '@fortawesome/free-solid-svg-icons'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faShoePrints } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
@@ -152,11 +152,16 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
         return apiMissions.map((mission) => ({
             id: mission.mission_id,
             title: mission.mission_name,
-            description: `${mission.mission_content} (目標: ${mission.mission_goal})`,
+            description: `${mission.mission_content}`,
             type: mission.mission_category,
-            status: mission.clear_status === 1 ? ('completed' as const) : ('not achieved' as const),
+            status: parseFloat(mission.progress_percentage) >= 100 ? ('completed' as const) : ('not achieved' as const),
             board: 'display' as const,
             image: null, // FontAwesome アイコンを使用するため null に設定
+            // APIから取得した進捗データを追加
+            currentStatus: mission.current_status,
+            missionGoal: mission.mission_goal,
+            clearTime: mission.clear_time,
+            progressPercentage: parseFloat(mission.progress_percentage),
         }))
     }
 
@@ -186,6 +191,41 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
 
     const filteredMissions = getFilteredMissions()
 
+    // ミッションクリアをAPIに送信
+    const sendMissionClear = async (missionId: string) => {
+        if (!userId || !sessionToken) {
+            console.log('⚠️ ユーザーIDまたはトークンがないため、クリアAPI呼び出しをスキップ')
+            return
+        }
+
+        try {
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_TEST_URL}/api/mission/clear`
+            console.log('🚀 ミッションクリアAPI呼び出し:', apiUrl)
+            console.log('📤 送信データ:', { mission_id: missionId })
+
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+                body: JSON.stringify({
+                    mission_id: missionId,
+                }),
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                console.log('✅ ミッションクリアAPI成功:', data)
+            } else {
+                const errorText = await response.text()
+                console.error('❌ ミッションクリアAPI失敗:', response.status, errorText)
+            }
+        } catch (error) {
+            console.error('❌ ミッションクリアAPI呼び出しエラー:', error)
+        }
+    }
+
     // 個別ミッション受け取り
     const handleReceive = (id: string) => {
         setClearedId(id)
@@ -199,19 +239,43 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
             Animated.delay(400),
         ]).start(() => {
             setClearedId(null)
+            // APIにクリア通知を送信
+            sendMissionClear(id)
+            // ローカルミッションから削除
             setMissions((prev) =>
                 prev.map((m) => (m.id === id && m.status === 'completed' ? { ...m, board: 'hidden' } : m))
             )
+            // APIミッションからも削除
+            setApiMissions((prev) => prev.filter((m) => m.mission_id !== id))
         })
     }
 
     // すべて受け取る
-    const handleReceiveAll = () => {
+    const handleReceiveAll = async () => {
+        // クリア可能なミッションのIDを収集
+        const claimableIds: string[] = []
+
+        // ローカルミッションから削除
         setMissions((prev) =>
-            prev.map((m) =>
-                m.type === type && m.status === 'completed' && m.board === 'display' ? { ...m, board: 'hidden' } : m
-            )
+            prev.map((m) => {
+                const isClaimable =
+                    m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
+
+                if (m.type === type && isClaimable && m.board === 'display') {
+                    claimableIds.push(m.id)
+                    return { ...m, board: 'hidden' }
+                }
+                return m
+            })
         )
+
+        // APIにクリア通知を一括送信
+        for (const missionId of claimableIds) {
+            await sendMissionClear(missionId)
+        }
+
+        // APIミッションからも削除
+        setApiMissions((prev) => prev.filter((m) => !claimableIds.includes(m.mission_id)))
     }
 
     return (
