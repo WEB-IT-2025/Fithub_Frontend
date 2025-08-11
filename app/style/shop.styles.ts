@@ -308,6 +308,52 @@ const styles = StyleSheet.create({
     confirmButtonTextDisabled: {
         color: '#999',
     },
+    // 新しく追加するスタイル
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderRadius: 12,
+        marginVertical: 20,
+        paddingVertical: 40,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    noItemsContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderRadius: 12,
+        marginVertical: 20,
+        paddingVertical: 40,
+    },
+    noItemsText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+    },
+    ownedText: {
+        fontSize: 12,
+        color: '#4CAF50',
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+    ownedBadge: {
+        fontSize: 10,
+        color: '#4CAF50',
+        fontWeight: 'bold',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        borderRadius: 4,
+        textAlign: 'center',
+        marginTop: 2,
+    },
 })
 
 export default styles
