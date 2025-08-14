@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { Ionicons } from '@expo/vector-icons'
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faShoePrints } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
     Animated,
     Image,
@@ -12,21 +16,121 @@ import {
     useWindowDimensions,
 } from 'react-native'
 
-import missionsData from '../components/Mission'
+import missionsData, { Mission } from '../components/Mission'
+import MissionList from '../components/MissionList'
 
 type MissionType = 'daily' | 'weekly'
 
-const MissionBoard = () => {
+// API レスポンスの型定義
+interface ApiMission {
+    mission_id: string
+    mission_name: string
+    mission_content: string
+    mission_goal: number
+    mission_category: 'daily' | 'weekly'
+    mission_type: string
+    mission_reward: string
+    reward_content: number
+    clear_status: number // 0: 未完了, 1: 完了
+    clear_time: string | null
+    current_status: number
+    progress_percentage: string
+}
+
+interface MissionBoardProps {
+    onClose?: () => void
+}
+
+const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const [missions, setMissions] = useState(missionsData)
+    const [apiMissions, setApiMissions] = useState<ApiMission[]>([])
     const [type, setType] = useState<MissionType>('daily')
     const [toggleWidth, setToggleWidth] = useState(0)
     const sliderAnim = useRef(new Animated.Value(0)).current
     const [clearedId, setClearedId] = useState<string | null>(null)
     const clearAnim = useRef(new Animated.Value(0)).current
+    const [loading, setLoading] = useState(false)
+    const [userId, setUserId] = useState<string | null>(null)
+    const [sessionToken, setSessionToken] = useState<string | null>(null)
 
     const sliderMargin = 8
     const sliderCount = 2
     const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
+
+    // ユーザーIDとトークンを取得
+    useEffect(() => {
+        const getAuthInfo = async () => {
+            try {
+                const storedUserId = await AsyncStorage.getItem('user_id')
+                const storedToken = await AsyncStorage.getItem('session_token')
+                setUserId(storedUserId)
+                setSessionToken(storedToken)
+                console.log('🔍 ミッションボード: ユーザーID取得完了:', storedUserId)
+                console.log('🔍 ミッションボード: トークン取得完了:', storedToken ? '有り' : '無し')
+            } catch (error) {
+                console.error('❌ ミッションボード: 認証情報取得エラー:', error)
+            }
+        }
+        getAuthInfo()
+    }, [])
+
+    // APIからミッションデータを取得
+    const fetchMissions = async (category: MissionType, cleared: boolean) => {
+        if (!userId || !sessionToken) {
+            console.log('⚠️ ユーザーIDまたはトークンがないため、API呼び出しをスキップ')
+            return
+        }
+
+        try {
+            setLoading(true)
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_TEST_URL}/api/mission/details?user_id=${userId}&category=${category}&cleared=${cleared}`
+            console.log('🚀 ミッションAPI呼び出し:', apiUrl)
+            console.log('🔑 認証トークン使用:', sessionToken ? '有り' : '無し')
+
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                console.log('✅ ミッションAPI成功:', data)
+
+                // APIレスポンスが配列の場合（successプロパティなし）
+                if (Array.isArray(data)) {
+                    setApiMissions(data)
+                    console.log(`📋 ${category}ミッション取得完了: ${data.length}件`)
+                } else if (data.success && Array.isArray(data.data)) {
+                    // 従来の形式（successプロパティあり）
+                    setApiMissions(data.data)
+                    console.log(`📋 ${category}ミッション取得完了: ${data.data.length}件`)
+                } else {
+                    console.warn('⚠️ ミッションAPIレスポンス形式が予期しない:', data)
+                    setApiMissions([])
+                }
+            } else {
+                const errorText = await response.text()
+                console.error('❌ ミッションAPI失敗:', response.status, errorText)
+                setApiMissions([])
+            }
+        } catch (error) {
+            console.error('❌ ミッションAPI呼び出しエラー:', error)
+            setApiMissions([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // ユーザーIDとトークンが取得できたら初期データを読み込み
+    useEffect(() => {
+        if (userId && sessionToken) {
+            // 未完了ミッションのみ取得
+            fetchMissions(type, false)
+        }
+    }, [userId, sessionToken, type])
 
     // スライダー位置を計算
     const getLeft = (t: MissionType) => {
@@ -43,8 +147,84 @@ const MissionBoard = () => {
         }).start()
     }, [type, toggleWidth])
 
-    // ミッションをフィルタリング
-    const filteredMissions = missions.filter((m: any) => m.type === type && m.board === 'display')
+    // APIミッションをローカル形式に変換
+    const convertApiMissionsToLocal = (apiMissions: ApiMission[]): Mission[] => {
+        return apiMissions.map((mission) => ({
+            id: mission.mission_id,
+            title: mission.mission_name,
+            description: `${mission.mission_content}`,
+            type: mission.mission_category,
+            status: parseFloat(mission.progress_percentage) >= 100 ? ('completed' as const) : ('not achieved' as const),
+            board: 'display' as const,
+            image: null, // FontAwesome アイコンを使用するため null に設定
+            // APIから取得した進捗データを追加
+            currentStatus: mission.current_status,
+            missionGoal: mission.mission_goal,
+            clearTime: mission.clear_time,
+            progressPercentage: parseFloat(mission.progress_percentage),
+        }))
+    }
+
+    // ミッションタイプに応じたアイコンを取得
+    const getIconForMissionType = (missionType: string) => {
+        switch (missionType) {
+            case 'step':
+                return faShoePrints // 靴跡アイコン
+            case 'github':
+                return faGithub // GitHub アイコン
+            case 'contribution': // GitHubのcontributionもこちらで処理
+                return faGithub // GitHub アイコン
+            default:
+                return faShoePrints // デフォルトアイコン
+        }
+    }
+
+    // ミッションをフィルタリング（APIデータを優先、フォールバックとしてローカルデータを使用）
+    const getFilteredMissions = () => {
+        if (apiMissions.length > 0) {
+            const convertedMissions = convertApiMissionsToLocal(apiMissions)
+            return convertedMissions.filter((m: any) => m.type === type && m.board === 'display')
+        } else {
+            return missions.filter((m: any) => m.type === type && m.board === 'display')
+        }
+    }
+
+    const filteredMissions = getFilteredMissions()
+
+    // ミッションクリアをAPIに送信
+    const sendMissionClear = async (missionId: string) => {
+        if (!userId || !sessionToken) {
+            console.log('⚠️ ユーザーIDまたはトークンがないため、クリアAPI呼び出しをスキップ')
+            return
+        }
+
+        try {
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_TEST_URL}/api/mission/clear`
+            console.log('🚀 ミッションクリアAPI呼び出し:', apiUrl)
+            console.log('📤 送信データ:', { mission_id: missionId })
+
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${sessionToken}`,
+                },
+                body: JSON.stringify({
+                    mission_id: missionId,
+                }),
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                console.log('✅ ミッションクリアAPI成功:', data)
+            } else {
+                const errorText = await response.text()
+                console.error('❌ ミッションクリアAPI失敗:', response.status, errorText)
+            }
+        } catch (error) {
+            console.error('❌ ミッションクリアAPI呼び出しエラー:', error)
+        }
+    }
 
     // 個別ミッション受け取り
     const handleReceive = (id: string) => {
@@ -59,19 +239,43 @@ const MissionBoard = () => {
             Animated.delay(400),
         ]).start(() => {
             setClearedId(null)
+            // APIにクリア通知を送信
+            sendMissionClear(id)
+            // ローカルミッションから削除
             setMissions((prev) =>
                 prev.map((m) => (m.id === id && m.status === 'completed' ? { ...m, board: 'hidden' } : m))
             )
+            // APIミッションからも削除
+            setApiMissions((prev) => prev.filter((m) => m.mission_id !== id))
         })
     }
 
     // すべて受け取る
-    const handleReceiveAll = () => {
+    const handleReceiveAll = async () => {
+        // クリア可能なミッションのIDを収集
+        const claimableIds: string[] = []
+
+        // ローカルミッションから削除
         setMissions((prev) =>
-            prev.map((m) =>
-                m.type === type && m.status === 'completed' && m.board === 'display' ? { ...m, board: 'hidden' } : m
-            )
+            prev.map((m) => {
+                const isClaimable =
+                    m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
+
+                if (m.type === type && isClaimable && m.board === 'display') {
+                    claimableIds.push(m.id)
+                    return { ...m, board: 'hidden' }
+                }
+                return m
+            })
         )
+
+        // APIにクリア通知を一括送信
+        for (const missionId of claimableIds) {
+            await sendMissionClear(missionId)
+        }
+
+        // APIミッションからも削除
+        setApiMissions((prev) => prev.filter((m) => !claimableIds.includes(m.mission_id)))
     }
 
     return (
@@ -107,7 +311,10 @@ const MissionBoard = () => {
                             />
                             <TouchableOpacity
                                 style={styles.toggleTouchable}
-                                onPress={() => setType('daily')}
+                                onPress={() => {
+                                    setType('daily')
+                                    if (userId && sessionToken) fetchMissions('daily', true)
+                                }}
                                 activeOpacity={1}
                             >
                                 <Text style={[styles.toggleText, type === 'daily' && styles.activeToggleText]}>
@@ -116,7 +323,10 @@ const MissionBoard = () => {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.toggleTouchable}
-                                onPress={() => setType('weekly')}
+                                onPress={() => {
+                                    setType('weekly')
+                                    if (userId && sessionToken) fetchMissions('weekly', true)
+                                }}
                                 activeOpacity={1}
                             >
                                 <Text style={[styles.toggleText, type === 'weekly' && styles.activeToggleText]}>
@@ -128,94 +338,21 @@ const MissionBoard = () => {
                 </View>
 
                 {/* デイリー/ウィークリーラベル */}
-                <Text style={styles.sectionLabel}>{type === 'daily' ? 'デイリー' : 'ウィークリー'}</Text>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionLabel}>{type === 'daily' ? 'デイリー' : 'ウィークリー'}</Text>
+                    {loading && <Text style={styles.loadingText}>読み込み中...</Text>}
+                </View>
                 <View style={styles.Spacer} />
 
                 {/* ミッションリスト */}
-                <ScrollView style={styles.missionList}>
-                    {filteredMissions.map((mission: any, idx: number) => (
-                        <View
-                            key={idx}
-                            style={{ position: 'relative', marginBottom: 16 }}
-                        >
-                            <View style={[styles.missionItemShadow, { top: 1 }]} />
-                            <TouchableOpacity
-                                style={styles.missionItem}
-                                disabled={mission.status !== 'completed'}
-                                onPress={() => handleReceive(mission.id)}
-                                activeOpacity={mission.status === 'completed' ? 0.7 : 1}
-                            >
-                                {/* 右上に達成数表示 */}
-                                <View style={{ position: 'absolute', top: 8, right: 12, zIndex: 2 }}>
-                                    <Text
-                                        style={{
-                                            fontSize: 13,
-                                            color: mission.status === 'completed' ? '#388e3c' : '#888',
-                                            fontWeight: 'bold',
-                                            backgroundColor: 'rgba(255,255,255,0.7)',
-                                            borderRadius: 8,
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 2,
-                                        }}
-                                    >
-                                        {mission.status === 'completed' ? '1/1' : '0/1'}
-                                    </Text>
-                                </View>
-                                {mission.image && (
-                                    <Image
-                                        source={
-                                            mission.image.startsWith('http')
-                                            // ? { uri: mission.image }
-                                            // : require(`${mission.image}`)
-                                        }
-                                        style={styles.missionImage}
-                                        resizeMode='cover'
-                                    />
-                                )}
-                                <View style={styles.missionTextContainer}>
-                                    {/* タイトル */}
-                                    <Text style={styles.missionTitleCustom}>{mission.title}</Text>
-                                    {/* 説明 */}
-                                    <Text style={styles.missionDescCustom}>{mission.description}</Text>
-                                    {/* 1行空白 */}
-                                    <View style={{ height: 8 }} />
-                                    {/* プログレスバー */}
-                                    <View style={styles.progressBarBackground}>
-                                        <View
-                                            style={[
-                                                styles.progressBarFill,
-                                                {
-                                                    width: mission.status === 'completed' ? '100%' : '0%',
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                </View>
-                                {clearedId === mission.id && (
-                                    <Animated.View
-                                        style={[
-                                            styles.clearAnim,
-                                            {
-                                                opacity: clearAnim,
-                                                transform: [
-                                                    {
-                                                        scale: clearAnim.interpolate({
-                                                            inputRange: [0, 1],
-                                                            outputRange: [0.7, 1.4],
-                                                        }),
-                                                    },
-                                                ],
-                                            },
-                                        ]}
-                                        pointerEvents='none'
-                                    >
-                                        <Text style={styles.clearText}>Clear!</Text>
-                                    </Animated.View>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    ))}
-                </ScrollView>
+                <MissionList
+                    missions={filteredMissions}
+                    clearedId={clearedId}
+                    clearAnim={clearAnim}
+                    onReceive={handleReceive}
+                    getIconForMissionType={getIconForMissionType}
+                    apiMissions={apiMissions}
+                />
 
                 {/* 下部ボタン */}
                 <View style={styles.bottomButtons}>
@@ -235,7 +372,7 @@ const MissionBoard = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'transparent', // ← 背景なし
+        backgroundColor: 'transparent',
         borderRadius: 20,
         padding: 16,
     },
@@ -273,7 +410,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         width: '100%',
         height: 44,
-        backgroundColor: '#98D3A5', // 指定の色
+        backgroundColor: '#98D3A5',
         borderRadius: 22,
         zIndex: 0,
     },
@@ -308,6 +445,24 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         marginLeft: 8,
         opacity: 0.7,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+        marginLeft: 8,
+        marginRight: 8,
+    },
+    loadingText: {
+        fontSize: 11,
+        color: '#666',
+        fontStyle: 'italic',
+    },
+    dataSourceText: {
+        fontSize: 10,
+        color: '#4caf50',
+        fontWeight: 'bold',
     },
     Spacer: {
         height: 12,
