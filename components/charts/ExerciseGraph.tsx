@@ -203,7 +203,7 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                 flexDirection: 'row',
                 justifyContent: 'space-between',
                 alignItems: 'flex-end',
-                marginBottom: responsiveHeight(2),
+                marginBottom: responsiveHeight(1),
                 paddingHorizontal: responsiveWidth(2),
             }}>
                 <View style={{ flex: 1 }}>
