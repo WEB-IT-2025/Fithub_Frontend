@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { faChartColumn, faChartLine } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { Text, TouchableOpacity, View } from 'react-native'
@@ -61,9 +62,8 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     const getMonthlyStepsData = () => {
         // ダミーデータ（30日分）、10000歩以下に制限
         const rawData = [
-            3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100,
-            4800, 3700, 5300, 4400, 4100, 5500, 4600, 3800, 5700, 4900,
-            4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500,
+            3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600, 3800,
+            5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500,
         ]
         return rawData.map((steps) => Math.min(steps, 10000))
     }
@@ -199,40 +199,54 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     return (
         <>
             {/* 合計・歩数 or 平均・歩数 */}
-            <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-end',
-                marginBottom: responsiveHeight(1),
-                paddingHorizontal: responsiveWidth(2),
-            }}>
+            <View
+                style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end',
+                    marginBottom: responsiveHeight(1),
+                    paddingHorizontal: responsiveWidth(2),
+                }}
+            >
                 <View style={{ flex: 1 }}>
-                    <Text style={{
-                        fontSize: responsiveFontSize(2),
-                        color: '#666',
-                        marginBottom: responsiveHeight(0.5),
-                    }}>
+                    <Text
+                        style={{
+                            fontSize: responsiveFontSize(2),
+                            color: '#666',
+                            marginBottom: responsiveHeight(0.5),
+                        }}
+                    >
                         {period === '週' || period === '月' ? '平均' : '合計'}
                     </Text>
                     {isLoading ?
-                        <Text style={{
-                            fontSize: responsiveFontSize(3),
-                            fontWeight: 'bold',
-                            color: '#333',
-                        }}>読込中...</Text>
-                    :   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                            <Text style={{
-                                fontSize: responsiveFontSize(3.5),
+                        <Text
+                            style={{
+                                fontSize: responsiveFontSize(3),
                                 fontWeight: 'bold',
                                 color: '#333',
-                            }}>
+                            }}
+                        >
+                            読込中...
+                        </Text>
+                    :   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                            <Text
+                                style={{
+                                    fontSize: responsiveFontSize(3.5),
+                                    fontWeight: 'bold',
+                                    color: '#333',
+                                }}
+                            >
                                 {getDisplaySteps().toLocaleString()}
                             </Text>
-                            <Text style={{
-                                fontSize: responsiveFontSize(2),
-                                color: '#666',
-                                marginLeft: responsiveWidth(1),
-                            }}>歩</Text>
+                            <Text
+                                style={{
+                                    fontSize: responsiveFontSize(2),
+                                    color: '#666',
+                                    marginLeft: responsiveWidth(1),
+                                }}
+                            >
+                                歩
+                            </Text>
                         </View>
                     }
                 </View>
@@ -263,18 +277,24 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
 
             {/* グラフ表示 */}
             {isLoading ?
-                <View style={{
-                    height: responsiveHeight(25),
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: 24,
-                    marginBottom: responsiveHeight(2),
-                }}>
-                    <Text style={{
-                        fontSize: responsiveFontSize(2),
-                        color: '#666',
-                    }}>データを読み込み中...</Text>
+                <View
+                    style={{
+                        height: responsiveHeight(25),
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: 24,
+                        marginBottom: responsiveHeight(2),
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: responsiveFontSize(2),
+                            color: '#666',
+                        }}
+                    >
+                        データを読み込み中...
+                    </Text>
                 </View>
             :   <View style={{ alignItems: 'center', marginBottom: responsiveHeight(2) }}>
                     <View
