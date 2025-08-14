@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Animated, Image, Platform, Text, TouchableOpacity, View } from 'react-native'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
@@ -260,11 +262,84 @@ const ProfileContent = ({
                 </>
             )}
 
+            {/* 他人のプロフィール用の小さなタイトル */}
+            {!showTitle && (
+                <>
+                    <Text
+                        style={{
+                            fontSize: responsiveFontSize(1.8),
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            marginBottom: responsiveHeight(0.5),
+                            marginTop: responsiveHeight(1),
+                            color: '#000',
+                        }}
+                    >
+                        プロフィール
+                    </Text>
+                    <View style={[styles.underline, { marginBottom: responsiveHeight(0.5) }]} />
+                </>
+            )}
+
             {/* タイトルがない場合の適切な空白 */}
-            {!showTitle && <View style={{ height: responsiveHeight(4.5) }} />}
+            {!showTitle && <View style={{ height: responsiveHeight(0.5) }} />}
 
             {/* ユーザー名 */}
-            <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>
+            {!showTitle ?
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '3%',
+                        marginHorizontal: '3%',
+                    }}
+                >
+                    <Text
+                        style={[
+                            styles.userName,
+                            {
+                                fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(3),
+                                marginLeft: 0,
+                                marginBottom: 0,
+                                flex: 1,
+                            },
+                        ]}
+                    >
+                        {user?.user_name || userName || 'Nguyen Duc Huynh'}
+                    </Text>
+                    <TouchableOpacity
+                        style={{
+                            backgroundColor: '#24292e',
+                            paddingHorizontal: responsiveWidth(3),
+                            paddingVertical: responsiveHeight(0.8),
+                            borderRadius: responsiveWidth(2),
+                            marginLeft: responsiveWidth(2),
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}
+                        onPress={() => {
+                            // TODO: GitHubプロフィールを開く処理
+                        }}
+                    >
+                        <FontAwesomeIcon
+                            icon={faGithub}
+                            size={responsiveFontSize(1.6)}
+                            color='#ffffff'
+                            style={{ marginRight: responsiveWidth(1.5) }}
+                        />
+                        <Text
+                            style={{
+                                color: '#ffffff',
+                                fontSize: responsiveFontSize(1.4),
+                                fontWeight: '600',
+                            }}
+                        >
+                            GitHub
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            :   <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>}
 
             {/* コントリビューション（週のみ） */}
             <Text style={styles.sectionLabel}>今週のコントリビューション</Text>
