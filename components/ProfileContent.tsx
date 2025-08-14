@@ -135,17 +135,23 @@ const ProfileContent = ({
 
     // SafeAreaInsetsが確実に取得できるまで待つ
     useEffect(() => {
-        // iOSの場合はinsets.topが20以上、Androidの場合は0以上であることを確認
-        const isInsetsReady = Platform.OS === 'ios' ? insets.top >= 20 : insets.top >= 0
+        // 自分のプロフィールの場合のみSafeAreaInsetsを待つ
+        if (isOwnProfile) {
+            // iOSの場合はinsets.topが20以上、Androidの場合は0以上であることを確認
+            const isInsetsReady = Platform.OS === 'ios' ? insets.top >= 20 : insets.top >= 0
 
-        if (isInsetsReady) {
-            // 少し遅延してから表示（SafeAreaが確実に適用されるまで）
-            const timer = setTimeout(() => {
-                setIsSafeAreaReady(true)
-            }, 300)
-            return () => clearTimeout(timer)
+            if (isInsetsReady) {
+                // 少し遅延してから表示（SafeAreaが確実に適用されるまで）
+                const timer = setTimeout(() => {
+                    setIsSafeAreaReady(true)
+                }, 300)
+                return () => clearTimeout(timer)
+            }
+        } else {
+            // 他人のプロフィールの場合は即座に表示
+            setIsSafeAreaReady(true)
         }
-    }, [insets])
+    }, [insets, isOwnProfile])
 
     // コンポーネントマウント時にデータを取得
     useEffect(() => {
@@ -163,6 +169,9 @@ const ProfileContent = ({
 
     // スライダーアニメーション
     useEffect(() => {
+        // SafeAreaが準備できてから実行
+        if (!isSafeAreaReady) return
+
         const sliderMargin = responsiveWidth(1.5)
         const sliderCount = 3
         const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
@@ -179,10 +188,13 @@ const ProfileContent = ({
             duration: 200,
             useNativeDriver: false,
         }).start()
-    }, [period, toggleWidth, sliderAnim])
+    }, [period, toggleWidth, sliderAnim, isSafeAreaReady])
 
     // ペットパラメータアニメーション
     useEffect(() => {
+        // SafeAreaが準備できてから実行
+        if (!isSafeAreaReady) return
+
         const paramValues = {
             health: 0.9,
             size: 0.5,
@@ -194,23 +206,28 @@ const ProfileContent = ({
         sizeAnim.setValue(0)
         ageAnim.setValue(0)
 
-        // すべて同じ秒数（例: 800ms）でアニメーション
-        Animated.timing(healthAnim, {
-            toValue: paramValues.health,
-            duration: 800,
-            useNativeDriver: false,
-        }).start()
-        Animated.timing(sizeAnim, {
-            toValue: paramValues.size,
-            duration: 800,
-            useNativeDriver: false,
-        }).start()
-        Animated.timing(ageAnim, {
-            toValue: paramValues.age,
-            duration: 800,
-            useNativeDriver: false,
-        }).start()
-    }, [healthAnim, sizeAnim, ageAnim])
+        // 少し遅延してからアニメーション開始
+        const timer = setTimeout(() => {
+            // すべて同じ秒数（例: 800ms）でアニメーション
+            Animated.timing(healthAnim, {
+                toValue: paramValues.health,
+                duration: 800,
+                useNativeDriver: false,
+            }).start()
+            Animated.timing(sizeAnim, {
+                toValue: paramValues.size,
+                duration: 800,
+                useNativeDriver: false,
+            }).start()
+            Animated.timing(ageAnim, {
+                toValue: paramValues.age,
+                duration: 800,
+                useNativeDriver: false,
+            }).start()
+        }, 100)
+
+        return () => clearTimeout(timer)
+    }, [isSafeAreaReady, healthAnim, sizeAnim, ageAnim])
 
     // コントリビューションデータ取得メソッド
     const getContributionsData = () => {
@@ -242,6 +259,9 @@ const ProfileContent = ({
                     <View style={styles.underline} />
                 </>
             )}
+
+            {/* タイトルがない場合の適切な空白 */}
+            {!showTitle && <View style={{ height: responsiveHeight(4.5) }} />}
 
             {/* ユーザー名 */}
             <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>

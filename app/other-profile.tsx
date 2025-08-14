@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 
-import { Platform, ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 import { responsiveHeight } from 'react-native-responsive-dimensions'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import ProfileContent from '@/components/ProfileContent'
 
@@ -32,40 +32,18 @@ interface OtherProfileProps {
 }
 
 const OtherProfile = ({ userName, userData, onClose }: OtherProfileProps) => {
-    const insets = useSafeAreaInsets()
-    const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
-
-    // SafeAreaInsetsが確実に取得できるまで待つ
-    useEffect(() => {
-        const isInsetsReady = Platform.OS === 'ios' ? insets.top >= 20 : insets.top >= 0
-
-        if (isInsetsReady) {
-            const timer = setTimeout(() => {
-                setIsSafeAreaReady(true)
-            }, 300)
-            return () => clearTimeout(timer)
-        }
-    }, [insets])
-
-    // SafeAreaInsetsが準備できるまでローディング表示
-    if (!isSafeAreaReady) {
-        return <View style={{ flex: 1, backgroundColor: '#fff' }} />
-    }
-
     return (
-        <ScrollView
-            style={[styles.container, { paddingTop: responsiveHeight(0.5) }]}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: responsiveHeight(10) }}
-        >
-            <ProfileContent
-                userName={userName}
-                userData={userData}
-                onClose={onClose}
-                showTitle={false}
-                isOwnProfile={false}
-            />
-        </ScrollView>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+            <View style={[styles.container, { paddingTop: responsiveHeight(0.5) }]}>
+                <ProfileContent
+                    userName={userName}
+                    userData={userData}
+                    onClose={onClose}
+                    showTitle={false}
+                    isOwnProfile={false}
+                />
+            </View>
+        </SafeAreaView>
     )
 }
 

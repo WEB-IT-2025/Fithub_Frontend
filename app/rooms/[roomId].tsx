@@ -160,6 +160,7 @@ const RoomScreen = () => {
     const [membersModalVisible, setMembersModalVisible] = useState(false)
     const [userDetailModalVisible, setUserDetailModalVisible] = useState(false)
     const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [profileKey, setProfileKey] = useState(0) // プロフィール強制再レンダリング用のキー
     const anim = useRef(new Animated.Value(0)).current
 
     // メンバー一覧を表示
@@ -171,7 +172,10 @@ const RoomScreen = () => {
     const handleShowUserDetail = (user: any) => {
         setSelectedUser(user)
         setMembersModalVisible(false)
-        setUserDetailModalVisible(true)
+        setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+        setTimeout(() => {
+            setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+        }, 200)
     }
 
     // 退会確認ダイアログ
@@ -274,7 +278,13 @@ const RoomScreen = () => {
                                     left: petPositions[idx].left,
                                 },
                             ]}
-                            onPress={() => handleShowUserDetail(user)}
+                            onPress={() => {
+                                setSelectedUser(user)
+                                setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+                                setTimeout(() => {
+                                    setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+                                }, 500)
+                            }}
                         >
                             <Image
                                 source={require('@/assets/images/cat1.png')}
@@ -424,6 +434,7 @@ const RoomScreen = () => {
                         (Platform.OS === 'ios' ?
                             <SafeAreaView style={styles.fullScreenModal}>
                                 <OtherProfile
+                                    key={profileKey}
                                     userName={selectedUser.name}
                                     userData={{
                                         today: {
@@ -452,6 +463,7 @@ const RoomScreen = () => {
                                 ]}
                             >
                                 <OtherProfile
+                                    key={profileKey}
                                     userName={selectedUser.name}
                                     userData={{
                                         today: {
