@@ -18,13 +18,17 @@ import {
     Image,
     ImageBackground,
     Modal,
+    Platform,
+    StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
+import OtherProfile from '../other-profile'
 
 // ステータスごとのサイズ
 const statusToSize: Record<number, number> = {
@@ -156,6 +160,7 @@ const RoomScreen = () => {
     const [membersModalVisible, setMembersModalVisible] = useState(false)
     const [userDetailModalVisible, setUserDetailModalVisible] = useState(false)
     const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [profileKey, setProfileKey] = useState(0) // プロフィール強制再レンダリング用のキー
     const anim = useRef(new Animated.Value(0)).current
 
     // メンバー一覧を表示
@@ -167,7 +172,10 @@ const RoomScreen = () => {
     const handleShowUserDetail = (user: any) => {
         setSelectedUser(user)
         setMembersModalVisible(false)
-        setUserDetailModalVisible(true)
+        setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+        setTimeout(() => {
+            setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+        }, 200)
     }
 
     // 退会確認ダイアログ
@@ -270,7 +278,13 @@ const RoomScreen = () => {
                                     left: petPositions[idx].left,
                                 },
                             ]}
-                            onPress={() => handleShowUserDetail(user)}
+                            onPress={() => {
+                                setSelectedUser(user)
+                                setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+                                setTimeout(() => {
+                                    setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+                                }, 500)
+                            }}
                         >
                             <Image
                                 source={require('@/assets/images/cat1.png')}
@@ -404,111 +418,73 @@ const RoomScreen = () => {
                 {/* ユーザー詳細モーダル */}
                 <Modal
                     visible={userDetailModalVisible}
-                    transparent={true}
                     animationType='slide'
                     onRequestClose={() => setUserDetailModalVisible(false)}
+                    statusBarTranslucent={true}
+                    presentationStyle='fullScreen'
+                    hardwareAccelerated={true}
                 >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.userDetailContent}>
-                            <View style={styles.modalHeader}>
-                                <TouchableOpacity
-                                    onPress={() => setUserDetailModalVisible(false)}
-                                    style={styles.closeButton}
-                                >
-                                    <FontAwesomeIcon
-                                        icon={faXmark}
-                                        size={24}
-                                        color='#333'
-                                    />
-                                </TouchableOpacity>
-                                <View style={styles.placeholder} />
-                            </View>
-
-                            {selectedUser && (
-                                <View style={styles.userDetailBody}>
-                                    {/* ユーザー名 */}
-                                    <Text style={styles.userDetailName}>{selectedUser.name}</Text>
-
-                                    {/* 今週のコントリビューション */}
-                                    <Text style={styles.userDetailSectionLabel}>今週のコントリビューション</Text>
-                                    <View style={styles.userDetailContributionBoard}>
-                                        <View style={styles.userDetailContributionRow}>
-                                            {[2, 0, 4, 3, 2, 4, 3].map((count, idx) => (
-                                                <View
-                                                    key={idx}
-                                                    style={[
-                                                        styles.userDetailContributionBox,
-                                                        {
-                                                            backgroundColor: [
-                                                                '#EFEFF4',
-                                                                '#ACEEBB',
-                                                                '#4BC16B',
-                                                                '#2BA44E',
-                                                                '#136229',
-                                                            ][Math.max(0, Math.min(count, 4))],
-                                                        },
-                                                    ]}
-                                                />
-                                            ))}
-                                        </View>
-                                    </View>
-
-                                    {/* ペットのパラメータ */}
-                                    <Text style={styles.userDetailSectionLabel}>ペットのパラメータ</Text>
-                                    <View style={styles.userDetailPetParamRow}>
-                                        <View style={styles.userDetailPetImageWrapper}>
-                                            <Image
-                                                source={require('@/assets/images/cat1.png')}
-                                                style={styles.userDetailPetImage}
-                                                resizeMode='contain'
-                                            />
-                                        </View>
-                                        <View style={styles.userDetailPetInfo}>
-                                            <Text style={styles.userDetailPetName}>ペット</Text>
-                                            <View style={styles.userDetailIndicatorColumn}>
-                                                <View style={styles.userDetailIndicatorRow}>
-                                                    <Text style={styles.userDetailIndicatorLabel}>健康度</Text>
-                                                    <View style={styles.userDetailIndicator}>
-                                                        <View
-                                                            style={[
-                                                                styles.userDetailIndicatorFill,
-                                                                { width: `${selectedUser.pet.pet_state * 25}%` },
-                                                            ]}
-                                                        />
-                                                    </View>
-                                                </View>
-                                                <View style={styles.userDetailIndicatorRow}>
-                                                    <Text style={styles.userDetailIndicatorLabel}>サイズ</Text>
-                                                    <View style={styles.userDetailIndicator}>
-                                                        <View
-                                                            style={[
-                                                                styles.userDetailIndicatorFill,
-                                                                { width: `${selectedUser.pet.pet_size * 33}%` },
-                                                            ]}
-                                                        />
-                                                    </View>
-                                                </View>
-                                                <View style={styles.userDetailIndicatorRow}>
-                                                    <Text style={styles.userDetailIndicatorLabel}>年齢</Text>
-                                                    <View style={styles.userDetailIndicator}>
-                                                        <View
-                                                            style={[styles.userDetailIndicatorFill, { width: '60%' }]}
-                                                        />
-                                                    </View>
-                                                </View>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {/* 運動グラフ */}
-                                    <Text style={styles.userDetailSectionLabel}>ユーザーの運動グラフ</Text>
-                                    <View style={styles.userDetailGraphPlaceholder}>
-                                        <Text style={{ color: '#bbb' }}>（運動データ）</Text>
-                                    </View>
-                                </View>
-                            )}
-                        </View>
-                    </View>
+                    <StatusBar
+                        barStyle='dark-content'
+                        backgroundColor='transparent'
+                        translucent={true}
+                        hidden={Platform.OS === 'android'}
+                    />
+                    {selectedUser &&
+                        (Platform.OS === 'ios' ?
+                            <SafeAreaView style={styles.fullScreenModal}>
+                                <OtherProfile
+                                    key={profileKey}
+                                    userName={selectedUser.name}
+                                    userData={{
+                                        today: {
+                                            steps: 5000,
+                                            contributions: 3,
+                                            date: new Date().toISOString().split('T')[0],
+                                        },
+                                        recent_exercise: [],
+                                        recent_contributions: [
+                                            { day: 'Mon', count: '2' },
+                                            { day: 'Tue', count: '0' },
+                                            { day: 'Wed', count: '4' },
+                                            { day: 'Thu', count: '3' },
+                                            { day: 'Fri', count: '2' },
+                                            { day: 'Sat', count: '4' },
+                                            { day: 'Sun', count: '3' },
+                                        ],
+                                    }}
+                                    onClose={() => setUserDetailModalVisible(false)}
+                                />
+                            </SafeAreaView>
+                        :   <View
+                                style={[
+                                    styles.fullScreenModal,
+                                    { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 },
+                                ]}
+                            >
+                                <OtherProfile
+                                    key={profileKey}
+                                    userName={selectedUser.name}
+                                    userData={{
+                                        today: {
+                                            steps: 5000,
+                                            contributions: 3,
+                                            date: new Date().toISOString().split('T')[0],
+                                        },
+                                        recent_exercise: [],
+                                        recent_contributions: [
+                                            { day: 'Mon', count: '2' },
+                                            { day: 'Tue', count: '0' },
+                                            { day: 'Wed', count: '4' },
+                                            { day: 'Thu', count: '3' },
+                                            { day: 'Fri', count: '2' },
+                                            { day: 'Sat', count: '4' },
+                                            { day: 'Sun', count: '3' },
+                                        ],
+                                    }}
+                                    onClose={() => setUserDetailModalVisible(false)}
+                                />
+                            </View>)}
                 </Modal>
             </View>
         </ImageBackground>
@@ -610,7 +586,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        padding: 10,
     },
     modalContent: {
         backgroundColor: '#fff',
@@ -669,139 +645,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
-    // ユーザー詳細モーダル関連のスタイル
-    userDetailContent: {
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        width: '95%',
-        maxHeight: '90%',
-        paddingVertical: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    userDetailTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#388e3c',
-        textAlign: 'center',
-    },
-    placeholder: {
-        width: 24,
-        height: 24,
-    },
-    userDetailBody: {
-        paddingHorizontal: 20,
-        paddingTop: 10,
-    },
-    userDetailName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
-        marginBottom: 16,
-        textAlign: 'left',
-    },
-    userDetailSectionLabel: {
-        fontSize: 16,
-        color: '#000',
-        fontWeight: 'bold',
-        marginBottom: 12,
-        marginTop: 8,
-        textAlign: 'left',
-    },
-    userDetailContributionBoard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        marginBottom: 16,
-        alignSelf: 'flex-start',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.18,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    userDetailContributionRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-    },
-    userDetailContributionBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        marginLeft: 3,
-        marginRight: 3,
-    },
-    userDetailPetParamRow: {
-        flexDirection: 'row',
-        alignItems: 'stretch',
-        marginBottom: 20,
-        width: '100%',
-    },
-    userDetailPetImageWrapper: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: 80,
-        marginRight: 16,
-    },
-    userDetailPetImage: {
-        width: 80,
-        height: 80,
-    },
-    userDetailPetInfo: {
+    fullScreenModal: {
         flex: 1,
-        justifyContent: 'center',
-        height: 80,
-    },
-    userDetailPetName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#388e3c',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    userDetailIndicatorColumn: {
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        gap: 6,
-    },
-    userDetailIndicatorRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 6,
-        width: '100%',
-    },
-    userDetailIndicatorLabel: {
-        fontSize: 12,
-        color: '#333',
-        marginRight: 10,
-        minWidth: 50,
-        textAlign: 'right',
-    },
-    userDetailIndicator: {
-        height: 8,
-        borderRadius: 4,
-        flex: 1,
-        backgroundColor: '#f0f0f0',
-        overflow: 'hidden',
-    },
-    userDetailIndicatorFill: {
-        height: '100%',
-        backgroundColor: '#2BA44E',
-        borderRadius: 4,
-    },
-    userDetailGraphPlaceholder: {
-        height: 120,
-        width: '100%',
-        backgroundColor: '#f4f4f4',
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
+        backgroundColor: '#fff',
+        position: 'relative',
     },
 })
 
