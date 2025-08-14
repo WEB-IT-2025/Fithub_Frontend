@@ -13,15 +13,10 @@ import {
 } from 'react-native'
 
 import missionsData from '../components/Mission'
-import MissionList from '../components/MissionList'
 
 type MissionType = 'daily' | 'weekly'
 
-interface MissionBoardProps {
-    onClose?: () => void
-}
-
-const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
+const MissionBoard = () => {
     const [missions, setMissions] = useState(missionsData)
     const [type, setType] = useState<MissionType>('daily')
     const [toggleWidth, setToggleWidth] = useState(0)
@@ -137,12 +132,90 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                 <View style={styles.Spacer} />
 
                 {/* ミッションリスト */}
-                <MissionList
-                    missions={filteredMissions}
-                    clearedId={clearedId}
-                    clearAnim={clearAnim}
-                    onReceive={handleReceive}
-                />
+                <ScrollView style={styles.missionList}>
+                    {filteredMissions.map((mission: any, idx: number) => (
+                        <View
+                            key={idx}
+                            style={{ position: 'relative', marginBottom: 16 }}
+                        >
+                            <View style={[styles.missionItemShadow, { top: 1 }]} />
+                            <TouchableOpacity
+                                style={styles.missionItem}
+                                disabled={mission.status !== 'completed'}
+                                onPress={() => handleReceive(mission.id)}
+                                activeOpacity={mission.status === 'completed' ? 0.7 : 1}
+                            >
+                                {/* 右上に達成数表示 */}
+                                <View style={{ position: 'absolute', top: 8, right: 12, zIndex: 2 }}>
+                                    <Text
+                                        style={{
+                                            fontSize: 13,
+                                            color: mission.status === 'completed' ? '#388e3c' : '#888',
+                                            fontWeight: 'bold',
+                                            backgroundColor: 'rgba(255,255,255,0.7)',
+                                            borderRadius: 8,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 2,
+                                        }}
+                                    >
+                                        {mission.status === 'completed' ? '1/1' : '0/1'}
+                                    </Text>
+                                </View>
+                                {mission.image && (
+                                    <Image
+                                        source={
+                                            mission.image.startsWith('http')
+                                            // ? { uri: mission.image }
+                                            // : require(`${mission.image}`)
+                                        }
+                                        style={styles.missionImage}
+                                        resizeMode='cover'
+                                    />
+                                )}
+                                <View style={styles.missionTextContainer}>
+                                    {/* タイトル */}
+                                    <Text style={styles.missionTitleCustom}>{mission.title}</Text>
+                                    {/* 説明 */}
+                                    <Text style={styles.missionDescCustom}>{mission.description}</Text>
+                                    {/* 1行空白 */}
+                                    <View style={{ height: 8 }} />
+                                    {/* プログレスバー */}
+                                    <View style={styles.progressBarBackground}>
+                                        <View
+                                            style={[
+                                                styles.progressBarFill,
+                                                {
+                                                    width: mission.status === 'completed' ? '100%' : '0%',
+                                                },
+                                            ]}
+                                        />
+                                    </View>
+                                </View>
+                                {clearedId === mission.id && (
+                                    <Animated.View
+                                        style={[
+                                            styles.clearAnim,
+                                            {
+                                                opacity: clearAnim,
+                                                transform: [
+                                                    {
+                                                        scale: clearAnim.interpolate({
+                                                            inputRange: [0, 1],
+                                                            outputRange: [0.7, 1.4],
+                                                        }),
+                                                    },
+                                                ],
+                                            },
+                                        ]}
+                                        pointerEvents='none'
+                                    >
+                                        <Text style={styles.clearText}>Clear!</Text>
+                                    </Animated.View>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                </ScrollView>
 
                 {/* 下部ボタン */}
                 <View style={styles.bottomButtons}>
@@ -154,16 +227,6 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                         <Text style={styles.receiveAllText}>すべて受け取る</Text>
                     </TouchableOpacity>
                 </View>
-
-                {/* 閉じるボタン */}
-                {onClose && (
-                    <TouchableOpacity
-                        style={styles.closeModalButtonAbsolute}
-                        onPress={onClose}
-                    >
-                        <Text style={styles.closeModalButtonText}>✕</Text>
-                    </TouchableOpacity>
-                )}
             </View>
         </View>
     )
@@ -249,6 +312,77 @@ const styles = StyleSheet.create({
     Spacer: {
         height: 12,
     },
+    missionList: {
+        flex: 1,
+        marginBottom: 16,
+    },
+    missionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ACEEBB',
+        borderRadius: 10,
+        padding: 18, // ← 縦幅を増やす（元: 12）
+        marginBottom: 10,
+        // // ドロップシャドウ
+        // shadowColor: '#388e3c', // 少し濃い緑
+        // shadowOffset: { width: 0, height: 4 },
+        // shadowOpacity: 0.18,
+        // shadowRadius: 8,
+        // elevation: 5,
+    },
+    missionItemShadow: {
+        position: 'absolute',
+        width: '100%',
+        height: '95%',
+        backgroundColor: '#a5cfa5', // missionItemより濃い緑
+        borderRadius: 10,
+        zIndex: 0,
+    },
+    missionImage: {
+        width: 48,
+        height: 48,
+        borderRadius: 8,
+        marginRight: 12,
+        backgroundColor: '#b2d8b2',
+    },
+    missionTextContainer: {
+        flex: 1,
+    },
+    missionTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#388e3c',
+    },
+    missionDesc: {
+        fontSize: 14,
+        color: '#388e3c',
+        marginTop: 4,
+    },
+    missionTitleCustom: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#000',
+        textAlign: 'left',
+        marginBottom: 2,
+    },
+    missionDescCustom: {
+        fontSize: 15,
+        color: '#222',
+        textAlign: 'left',
+    },
+    progressBarBackground: {
+        width: '100%',
+        height: 8,
+        backgroundColor: '#BEBEBE',
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginTop: 8,
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: '#4caf50',
+        borderRadius: 4,
+    },
     bottomButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -276,23 +410,25 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    closeModalButtonAbsolute: {
+    clearAnim: {
         position: 'absolute',
-        left: 16,
-        bottom: '1%',
-        backgroundColor: '#b2d8b2',
-        width: 64,
-        height: 48,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
+        top: '40%',
+        left: '50%',
+        transform: [{ translateX: -40 }, { translateY: -20 }],
         zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+        borderRadius: 12,
+        paddingHorizontal: 24,
+        paddingVertical: 8,
     },
-    closeModalButtonText: {
-        color: '#388e3c',
-        fontSize: 32,
+    clearText: {
+        fontSize: 24,
+        color: '#4caf50',
         fontWeight: 'bold',
         textAlign: 'center',
+        textShadowColor: '#fff',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 4,
     },
 })
 

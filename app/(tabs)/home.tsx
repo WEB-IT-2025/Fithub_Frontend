@@ -1,11 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 
 import { faGithub, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faCoffee, faDog, faPerson, faScroll, faUser } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { BlurView } from 'expo-blur'
 import {
     Image,
     ImageBackground,
@@ -21,55 +19,19 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
 import MissionBoard from '../missionboard'
-import PetChange from '../petchange'
 import Profile from '../profile'
 
 // 追加
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 }
 
-const PET_NAME = 'とりゃー'
-const WALK_GOAL = 5000 // 目標歩数
+const PET_NAME = 'くろた'
+const WALK_PERCENT = 0.6
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
-    const [profileVisible, setProfileVisible] = useState(false)
-    const [petChangeVisible, setPetChangeVisible] = useState(false)
-    const [profileKey, setProfileKey] = useState(0)
-    const [steps, setSteps] = useState<number | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
-    // APIから今日の歩数データを取得
-    useEffect(() => {
-        const fetchSteps = async () => {
-            setIsLoading(true)
-            try {
-                const token = await AsyncStorage.getItem('session_token')
-                if (!token) return
-                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(
-                    /\/+$/,
-                    ''
-                )
-                const res = await fetch(`${API_BASE_URL}/api/data/user`, {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                })
-                if (res.ok) {
-                    const data = await res.json()
-                    if (data.success && data.data && data.data.today && typeof data.data.today.steps === 'number') {
-                        setSteps(data.data.today.steps)
-                    }
-                }
-            } catch (e) {
-                // エラーは無視
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        fetchSteps()
-    }, [])
+    const [profileVisible, setProfileVisible] = useState(false) // 追加
+    const [profileKey, setProfileKey] = useState(0) // Profileコンポーネントの強制再レンダリング用
 
     return (
         <ImageBackground
@@ -100,7 +62,7 @@ const HomeScreen = () => {
                         <TouchableOpacity
                             style={styles.circleButton}
                             onPress={() => {
-                                setPetChangeVisible(true)
+                                /* ペット画面へ遷移など */
                             }}
                         >
                             <FontAwesomeIcon
@@ -127,75 +89,15 @@ const HomeScreen = () => {
                     <View style={styles.petInfo}>
                         <Text style={styles.petName}>{PET_NAME}</Text>
                         <Image
-                            source={require('@/assets/images/gifcat.gif')}
+                            source={require('@/assets/images/cat1.png')}
                             style={styles.petImage}
                             resizeMode='cover'
                         />
                         <Text style={styles.label}>今日の歩数</Text>
-                        <View style={[styles.progressBarBackground, { position: 'relative' }]}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    {
-                                        width: `${steps !== null ? Math.min(steps / WALK_GOAL, 1) * 100 : 0}%`,
-                                    },
-                                ]}
-                            />
-                            {steps !== null && (
-                                <View
-                                    style={{
-                                        position: 'absolute',
-                                        left: 0,
-                                        right: 0,
-                                        top: 0,
-                                        bottom: 0,
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        zIndex: 2,
-                                    }}
-                                    pointerEvents='none'
-                                >
-                                    <Text
-                                        style={{
-                                            color: '#fff',
-                                            fontWeight: 'bold',
-                                            fontSize: 14,
-                                            textAlign: 'center',
-                                            includeFontPadding: false,
-                                            textShadowColor: 'rgba(0,0,0,0.5)',
-                                            textShadowOffset: { width: 0, height: 2 },
-                                            textShadowRadius: 3,
-                                            elevation: 4, // Android用の影
-                                            shadowColor: '#000', // iOS用の影
-                                            shadowOffset: { width: 0, height: 2 },
-                                            shadowOpacity: 0.1,
-                                            shadowRadius: 2,
-                                        }}
-                                        numberOfLines={1}
-                                    >
-                                        {steps.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
+                        <View style={styles.progressBarBackground}>
+                            <View style={[styles.progressBarFill, { width: `${WALK_PERCENT * 100}%` }]} />
                         </View>
-                        {isLoading ?
-                            <Text style={styles.percentText}>読込中...</Text>
-                        : steps !== null ?
-                            steps >= WALK_GOAL ?
-                                <Text style={styles.percentText}>目標達成！</Text>
-                            :   <View style={styles.goalContainer}>
-                                    <BlurView
-                                        intensity={5}
-                                        tint='light'
-                                        style={styles.blurBackground}
-                                    >
-                                        <Text style={styles.goalText}>
-                                            目標まであと{100 - Math.floor((steps / WALK_GOAL) * 100)}％
-                                        </Text>
-                                    </BlurView>
-                                </View>
-
-                        :   <Text style={styles.percentText}>データなし</Text>}
+                        <Text style={styles.percentText}>5000歩まであと40％</Text>
                     </View>
 
                     {/* 右側ボタン（クローン） */}
@@ -219,12 +121,24 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <MissionBoard onClose={() => setModalVisible(false)} />
+                            <MissionBoard />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <MissionBoard onClose={() => setModalVisible(false)} />
+                            <MissionBoard />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
                         </View>
                     }
                 </Modal>
@@ -246,45 +160,24 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <Profile
-                                key={profileKey}
-                                onClose={() => setProfileVisible(false)}
-                            />
+                            <Profile key={profileKey} />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setProfileVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <Profile
-                                key={profileKey}
-                                onClose={() => setProfileVisible(false)}
-                            />
-                        </View>
-                    }
-                </Modal>
-
-                {/* ペット変更モーダル */}
-                <Modal
-                    visible={petChangeVisible}
-                    animationType='slide'
-                    onRequestClose={() => setPetChangeVisible(false)}
-                    statusBarTranslucent={true}
-                    presentationStyle='fullScreen'
-                    hardwareAccelerated={true}
-                >
-                    <StatusBar
-                        barStyle='dark-content'
-                        backgroundColor='transparent'
-                        translucent={true}
-                        hidden={Platform.OS === 'android'}
-                    />
-                    {Platform.OS === 'ios' ?
-                        <SafeAreaView style={styles.fullScreenModal}>
-                            <PetChange onClose={() => setPetChangeVisible(false)} />
-                        </SafeAreaView>
-                    :   <View
-                            style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
-                        >
-                            <PetChange onClose={() => setPetChangeVisible(false)} />
+                            <Profile key={profileKey} />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setProfileVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
                         </View>
                     }
                 </Modal>
@@ -325,6 +218,24 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    closeModalButtonAbsolute: {
+        position: 'absolute',
+        left: 16,
+        bottom: 30,
+        backgroundColor: '#b2d8b2',
+        width: 64,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    closeModalButtonText: {
+        color: '#388e3c',
+        fontSize: 32,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     tabBarContainer: {
         position: 'absolute',
@@ -385,20 +296,16 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#fff',
         marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
-        shadowRadius: 6,
     },
     progressBarBackground: {
         width: 180,
-        height: 26,
+        height: 20,
         backgroundColor: '#e0e0e0',
-        borderRadius: 25,
+        borderRadius: 10,
         overflow: 'hidden',
         marginBottom: 12,
         borderWidth: 2,
-        borderColor: '#e0e0e0',
+        borderColor: '#fff',
     },
     progressBarFill: {
         height: '100%',
@@ -409,28 +316,9 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
     },
-    goalContainer: {
-        borderRadius: 12,
-        overflow: 'hidden',
-        marginTop: 4,
-    },
-    blurBackground: {
-        paddingHorizontal: 1,
-        paddingVertical: 1,
-        borderRadius: 1,
-    },
-    goalText: {
-        fontSize: 16,
-        color: '#fff',
-        fontWeight: 'bold',
-        textAlign: 'center',
-        textShadowColor: 'rgba(0,0,0,0.7)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
-    },
     fullScreenModal: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#ffffff',
         position: 'relative',
     },
 })

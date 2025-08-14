@@ -1,8 +1,9 @@
 /*
-
-このページのみ試験的に結合を意識してコードを書いています。もし逆にやりにくくなってたらゴメンね☆
-
-*/
+ * petchange.tsx - ペット変更画面
+ * 
+ * このページのみ試験的に結合を意識してコードを書いています。もし逆にやりにくくなってたらゴメンね☆
+ *
+ */
 
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -15,19 +16,50 @@ import {
     ImageBackground, 
     Modal,
     Platform, 
-    StyleSheet, 
+    ScrollView,
     Text, 
     TextInput,
     TouchableOpacity, 
     View 
 } from 'react-native'
-import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
+import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import styles from './style/petchange.styles'
 
 const PET_NAME = 'とりゃー' // home.tsxと同じペット名を参照
 
 // API設定
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+
+// 全ペットデータ（ペット選択用）
+const allPets = [
+    // 猫のペット
+    { id: 'black_cat', name: 'クロネコ', image: require('@/assets/images/black_cat.png') },
+    { id: 'vitiligo_cat', name: 'ブチネコ', image: require('@/assets/images/vitiligo_cat.png') },
+    { id: 'mike_cat', name: 'ミケネコ', image: require('@/assets/images/mike_cat.png') },
+    { id: 'tora_cat', name: 'キジトラ', image: require('@/assets/images/tora_cat.png') },
+    { id: 'ameshort_cat', name: 'アメショ', image: require('@/assets/images/ameshort_cat.png') },
+    
+    // 犬のペット
+    { id: 'shiba_dog', name: 'シバイヌ', image: require('@/assets/images/shiba_dog.png') },
+    { id: 'chihuahua', name: 'チワワ', image: require('@/assets/images/chihuahua.png') },
+    { id: 'pome', name: 'ポメラニアン', image: require('@/assets/images/pome.png') },
+    { id: 'toipo', name: 'プードル', image: require('@/assets/images/toipo.png') },
+    { id: 'bulldog', name: 'ブルドッグ', image: require('@/assets/images/bulldog.png') },
+    
+    // 魚類・水生動物
+    { id: 'gingin_penguin', name: 'GINGIN', image: require('@/assets/images/gingin_penguin.png') },
+    { id: 'takopee', name: 'ミズダコ', image: require('@/assets/images/takopee.png') },
+    { id: 'penguin', name: 'ペンギン', image: require('@/assets/images/penguin.png') },
+    { id: 'slime', name: 'スラリー', image: require('@/assets/images/slime.png') },
+    
+    // その他
+    { id: 'zebra', name: 'シマウマ', image: require('@/assets/images/zebra.png') },
+    { id: 'rabbit', name: 'ウサギ', image: require('@/assets/images/rabbit.png') },
+    { id: 'chinpan', name: 'チンパンジー', image: require('@/assets/images/chinpan.png') },
+    { id: 'panda', name: 'パンダ', image: require('@/assets/images/panda.png') },
+]
 
 interface PetChangeProps {
     onClose?: () => void
@@ -39,6 +71,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     const [nameEditVisible, setNameEditVisible] = useState(false)
     const [newPetName, setNewPetName] = useState(PET_NAME)
     const [isUpdating, setIsUpdating] = useState(false)
+    const [selectedPetId, setSelectedPetId] = useState('black_cat') // 選択されたペットID
     
     // パラメータアニメーション用のref
     const healthAnim = useRef(new Animated.Value(0)).current
@@ -131,6 +164,16 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
         }).start()
     }, [healthAnim, sizeAnim, intimacyAnim])
 
+    // ペット選択ハンドラ
+    const handlePetSelect = (petId: string) => {
+        setSelectedPetId(petId)
+    }
+
+    // 選択されたペットを取得
+    const getSelectedPet = () => {
+        return allPets.find(pet => pet.id === selectedPetId) || allPets[0]
+    }
+
     // SafeAreaInsetsが準備できるまでローディング表示
     if (!isSafeAreaReady) {
         return <View style={{ flex: 1, backgroundColor: '#fff' }} />
@@ -150,7 +193,12 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                     style={styles.backgroundImage}
                     resizeMode='cover'
                 >
-                    {/* 背景画像の上に表示するコンテンツがあればここに追加 */}
+                    {/* 選択されたペット画像を中央に表示 */}
+                    <Image
+                        source={getSelectedPet().image}
+                        style={styles.selectedPetImage}
+                        resizeMode='contain'
+                    />
                 </ImageBackground>
             </View>
 
@@ -176,7 +224,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                 {/* ペット画像 */}
                 <View style={styles.petParamImageWrapper}>
                     <Image
-                        source={require('@/assets/images/Nicon.png')}
+                        source={getSelectedPet().image}
                         style={styles.petParamImage}
                         resizeMode='cover'
                     />
@@ -236,6 +284,33 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                 </View>
             </View>
 
+            {/* ペット選択グリッド */}
+            <View style={styles.petGridContainer}>
+                <ScrollView 
+                    style={styles.petGridScrollView}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <View style={styles.petGrid}>
+                        {allPets.map((pet, index) => (
+                            <TouchableOpacity
+                                key={pet.id}
+                                style={[
+                                    styles.petGridItem,
+                                    selectedPetId === pet.id && styles.selectedPetGridItem
+                                ]}
+                                onPress={() => handlePetSelect(pet.id)}
+                            >
+                                <Image
+                                    source={pet.image}
+                                    style={styles.petGridImage}
+                                    resizeMode='contain'
+                                />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </ScrollView>
+            </View>
+
             {/* ペット名編集モーダル */}
             <Modal
                 visible={nameEditVisible}
@@ -293,228 +368,5 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
         </View>
     )
 }
-
-const styles = StyleSheet.create({
-    // メインコンテナ - 画面全体のレイアウト
-    container: {
-        flex: 1,
-        backgroundColor: '#ffcccc', // 薄い赤 - メインコンテナ
-        padding: 16,
-    },
-    // ページタイトル - 「ペット変更」の見出し
-    title: {
-        fontSize: Platform.OS === 'android' ? responsiveFontSize(2.8) : responsiveFontSize(3),
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 10,
-        color: '#000',
-        backgroundColor: '#ccffcc', // 薄い緑 - タイトル
-    },
-    // タイトル下の水平線 - 視覚的な区切り
-    underline: {
-        height: 1,
-        backgroundColor: '#000000', // 黒 - 水平線
-        width: '150%',
-        alignSelf: 'center',
-        marginBottom: 10,
-        opacity: 0.5,
-    },
-    // 背景画像コンテナ - ペット背景画像の外枠
-    backgroundImageContainer: {
-        width: responsiveWidth(100) - 32, // padding分を引く
-        height: responsiveHeight(25), // 画面の1/4
-        marginTop: 10,
-        marginBottom: 10,
-        borderRadius: 16,
-        overflow: 'hidden', // 角丸を適用するために追加
-        backgroundColor: '#ccccff', // 薄い青 - 背景画像コンテナ
-    },
-    // 背景画像 - ペットの背景画像スタイル
-    backgroundImage: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#ffffcc', // 薄い黄色 - 背景画像
-    },
-    // ペット名セクション - 名前とペンシルアイコンの横並び
-    petNameSection: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'flex-start',
-        marginBottom: 20,
-        paddingLeft: 16, // 左側のパディングを追加
-        backgroundColor: '#ffccff', // 薄いピンク - ペット名セクション
-    },
-    // ペット名テキスト - 名前表示のスタイル
-    petNameText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
-        marginRight: 12,
-        backgroundColor: '#ccffff', // 薄いシアン - ペット名テキスト
-    },
-    // 編集ボタン - ペンシルアイコンのタッチエリア
-    editButton: {
-        paddingTop: 3, // アイコンの位置がテキストの真ん中あたりになるように調整
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffaacc', // 薄いマゼンタ - 編集ボタン
-    },
-    // 閉じるボタン（絶対位置） - 画面左下の閉じるボタン
-    closeModalButtonAbsolute: {
-        position: 'absolute',
-        left: 16,
-        bottom: '1%',
-        backgroundColor: '#b2d8b2',
-        width: 64,
-        height: 48,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-    },
-    // 閉じるボタンテキスト - ✕マークのスタイル
-    closeModalButtonText: {
-        color: '#388e3c',
-        fontSize: 32,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    // モーダルオーバーレイ - モーダルの背景（半透明）
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(255, 0, 0, 0.3)', // 薄い赤（半透明） - モーダルオーバーレイ
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        paddingTop: responsiveHeight(25), // 上からの距離を指定
-    },
-    // モーダルコンテナ - モーダルダイアログ本体
-    modalContainer: {
-        backgroundColor: '#aaffaa', // 薄い緑 - モーダルコンテナ
-        borderRadius: 16,
-        padding: 24,
-        width: responsiveWidth(80),
-        maxWidth: 400,
-    },
-    // モーダルタイトル - 「ペット名を変更」の見出し
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
-        color: '#388e3c',
-        backgroundColor: '#ffaaaa', // 薄い赤 - モーダルタイトル
-    },
-    // テキスト入力フィールド - ペット名入力エリア
-    textInput: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        padding: 12,
-        fontSize: 16,
-        marginBottom: 20,
-        backgroundColor: '#aaaaff', // 薄い青 - テキスト入力
-    },
-    // モーダルボタン群 - キャンセル・送信ボタンの横並び
-    modalButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
-        backgroundColor: '#ffffaa', // 薄い黄色 - モーダルボタン群
-    },
-    // モーダルボタン共通 - ボタンの基本スタイル
-    modalButton: {
-        flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    // キャンセルボタン - グレー背景のボタン
-    cancelButton: {
-        backgroundColor: '#ffbbbb', // 薄い赤 - キャンセルボタン
-        borderWidth: 1,
-        borderColor: '#ccc',
-    },
-    // 送信ボタン - 緑背景のメインボタン
-    submitButton: {
-        backgroundColor: '#bbffbb', // 薄い緑 - 送信ボタン
-    },
-    // キャンセルボタンテキスト - グレー文字
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    // 送信ボタンテキスト - 白文字
-    submitButtonText: {
-        color: '#000000', // 黒文字に変更して見やすく
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    // ペットパラメータ関連のスタイル
-    // パラメータ行 - 画像とパラメータの横並びレイアウト
-    petParamRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-        width: responsiveWidth(100) - 32, // 背景画像コンテナと同じ（padding分を引く）
-        height: responsiveHeight(14), // 画面の1/7程度
-        gap: 16,
-        backgroundColor: '#ddaadd', // 薄い紫 - パラメータ行
-        paddingHorizontal: 16, // 内側のパディング
-    },
-    // ペット画像ラッパー - 1:1正方形の画像コンテナ
-    petParamImageWrapper: {
-        width: responsiveWidth(15), // 1:1の正方形
-        height: responsiveWidth(15),
-        borderRadius: 8,
-        overflow: 'hidden',
-        backgroundColor: '#aadddd', // 薄いティール - 画像ラッパー
-    },
-    // ペット画像 - 画像本体のスタイル
-    petParamImage: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#ddddaa', // 薄いオリーブ - ペット画像
-    },
-    // パラメータ情報 - 右側のパラメータ表示エリア
-    petParamInfo: {
-        flex: 1,
-        justifyContent: 'center',
-        backgroundColor: '#ffddaa', // 薄いオレンジ - パラメータ情報
-    },
-    // インジケーター列 - パラメータ項目の縦並び
-    indicatorColumn: {
-        gap: 0,
-        backgroundColor: '#ddffaa', // 薄い黄緑 - インジケーター列
-    },
-    // インジケーター行 - ラベルとプログレスバーの横並び
-    indicatorRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-        backgroundColor: '#aaddff', // 薄い青 - インジケーター行
-    },
-    // インジケーターラベル - パラメータ名（健康度、大きさ、親密度）
-    indicatorLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#333',
-        width: responsiveWidth(20),
-        minWidth: 60,
-        backgroundColor: '#ffaadd', // 薄いピンク - インジケーターラベル
-    },
-    // インジケーター - プログレスバーの背景
-    indicator: {
-        flex: 1,
-        height: 8,
-        backgroundColor: '#ffaaaa', // 薄い赤 - インジケーター背景
-        borderRadius: responsiveWidth(1.25),
-        overflow: 'hidden',
-    },
-})
 
 export default PetChange
