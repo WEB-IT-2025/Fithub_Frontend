@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import TabBar from '../../components/TabBar'
 import MissionBoard from '../missionboard'
 import Profile from '../profile'
+import PetChange from '../petchange'
 
 // 追加
 
@@ -276,42 +277,12 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-                                <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>ペット変更</Text>
-                                <Text style={{ fontSize: 16, color: '#666' }}>ペット変更画面を実装予定</Text>
-                                <TouchableOpacity
-                                    style={{
-                                        marginTop: 30,
-                                        backgroundColor: '#388e3c',
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 10,
-                                        borderRadius: 8
-                                    }}
-                                    onPress={() => setPetChangeVisible(false)}
-                                >
-                                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>閉じる</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <PetChange onClose={() => setPetChangeVisible(false)} />
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-                                <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>ペット変更</Text>
-                                <Text style={{ fontSize: 16, color: '#666' }}>ペット変更画面を実装予定</Text>
-                                <TouchableOpacity
-                                    style={{
-                                        marginTop: 30,
-                                        backgroundColor: '#388e3c',
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 10,
-                                        borderRadius: 8
-                                    }}
-                                    onPress={() => setPetChangeVisible(false)}
-                                >
-                                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>閉じる</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <PetChange onClose={() => setPetChangeVisible(false)} />
                         </View>
                     }
                 </Modal>
