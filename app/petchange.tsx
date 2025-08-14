@@ -32,33 +32,37 @@ const PET_NAME = 'とりゃー' // home.tsxと同じペット名を参照
 // API設定
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
 
+// カテゴリーと並び順の選択肢
+const CATEGORIES = ['すべて', '猫', '犬', '水生動物', 'その他']
+const SORT_OPTIONS = ['入手順', '名前順', '種類順']
+
 // 全ペットデータ（ペット選択用）
 const allPets = [
     // 猫のペット
-    { id: 'black_cat', name: 'クロネコ', image: require('@/assets/images/black_cat.png') },
-    { id: 'vitiligo_cat', name: 'ブチネコ', image: require('@/assets/images/vitiligo_cat.png') },
-    { id: 'mike_cat', name: 'ミケネコ', image: require('@/assets/images/mike_cat.png') },
-    { id: 'tora_cat', name: 'キジトラ', image: require('@/assets/images/tora_cat.png') },
-    { id: 'ameshort_cat', name: 'アメショ', image: require('@/assets/images/ameshort_cat.png') },
+    { id: 'black_cat', name: 'クロネコ', image: require('@/assets/images/black_cat.png'), category: '猫' },
+    { id: 'vitiligo_cat', name: 'ブチネコ', image: require('@/assets/images/vitiligo_cat.png'), category: '猫' },
+    { id: 'mike_cat', name: 'ミケネコ', image: require('@/assets/images/mike_cat.png'), category: '猫' },
+    { id: 'tora_cat', name: 'キジトラ', image: require('@/assets/images/tora_cat.png'), category: '猫' },
+    { id: 'ameshort_cat', name: 'アメショ', image: require('@/assets/images/ameshort_cat.png'), category: '猫' },
     
     // 犬のペット
-    { id: 'shiba_dog', name: 'シバイヌ', image: require('@/assets/images/shiba_dog.png') },
-    { id: 'chihuahua', name: 'チワワ', image: require('@/assets/images/chihuahua.png') },
-    { id: 'pome', name: 'ポメラニアン', image: require('@/assets/images/pome.png') },
-    { id: 'toipo', name: 'プードル', image: require('@/assets/images/toipo.png') },
-    { id: 'bulldog', name: 'ブルドッグ', image: require('@/assets/images/bulldog.png') },
+    { id: 'shiba_dog', name: 'シバイヌ', image: require('@/assets/images/shiba_dog.png'), category: '犬' },
+    { id: 'chihuahua', name: 'チワワ', image: require('@/assets/images/chihuahua.png'), category: '犬' },
+    { id: 'pome', name: 'ポメラニアン', image: require('@/assets/images/pome.png'), category: '犬' },
+    { id: 'toipo', name: 'プードル', image: require('@/assets/images/toipo.png'), category: '犬' },
+    { id: 'bulldog', name: 'ブルドッグ', image: require('@/assets/images/bulldog.png'), category: '犬' },
     
     // 魚類・水生動物
-    { id: 'gingin_penguin', name: 'GINGIN', image: require('@/assets/images/gingin_penguin.png') },
-    { id: 'takopee', name: 'ミズダコ', image: require('@/assets/images/takopee.png') },
-    { id: 'penguin', name: 'ペンギン', image: require('@/assets/images/penguin.png') },
-    { id: 'slime', name: 'スラリー', image: require('@/assets/images/slime.png') },
+    { id: 'gingin_penguin', name: 'GINGIN', image: require('@/assets/images/gingin_penguin.png'), category: '水生動物' },
+    { id: 'takopee', name: 'ミズダコ', image: require('@/assets/images/takopee.png'), category: '水生動物' },
+    { id: 'penguin', name: 'ペンギン', image: require('@/assets/images/penguin.png'), category: '水生動物' },
+    { id: 'slime', name: 'スラリー', image: require('@/assets/images/slime.png'), category: '水生動物' },
     
     // その他
-    { id: 'zebra', name: 'シマウマ', image: require('@/assets/images/zebra.png') },
-    { id: 'rabbit', name: 'ウサギ', image: require('@/assets/images/rabbit.png') },
-    { id: 'chinpan', name: 'チンパンジー', image: require('@/assets/images/chinpan.png') },
-    { id: 'panda', name: 'パンダ', image: require('@/assets/images/panda.png') },
+    { id: 'zebra', name: 'シマウマ', image: require('@/assets/images/zebra.png'), category: 'その他' },
+    { id: 'rabbit', name: 'ウサギ', image: require('@/assets/images/rabbit.png'), category: 'その他' },
+    { id: 'chinpan', name: 'チンパンジー', image: require('@/assets/images/chinpan.png'), category: 'その他' },
+    { id: 'panda', name: 'パンダ', image: require('@/assets/images/panda.png'), category: 'その他' },
 ]
 
 interface PetChangeProps {
@@ -72,6 +76,12 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     const [newPetName, setNewPetName] = useState(PET_NAME)
     const [isUpdating, setIsUpdating] = useState(false)
     const [selectedPetId, setSelectedPetId] = useState('black_cat') // 選択されたペットID
+    
+    // グリッド並べ替え用のstate
+    const [selectedCategory, setSelectedCategory] = useState('すべて')
+    const [selectedSortOrder, setSelectedSortOrder] = useState('入手順')
+    const [categoryDropdownVisible, setCategoryDropdownVisible] = useState(false)
+    const [sortDropdownVisible, setSortDropdownVisible] = useState(false)
     
     // パラメータアニメーション用のref
     const healthAnim = useRef(new Animated.Value(0)).current
@@ -167,6 +177,32 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     // ペット選択ハンドラ
     const handlePetSelect = (petId: string) => {
         setSelectedPetId(petId)
+    }
+
+    // フィルタリングとソート機能
+    const getFilteredAndSortedPets = () => {
+        let filteredPets = [...allPets]
+        
+        // カテゴリーフィルタ
+        if (selectedCategory !== 'すべて') {
+            filteredPets = filteredPets.filter(pet => pet.category === selectedCategory)
+        }
+        
+        // ソート
+        switch (selectedSortOrder) {
+            case '名前順':
+                filteredPets.sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+                break
+            case '種類順':
+                filteredPets.sort((a, b) => a.category.localeCompare(b.category, 'ja'))
+                break
+            case '入手順':
+            default:
+                // 元の順序を維持（何もしない）
+                break
+        }
+        
+        return filteredPets
     }
 
     // 選択されたペットを取得
@@ -284,6 +320,33 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                 </View>
             </View>
 
+            {/* グリッド並べ替えセクション */}
+            <View style={styles.sortFilterContainer}>
+                {/* カテゴリー絞り込み */}
+                <View style={styles.categoryFilterContainer}>
+                    <Text style={styles.categoryLabel}>カテゴリー：</Text>
+                    <TouchableOpacity
+                        style={styles.categorySelectButton}
+                        onPress={() => setCategoryDropdownVisible(true)}
+                    >
+                        <Text style={styles.categorySelectText}>{selectedCategory}</Text>
+                        <Text style={styles.dropdownArrow}>▼</Text>
+                    </TouchableOpacity>
+                </View>
+                
+                {/* 並び順選択 */}
+                <View style={styles.sortOrderContainer}>
+                    <Text style={styles.sortLabel}>表示順：</Text>
+                    <TouchableOpacity
+                        style={styles.sortSelectButton}
+                        onPress={() => setSortDropdownVisible(true)}
+                    >
+                        <Text style={styles.sortSelectText}>{selectedSortOrder}</Text>
+                        <Text style={styles.dropdownArrow}>▼</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
             {/* ペット選択グリッド */}
             <View style={styles.petGridContainer}>
                 <ScrollView 
@@ -291,12 +354,13 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.petGrid}>
-                        {allPets.map((pet, index) => (
+                        {getFilteredAndSortedPets().map((pet, index) => (
                             <TouchableOpacity
                                 key={pet.id}
                                 style={[
                                     styles.petGridItem,
-                                    selectedPetId === pet.id && styles.selectedPetGridItem
+                                    selectedPetId === pet.id && styles.selectedPetGridItem,
+                                    (index + 1) % 3 === 0 && styles.petGridItemLast // 3列目のアイテムに適用
                                 ]}
                                 onPress={() => handlePetSelect(pet.id)}
                             >
@@ -354,6 +418,82 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                         </View>
                     </View>
                 </View>
+            </Modal>
+
+            {/* カテゴリー選択ドロップダウンモーダル */}
+            <Modal
+                visible={categoryDropdownVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setCategoryDropdownVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.dropdownOverlay}
+                    activeOpacity={1}
+                    onPress={() => setCategoryDropdownVisible(false)}
+                >
+                    <View style={styles.dropdownMenu}>
+                        {CATEGORIES.map((category, index) => (
+                            <TouchableOpacity
+                                key={category}
+                                style={[
+                                    styles.dropdownItem,
+                                    index === CATEGORIES.length - 1 && styles.dropdownItemLast,
+                                    selectedCategory === category && styles.dropdownItemSelected
+                                ]}
+                                onPress={() => {
+                                    setSelectedCategory(category)
+                                    setCategoryDropdownVisible(false)
+                                }}
+                            >
+                                <Text style={[
+                                    styles.dropdownItemText,
+                                    selectedCategory === category && styles.dropdownItemTextSelected
+                                ]}>
+                                    {category}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* 並び順選択ドロップダウンモーダル */}
+            <Modal
+                visible={sortDropdownVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setSortDropdownVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.dropdownOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSortDropdownVisible(false)}
+                >
+                    <View style={styles.dropdownMenu}>
+                        {SORT_OPTIONS.map((option, index) => (
+                            <TouchableOpacity
+                                key={option}
+                                style={[
+                                    styles.dropdownItem,
+                                    index === SORT_OPTIONS.length - 1 && styles.dropdownItemLast,
+                                    selectedSortOrder === option && styles.dropdownItemSelected
+                                ]}
+                                onPress={() => {
+                                    setSelectedSortOrder(option)
+                                    setSortDropdownVisible(false)
+                                }}
+                            >
+                                <Text style={[
+                                    styles.dropdownItemText,
+                                    selectedSortOrder === option && styles.dropdownItemTextSelected
+                                ]}>
+                                    {option}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </TouchableOpacity>
             </Modal>
 
             {/* 閉じるボタン */}

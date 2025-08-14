@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import TabBar from '../../components/TabBar'
 import MissionBoard from '../missionboard'
 import Profile from '../profile'
+import PetChange from '../petchange'
 
 // 追加
 
@@ -31,6 +32,7 @@ const WALK_PERCENT = 0.6
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
     const [profileVisible, setProfileVisible] = useState(false) // 追加
+    const [petChangeVisible, setPetChangeVisible] = useState(false) // ペット変更モーダル用
     const [profileKey, setProfileKey] = useState(0) // Profileコンポーネントの強制再レンダリング用
 
     return (
@@ -61,9 +63,7 @@ const HomeScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.circleButton}
-                            onPress={() => {
-                                /* ペット画面へ遷移など */
-                            }}
+                            onPress={() => setPetChangeVisible(true)}
                         >
                             <FontAwesomeIcon
                                 style={iconStyle}
@@ -175,6 +175,45 @@ const HomeScreen = () => {
                             <TouchableOpacity
                                 style={styles.closeModalButtonAbsolute}
                                 onPress={() => setProfileVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                    }
+                </Modal>
+
+                {/* ペット変更モーダル */}
+                <Modal
+                    visible={petChangeVisible}
+                    animationType='slide'
+                    onRequestClose={() => setPetChangeVisible(false)}
+                    statusBarTranslucent={true}
+                    presentationStyle='fullScreen'
+                    hardwareAccelerated={true}
+                >
+                    <StatusBar
+                        barStyle='dark-content'
+                        backgroundColor='transparent'
+                        translucent={true}
+                        hidden={Platform.OS === 'android'}
+                    />
+                    {Platform.OS === 'ios' ?
+                        <SafeAreaView style={styles.fullScreenModal}>
+                            <PetChange />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setPetChangeVisible(false)}
+                            >
+                                <Text style={styles.closeModalButtonText}>✕</Text>
+                            </TouchableOpacity>
+                        </SafeAreaView>
+                    :   <View
+                            style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
+                        >
+                            <PetChange />
+                            <TouchableOpacity
+                                style={styles.closeModalButtonAbsolute}
+                                onPress={() => setPetChangeVisible(false)}
                             >
                                 <Text style={styles.closeModalButtonText}>✕</Text>
                             </TouchableOpacity>

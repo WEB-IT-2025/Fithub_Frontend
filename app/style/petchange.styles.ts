@@ -148,7 +148,130 @@ const styles = StyleSheet.create({
     },
 
     // ===============================
-    // 6. ペット選択グリッドセクション
+    // 6. グリッド並べ変えセクション
+    // ===============================
+    
+    // 並べ変えセクション - カテゴリー絞り込みと表示順変更の全体コンテナ
+    sortFilterContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginBottom: 8,
+        borderRadius: 8,
+        marginHorizontal: 8,
+    },
+    // カテゴリー絞り込みエリア - 左側のカテゴリー選択部分
+    categoryFilterContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    // カテゴリーラベル - 「カテゴリー：」文字
+    categoryLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginRight: 4,
+    },
+    // カテゴリー選択ボタン - ドロップダウン風のボタン
+    categorySelectButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'transparent',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        minWidth: 60,
+    },
+    // カテゴリー選択テキスト - 選択されたカテゴリー名
+    categorySelectText: {
+        fontSize: 14,
+        color: '#333',
+        marginRight: 4,
+    },
+    // ドロップダウン矢印アイコン - 選択ボタンの右側矢印
+    dropdownArrow: {
+        fontSize: 12,
+        color: '#666',
+    },
+    // 並び順エリア - 右側の並び順選択部分
+    sortOrderContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    // 並び順ラベル - 「表示順：」文字
+    sortLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+        marginRight: 4,
+    },
+    // 並び順選択ボタン - ドロップダウン風のボタン
+    sortSelectButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'transparent',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        minWidth: 60,
+    },
+    // 並び順選択テキスト - 選択された並び順名
+    sortSelectText: {
+        fontSize: 14,
+        color: '#333',
+        marginRight: 4,
+    },
+    // ドロップダウンオーバーレイ - モーダル選択肢の背景
+    dropdownOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    // ドロップダウンメニュー - 選択肢のコンテナ
+    dropdownMenu: {
+        backgroundColor: '#ffffff',
+        borderRadius: 8,
+        paddingVertical: 8,
+        minWidth: 200,
+        maxWidth: 300,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+    },
+    // ドロップダウンアイテム - 各選択肢のボタン
+    dropdownItem: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    // 最後のドロップダウンアイテム - 下線なし
+    dropdownItemLast: {
+        borderBottomWidth: 0,
+    },
+    // 選択されたドロップダウンアイテム - ハイライト表示
+    dropdownItemSelected: {
+        backgroundColor: '#e8f5e8',
+    },
+    // ドロップダウンアイテムテキスト - 選択肢の文字
+    dropdownItemText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    // 選択されたドロップダウンアイテムテキスト - ハイライト文字
+    dropdownItemTextSelected: {
+        color: '#388e3c',
+        fontWeight: '600',
+    },
+
+    // ===============================
+    // 7. ペット選択グリッドセクション
     // ===============================
     
     // グリッドコンテナ - ペット選択エリア全体
@@ -166,7 +289,7 @@ const styles = StyleSheet.create({
     petGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         paddingHorizontal: 10,
         paddingBottom: 10,
     },
@@ -175,12 +298,17 @@ const styles = StyleSheet.create({
         width: '30%', // 3列表示
         aspectRatio: 1, // 正方形
         marginBottom: 15,
+        marginRight: '5%', // 右側のマージンを追加
         borderRadius: 8,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#E9E9E9',
         padding: 8,
+    },
+    // 3列目のアイテム（右端）のマージンを削除
+    petGridItemLast: {
+        marginRight: 0,
     },
     // 選択されたグリッドアイテム - ハイライト表示
     selectedPetGridItem: {
@@ -196,13 +324,13 @@ const styles = StyleSheet.create({
     },
 
     // ===============================
-    // 7. モーダル関連（ペット名編集）
+    // 8. モーダル関連（ペット名編集）
     // ===============================
     
     // モーダルオーバーレイ - モーダルの背景（半透明）
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(255, 0, 0, 0.3)', // 薄い赤（半透明） - モーダルオーバーレイ
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // 半透明の黒
         justifyContent: 'flex-start',
         alignItems: 'center',
         paddingTop: responsiveHeight(25), // 上からの距離を指定
@@ -272,7 +400,7 @@ const styles = StyleSheet.create({
     },
 
     // ===============================
-    // 8. 閉じるボタン（固定位置）
+    // 9. 閉じるボタン（固定位置）
     // ===============================
     
     // 閉じるボタン（絶対位置） - 画面左下の閉じるボタン
