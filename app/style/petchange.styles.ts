@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     // タイトル下の水平線 - 視覚的な区切り
     underline: {
         height: 1,
-        backgroundColor: '#000000', // 黒 - 水平線
+        backgroundColor: '#ccc',
         width: '150%',
         alignSelf: 'center',
         marginBottom: 10,
