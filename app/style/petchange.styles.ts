@@ -423,6 +423,30 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'center',
     },
+
+    // ===============================
+    // 10. 変更ボタン（右下固定位置）
+    // ===============================
+    
+    // 変更ボタン（絶対位置） - 画面右下の変更ボタン
+    changeButtonAbsolute: {
+        position: 'absolute',
+        right: 16,
+        bottom: '1%',
+        backgroundColor: '#4caf50',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    // 変更ボタンテキスト
+    changeButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 })
 
 export default styles

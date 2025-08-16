@@ -345,7 +345,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
 
             {/* ペット名とペンシルアイコン */}
             <View style={styles.petNameSection}>
-                <Text style={styles.petNameText}>{PET_NAME}</Text>
+                <Text style={styles.petNameText}>{getSelectedPet()?.name || PET_NAME}</Text>
                 <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => {
@@ -621,6 +621,23 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                     <Text style={styles.closeModalButtonText}>✕</Text>
                 </TouchableOpacity>
             )}
+
+            {/* 変更ボタン */}
+            <TouchableOpacity
+                style={styles.changeButtonAbsolute}
+                onPress={() => {
+                    // TODO: ペット変更のAPI呼び出し処理を実装
+                    const selectedPet = getSelectedPet()
+                    console.log('選択されたペット:', selectedPet)
+                    
+                    // 現在は選択されたペット情報をログに出力してモーダルを閉じる
+                    if (onClose) {
+                        onClose()
+                    }
+                }}
+            >
+                <Text style={styles.changeButtonText}>変更</Text>
+            </TouchableOpacity>
         </View>
     )
 }
