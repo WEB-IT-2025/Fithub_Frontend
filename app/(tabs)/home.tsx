@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 import { faGithub, faTwitter } from '@fortawesome/free-brands-svg-icons'
 import { faCalendar } from '@fortawesome/free-regular-svg-icons'
 import { faCoffee, faDog, faPerson, faScroll, faUser } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useFocusEffect } from '@react-navigation/native'
 import { BlurView } from 'expo-blur'
 import {
     Image,
@@ -21,15 +22,40 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import TabBar from '../../components/TabBar'
 import MissionBoard from '../missionboard'
-import Profile from '../profile'
 import PetChange from '../petchange'
+import Profile from '../profile'
 
 // 追加
 
 const iconStyle = { color: '#1DA1F2', fontSize: 32 }
 
-const PET_NAME = 'とりゃー'
 const WALK_GOAL = 5000 // 目標歩数
+
+// ペット画像のマッピング関数
+const getImageSource = (imageName: string) => {
+    const imageMap: { [key: string]: any } = {
+        'gifcat.gif': require('@/assets/images/gifcat.gif'),
+        'pome.png': require('@/assets/images/pome.png'),
+        'tora_cat.png': require('@/assets/images/tora_cat.png'),
+        'mike_cat.png': require('@/assets/images/mike_cat.png'),
+        'black_cat.png': require('@/assets/images/black_cat.png'),
+        'vitiligo_cat.png': require('@/assets/images/vitiligo_cat.png'),
+        'fithub_cat.png': require('@/assets/images/fithub_cat.png'),
+        'bulldog.png': require('@/assets/images/bulldog.png'),
+        'chihuahua.png': require('@/assets/images/chihuahua.png'),
+        'shiba_dog.png': require('@/assets/images/shiba_dog.png'),
+        'penguin.png': require('@/assets/images/penguin.png'),
+        'gingin_penguin.png': require('@/assets/images/gingin_penguin.png'),
+        'rabbit.png': require('@/assets/images/rabbit.png'),
+        'panda.png': require('@/assets/images/panda.png'),
+        'zebra.png': require('@/assets/images/zebra.png'),
+        'slime.png': require('@/assets/images/slime.png'),
+        'takopee.png': require('@/assets/images/takopee.png'),
+        'toipo.png': require('@/assets/images/toipo.png'),
+        'chinpan.png': require('@/assets/images/chinpan.png'),
+    }
+    return imageMap[imageName] || require('@/assets/images/gifcat.gif')
+}
 
 const HomeScreen = () => {
     const [modalVisible, setModalVisible] = useState(false)
@@ -38,6 +64,106 @@ const HomeScreen = () => {
     const [profileKey, setProfileKey] = useState(0)
     const [steps, setSteps] = useState<number | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [petProfile, setPetProfile] = useState({
+        main_pet_name: 'とりゃー',
+        main_pet_user_name: 'ローディング中...',
+        main_pet_image_url: 'gifcat.gif',
+        main_pet_size: 50,
+        main_pet_intimacy: 0,
+    })
+
+    // ペット情報取得関数を分離
+    const fetchPetProfile = useCallback(async () => {
+        console.log('ペット情報取得開始')
+        try {
+            const token = await AsyncStorage.getItem('session_token')
+            if (!token) {
+                console.log('トークンが見つかりません')
+                return
+            }
+            console.log('トークン取得成功:', token.substring(0, 10) + '...')
+
+            const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(
+                /\/+$/,
+                ''
+            )
+            console.log('APIベースURL:', API_BASE_URL)
+
+            const res = await fetch(`${API_BASE_URL}/api/pet/profile`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            console.log('レスポンスステータス:', res.status)
+
+            if (res.ok) {
+                const data = await res.json()
+                console.log('レスポンスデータ:', data)
+
+                if (data.success && data.data) {
+                    console.log('ペット情報更新:', data.data)
+                    setPetProfile({
+                        main_pet_name: data.data.main_pet_name || 'とりゃー',
+                        main_pet_user_name: data.data.main_pet_user_name || 'ペット',
+                        main_pet_image_url: data.data.main_pet_image_url || 'gifcat.gif',
+                        main_pet_size: data.data.main_pet_size || 50,
+                        main_pet_intimacy: data.data.main_pet_intimacy || 0,
+                    })
+                } else {
+                    console.log('データ構造が不正:', data)
+                    // デフォルト値にリセット
+                    setPetProfile({
+                        main_pet_name: 'とりゃー',
+                        main_pet_user_name: 'データエラー',
+                        main_pet_image_url: 'gifcat.gif',
+                        main_pet_size: 50,
+                        main_pet_intimacy: 0,
+                    })
+                }
+            } else {
+                const errorText = await res.text()
+                console.log('APIエラー:', res.status, errorText)
+                // デフォルト値にリセット
+                setPetProfile({
+                    main_pet_name: 'とりゃー',
+                    main_pet_user_name: 'API接続エラー',
+                    main_pet_image_url: 'gifcat.gif',
+                    main_pet_size: 50,
+                    main_pet_intimacy: 0,
+                })
+            }
+        } catch (e) {
+            console.log('ペット情報取得エラー:', e)
+            // デフォルト値にリセット
+            setPetProfile({
+                main_pet_name: 'とりゃー',
+                main_pet_user_name: '通信エラー',
+                main_pet_image_url: 'gifcat.gif',
+                main_pet_size: 50,
+                main_pet_intimacy: 0,
+            })
+        }
+    }, [])
+
+    // 初回とフォーカス時にペット情報を取得
+    useFocusEffect(
+        useCallback(() => {
+            fetchPetProfile()
+        }, [fetchPetProfile])
+    )
+
+    // ペット変更モーダルを閉じる際の処理
+    const handlePetChangeClose = useCallback(() => {
+        setPetChangeVisible(false)
+        // ペット変更後にデータを再取得
+        setTimeout(() => {
+            fetchPetProfile()
+        }, 500) // 少し待ってから再取得
+    }, [fetchPetProfile])
+
     // APIから今日の歩数データを取得
     useEffect(() => {
         const fetchSteps = async () => {
@@ -45,7 +171,7 @@ const HomeScreen = () => {
             try {
                 const token = await AsyncStorage.getItem('session_token')
                 if (!token) return
-                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(
+                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(
                     /\/+$/,
                     ''
                 )
@@ -123,11 +249,17 @@ const HomeScreen = () => {
 
                     {/* 中央ペット情報 */}
                     <View style={styles.petInfo}>
-                        <Text style={styles.petName}>{PET_NAME}</Text>
+                        <Text style={styles.petName}>{petProfile.main_pet_user_name}</Text>
                         <Image
-                            source={require('@/assets/images/gifcat.gif')}
-                            style={styles.petImage}
-                            resizeMode='cover'
+                            source={getImageSource(petProfile.main_pet_image_url)}
+                            style={[
+                                styles.petImage,
+                                {
+                                    width: petProfile.main_pet_size * 3.4,
+                                    height: petProfile.main_pet_size * 3.4,
+                                },
+                            ]}
+                            resizeMode='contain'
                         />
                         <Text style={styles.label}>今日の歩数</Text>
                         <View style={[styles.progressBarBackground, { position: 'relative' }]}>
@@ -188,7 +320,8 @@ const HomeScreen = () => {
                                         style={styles.blurBackground}
                                     >
                                         <Text style={styles.goalText}>
-                                            目標まであと{100 - Math.floor((steps / WALK_GOAL) * 100)}％
+                                            目標まであと
+                                            {Math.max(0, (100 - (steps / WALK_GOAL) * 100)).toFixed(1)}％
                                         </Text>
                                     </BlurView>
                                 </View>
@@ -264,7 +397,7 @@ const HomeScreen = () => {
                 <Modal
                     visible={petChangeVisible}
                     animationType='slide'
-                    onRequestClose={() => setPetChangeVisible(false)}
+                    onRequestClose={handlePetChangeClose}
                     statusBarTranslucent={true}
                     presentationStyle='fullScreen'
                     hardwareAccelerated={true}
@@ -277,12 +410,12 @@ const HomeScreen = () => {
                     />
                     {Platform.OS === 'ios' ?
                         <SafeAreaView style={styles.fullScreenModal}>
-                            <PetChange onClose={() => setPetChangeVisible(false)} />
+                            <PetChange onClose={handlePetChangeClose} />
                         </SafeAreaView>
                     :   <View
                             style={[styles.fullScreenModal, { marginTop: 0, paddingTop: StatusBar.currentHeight || 0 }]}
                         >
-                            <PetChange onClose={() => setPetChangeVisible(false)} />
+                            <PetChange onClose={handlePetChangeClose} />
                         </View>
                     }
                 </Modal>
