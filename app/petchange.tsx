@@ -184,6 +184,57 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
         }
     }
 
+    // メインペットを変更するAPI関数
+    const updateMainPet = async (petId: string, petName: string) => {
+        console.log('メインペット変更開始:', { petId, petName })
+        setIsUpdating(true)
+        try {
+            const token = await AsyncStorage.getItem('session_token')
+            if (!token) {
+                console.log('トークンが見つかりません')
+                Alert.alert('エラー', '認証が必要です')
+                return false
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/pet/main`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_id: petId,
+                    pet_name: petName,
+                }),
+            })
+
+            console.log('メインペット変更APIレスポンス:', response.status)
+
+            if (response.ok) {
+                const data = await response.json()
+                console.log('メインペット変更成功:', data)
+
+                if (data.success) {
+                    return true
+                } else {
+                    Alert.alert('エラー', data.message || 'ペット変更に失敗しました')
+                    return false
+                }
+            } else {
+                const errorText = await response.text()
+                console.log('メインペット変更API エラー:', response.status, errorText)
+                Alert.alert('エラー', 'サーバーエラーが発生しました')
+                return false
+            }
+        } catch (error) {
+            console.error('メインペット変更エラー:', error)
+            Alert.alert('エラー', 'ネットワークエラーが発生しました')
+            return false
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
     // ペット名を更新する関数
     const updatePetName = async () => {
         if (!newPetName.trim()) {
@@ -625,18 +676,26 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             {/* 変更ボタン */}
             <TouchableOpacity
                 style={styles.changeButtonAbsolute}
-                onPress={() => {
-                    // TODO: ペット変更のAPI呼び出し処理を実装
+                onPress={async () => {
                     const selectedPet = getSelectedPet()
+                    if (!selectedPet) {
+                        Alert.alert('エラー', 'ペットが選択されていません')
+                        return
+                    }
+
                     console.log('選択されたペット:', selectedPet)
-                    
-                    // 現在は選択されたペット情報をログに出力してモーダルを閉じる
-                    if (onClose) {
+
+                    // メインペット変更API呼び出し
+                    const success = await updateMainPet(selectedPet.id, selectedPet.name)
+
+                    // 成功したらモーダルを閉じる
+                    if (success && onClose) {
                         onClose()
                     }
                 }}
+                disabled={isUpdating}
             >
-                <Text style={styles.changeButtonText}>変更</Text>
+                <Text style={styles.changeButtonText}>{isUpdating ? '変更中...' : '変更'}</Text>
             </TouchableOpacity>
         </View>
     )
