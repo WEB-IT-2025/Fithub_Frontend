@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     closeModalButtonAbsolute: {
         position: 'absolute',
         left: 16,
-        bottom: 5,
+        bottom: '1%',
         backgroundColor: '#b2d8b2',
         width: 64,
         height: 48,

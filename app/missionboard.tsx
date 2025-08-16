@@ -365,6 +365,16 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* 閉じるボタン（絶対位置） */}
+            {onClose && (
+                <TouchableOpacity
+                    style={styles.closeModalButtonAbsolute}
+                    onPress={onClose}
+                >
+                    <Text style={styles.closeModalButtonText}>✕</Text>
+                </TouchableOpacity>
+            )}
         </View>
     )
 }
@@ -584,6 +594,24 @@ const styles = StyleSheet.create({
         textShadowColor: '#fff',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
+    },
+    closeModalButtonAbsolute: {
+        position: 'absolute',
+        left: 16,
+        bottom: '1%',
+        backgroundColor: '#b2d8b2',
+        width: 64,
+        height: 48,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    closeModalButtonText: {
+        color: '#388e3c',
+        fontSize: 32,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
 })
 

@@ -321,7 +321,7 @@ const HomeScreen = () => {
                                     >
                                         <Text style={styles.goalText}>
                                             目標まであと
-                                            {Math.max(0, (100 - (steps / WALK_GOAL) * 100)).toFixed(1)}％
+                                            {Math.max(0, 100 - (steps / WALK_GOAL) * 100).toFixed(1)}％
                                         </Text>
                                     </BlurView>
                                 </View>

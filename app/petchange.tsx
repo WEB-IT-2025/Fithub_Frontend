@@ -1,26 +1,26 @@
 /*
  * petchange.tsx - ペット変更画面
- * 
+ *
  * このページのみ試験的に結合を意識してコードを書いています。もし逆にやりにくくなってたらゴメンね☆
  *
  */
-
 import React, { useEffect, useRef, useState } from 'react'
 
 import { faPencil } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
-import { 
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
     Alert,
     Animated,
-    Image, 
-    ImageBackground, 
+    Image,
+    ImageBackground,
     Modal,
-    Platform, 
+    Platform,
     ScrollView,
-    Text, 
+    Text,
     TextInput,
-    TouchableOpacity, 
-    View 
+    TouchableOpacity,
+    View,
 } from 'react-native'
 import { responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -30,7 +30,7 @@ import styles from './style/petchange.styles'
 const PET_NAME = 'とりゃー' // home.tsxと同じペット名を参照
 
 // API設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
 
 // カテゴリーと並び順の選択肢
 const CATEGORIES = ['すべて', '猫', '犬', '水生動物', 'その他']
@@ -44,20 +44,25 @@ const allPets = [
     { id: 'mike_cat', name: 'ミケネコ', image: require('@/assets/images/mike_cat.png'), category: '猫' },
     { id: 'tora_cat', name: 'キジトラ', image: require('@/assets/images/tora_cat.png'), category: '猫' },
     { id: 'ameshort_cat', name: 'アメショ', image: require('@/assets/images/ameshort_cat.png'), category: '猫' },
-    
+
     // 犬のペット
     { id: 'shiba_dog', name: 'シバイヌ', image: require('@/assets/images/shiba_dog.png'), category: '犬' },
     { id: 'chihuahua', name: 'チワワ', image: require('@/assets/images/chihuahua.png'), category: '犬' },
     { id: 'pome', name: 'ポメラニアン', image: require('@/assets/images/pome.png'), category: '犬' },
     { id: 'toipo', name: 'プードル', image: require('@/assets/images/toipo.png'), category: '犬' },
     { id: 'bulldog', name: 'ブルドッグ', image: require('@/assets/images/bulldog.png'), category: '犬' },
-    
+
     // 魚類・水生動物
-    { id: 'gingin_penguin', name: 'GINGIN', image: require('@/assets/images/gingin_penguin.png'), category: '水生動物' },
+    {
+        id: 'gingin_penguin',
+        name: 'GINGIN',
+        image: require('@/assets/images/gingin_penguin.png'),
+        category: '水生動物',
+    },
     { id: 'takopee', name: 'ミズダコ', image: require('@/assets/images/takopee.png'), category: '水生動物' },
     { id: 'penguin', name: 'ペンギン', image: require('@/assets/images/penguin.png'), category: '水生動物' },
     { id: 'slime', name: 'スラリー', image: require('@/assets/images/slime.png'), category: '水生動物' },
-    
+
     // その他
     { id: 'zebra', name: 'シマウマ', image: require('@/assets/images/zebra.png'), category: 'その他' },
     { id: 'rabbit', name: 'ウサギ', image: require('@/assets/images/rabbit.png'), category: 'その他' },
@@ -69,6 +74,20 @@ interface PetChangeProps {
     onClose?: () => void
 }
 
+// ペットタイプからカテゴリーを取得する関数
+const getCategory = (petType: string): string => {
+    switch (petType) {
+        case 'cat':
+            return '猫'
+        case 'dog':
+            return '犬'
+        case 'fish':
+            return '水生動物'
+        default:
+            return 'その他'
+    }
+}
+
 const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     const insets = useSafeAreaInsets()
     const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
@@ -76,17 +95,94 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     const [newPetName, setNewPetName] = useState(PET_NAME)
     const [isUpdating, setIsUpdating] = useState(false)
     const [selectedPetId, setSelectedPetId] = useState('black_cat') // 選択されたペットID
-    
+    const [ownedPets, setOwnedPets] = useState<any[]>([]) // 所有ペット一覧
+    const [isLoadingPets, setIsLoadingPets] = useState(true) // ペット読み込み状態
+
     // グリッド並べ替え用のstate
     const [selectedCategory, setSelectedCategory] = useState('すべて')
     const [selectedSortOrder, setSelectedSortOrder] = useState('入手順')
     const [categoryDropdownVisible, setCategoryDropdownVisible] = useState(false)
     const [sortDropdownVisible, setSortDropdownVisible] = useState(false)
-    
+
     // パラメータアニメーション用のref
     const healthAnim = useRef(new Animated.Value(0)).current
     const sizeAnim = useRef(new Animated.Value(0)).current
     const intimacyAnim = useRef(new Animated.Value(0)).current
+
+    // 所有ペットを取得する関数
+    const fetchOwnedPets = async () => {
+        console.log('所有ペット取得開始')
+        setIsLoadingPets(true)
+        try {
+            const token = await AsyncStorage.getItem('session_token')
+            if (!token) {
+                console.log('トークンが見つかりません')
+                return
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/pet/owned`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            console.log('所有ペットAPIレスポンスステータス:', response.status)
+
+            if (response.ok) {
+                const data = await response.json()
+                console.log('所有ペットデータ:', data)
+
+                if (data.success && data.data && Array.isArray(data.data.pets)) {
+                    // APIから取得したペット情報を画像と組み合わせる
+                    const petsWithImages = data.data.pets.map((pet: any) => {
+                        // 画像ファイル名からペットIDを作成（拡張子を除去）
+                        const imageId = pet.item_image_url.replace('.png', '').replace('.gif', '')
+                        const matchingPet = allPets.find((p) => p.id === imageId)
+
+                        return {
+                            id: pet.item_id,
+                            name: pet.user_pet_name || pet.item_name,
+                            image: matchingPet?.image || require('@/assets/images/gifcat.gif'),
+                            category: getCategory(pet.pet_type),
+                            owned: true,
+                            user_main_pet: pet.user_main_pet,
+                            pet_size: pet.pet_size,
+                            pet_intimacy: pet.pet_intimacy,
+                            item_name: pet.item_name,
+                            item_image_url: pet.item_image_url,
+                            pet_type: pet.pet_type,
+                        }
+                    })
+
+                    setOwnedPets(petsWithImages)
+
+                    // メインペットまたは最初の所有ペットをデフォルト選択に設定
+                    const mainPet = petsWithImages.find((pet: any) => pet.user_main_pet === 1)
+                    if (mainPet) {
+                        setSelectedPetId(mainPet.id)
+                    } else if (petsWithImages.length > 0) {
+                        setSelectedPetId(petsWithImages[0].id)
+                    }
+
+                    console.log('所有ペット設定完了:', petsWithImages.length, '匹')
+                } else {
+                    console.log('所有ペットデータが不正:', data)
+                    setOwnedPets([])
+                }
+            } else {
+                const errorText = await response.text()
+                console.log('所有ペットAPI エラー:', response.status, errorText)
+                setOwnedPets([])
+            }
+        } catch (error) {
+            console.error('所有ペット取得エラー:', error)
+            setOwnedPets([])
+        } finally {
+            setIsLoadingPets(false)
+        }
+    }
 
     // ペット名を更新する関数
     const updatePetName = async () => {
@@ -97,7 +193,6 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
 
         try {
             setIsUpdating(true)
-            
 
             // API呼び出し
             const response = await fetch(`${API_BASE_URL}/api/pets/update-name`, {
@@ -143,12 +238,22 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
         }
     }, [insets])
 
+    // 初期化時に所有ペットを取得
+    useEffect(() => {
+        if (isSafeAreaReady) {
+            fetchOwnedPets()
+        }
+    }, [isSafeAreaReady])
+
     // ペットパラメータアニメーション
     useEffect(() => {
+        const selectedPet = getSelectedPet()
+        if (!selectedPet) return
+
         const paramValues = {
-            health: 0.9,    // 健康度 90%
-            size: 0.6,      // 大きさ 60%
-            intimacy: 0.8,  // 親密度 80%
+            health: Math.min(selectedPet.pet_intimacy / 100, 1), // 親密度を健康度として使用（最大100）
+            size: Math.min(selectedPet.pet_size / 100, 1), // サイズ（最大100と仮定）
+            intimacy: Math.min(selectedPet.pet_intimacy / 100, 1), // 親密度
         }
 
         // アニメーションをリセットしてから開始
@@ -172,22 +277,22 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             duration: 800,
             useNativeDriver: false,
         }).start()
-    }, [healthAnim, sizeAnim, intimacyAnim])
+    }, [healthAnim, sizeAnim, intimacyAnim, selectedPetId, ownedPets])
 
     // ペット選択ハンドラ
     const handlePetSelect = (petId: string) => {
         setSelectedPetId(petId)
     }
 
-    // フィルタリングとソート機能
+    // フィルタリングとソート機能（所有ペットのみ）
     const getFilteredAndSortedPets = () => {
-        let filteredPets = [...allPets]
-        
+        let filteredPets = [...ownedPets]
+
         // カテゴリーフィルタ
         if (selectedCategory !== 'すべて') {
-            filteredPets = filteredPets.filter(pet => pet.category === selectedCategory)
+            filteredPets = filteredPets.filter((pet) => pet.category === selectedCategory)
         }
-        
+
         // ソート
         switch (selectedSortOrder) {
             case '名前順':
@@ -201,13 +306,13 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                 // 元の順序を維持（何もしない）
                 break
         }
-        
+
         return filteredPets
     }
 
-    // 選択されたペットを取得
+    // 選択されたペットを取得（所有ペットから）
     const getSelectedPet = () => {
-        return allPets.find(pet => pet.id === selectedPetId) || allPets[0]
+        return ownedPets.find((pet) => pet.id === selectedPetId) || ownedPets[0] || allPets[0]
     }
 
     // SafeAreaInsetsが準備できるまでローディング表示
@@ -241,7 +346,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             {/* ペット名とペンシルアイコン */}
             <View style={styles.petNameSection}>
                 <Text style={styles.petNameText}>{PET_NAME}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => {
                         setNameEditVisible(true)
@@ -333,7 +438,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                         <Text style={styles.dropdownArrow}>▼</Text>
                     </TouchableOpacity>
                 </View>
-                
+
                 {/* 並び順選択 */}
                 <View style={styles.sortOrderContainer}>
                     <Text style={styles.sortLabel}>表示順：</Text>
@@ -349,29 +454,38 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
 
             {/* ペット選択グリッド */}
             <View style={styles.petGridContainer}>
-                <ScrollView 
+                <ScrollView
                     style={styles.petGridScrollView}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.petGrid}>
-                        {getFilteredAndSortedPets().map((pet, index) => (
-                            <TouchableOpacity
-                                key={pet.id}
-                                style={[
-                                    styles.petGridItem,
-                                    selectedPetId === pet.id && styles.selectedPetGridItem,
-                                    (index + 1) % 3 === 0 && styles.petGridItemLast // 3列目のアイテムに適用
-                                ]}
-                                onPress={() => handlePetSelect(pet.id)}
-                            >
-                                <Image
-                                    source={pet.image}
-                                    style={styles.petGridImage}
-                                    resizeMode='contain'
-                                />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                    {isLoadingPets ?
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 16, color: '#666' }}>ペット情報を読み込み中...</Text>
+                        </View>
+                    : ownedPets.length === 0 ?
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 16, color: '#666' }}>所有ペットがありません</Text>
+                        </View>
+                    :   <View style={styles.petGrid}>
+                            {getFilteredAndSortedPets().map((pet, index) => (
+                                <TouchableOpacity
+                                    key={pet.id}
+                                    style={[
+                                        styles.petGridItem,
+                                        selectedPetId === pet.id && styles.selectedPetGridItem,
+                                        (index + 1) % 3 === 0 && styles.petGridItemLast, // 3列目のアイテムに適用
+                                    ]}
+                                    onPress={() => handlePetSelect(pet.id)}
+                                >
+                                    <Image
+                                        source={pet.image}
+                                        style={styles.petGridImage}
+                                        resizeMode='contain'
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    }
                 </ScrollView>
             </View>
 
@@ -379,22 +493,22 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             <Modal
                 visible={nameEditVisible}
                 transparent={true}
-                animationType="fade"
+                animationType='fade'
                 onRequestClose={() => setNameEditVisible(false)}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         <Text style={styles.modalTitle}>ペット名を変更</Text>
-                        
+
                         <TextInput
                             style={styles.textInput}
                             value={newPetName}
                             onChangeText={setNewPetName}
-                            placeholder="新しいペット名を入力"
+                            placeholder='新しいペット名を入力'
                             maxLength={20}
                             autoFocus={true}
                         />
-                        
+
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.cancelButton]}
@@ -405,15 +519,13 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                             >
                                 <Text style={styles.cancelButtonText}>キャンセル</Text>
                             </TouchableOpacity>
-                            
+
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.submitButton]}
                                 onPress={updatePetName}
                                 disabled={isUpdating}
                             >
-                                <Text style={styles.submitButtonText}>
-                                    {isUpdating ? '更新中...' : '送信'}
-                                </Text>
+                                <Text style={styles.submitButtonText}>{isUpdating ? '更新中...' : '送信'}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -424,7 +536,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             <Modal
                 visible={categoryDropdownVisible}
                 transparent={true}
-                animationType="fade"
+                animationType='fade'
                 onRequestClose={() => setCategoryDropdownVisible(false)}
             >
                 <TouchableOpacity
@@ -439,17 +551,19 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                                 style={[
                                     styles.dropdownItem,
                                     index === CATEGORIES.length - 1 && styles.dropdownItemLast,
-                                    selectedCategory === category && styles.dropdownItemSelected
+                                    selectedCategory === category && styles.dropdownItemSelected,
                                 ]}
                                 onPress={() => {
                                     setSelectedCategory(category)
                                     setCategoryDropdownVisible(false)
                                 }}
                             >
-                                <Text style={[
-                                    styles.dropdownItemText,
-                                    selectedCategory === category && styles.dropdownItemTextSelected
-                                ]}>
+                                <Text
+                                    style={[
+                                        styles.dropdownItemText,
+                                        selectedCategory === category && styles.dropdownItemTextSelected,
+                                    ]}
+                                >
                                     {category}
                                 </Text>
                             </TouchableOpacity>
@@ -462,7 +576,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
             <Modal
                 visible={sortDropdownVisible}
                 transparent={true}
-                animationType="fade"
+                animationType='fade'
                 onRequestClose={() => setSortDropdownVisible(false)}
             >
                 <TouchableOpacity
@@ -477,17 +591,19 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                                 style={[
                                     styles.dropdownItem,
                                     index === SORT_OPTIONS.length - 1 && styles.dropdownItemLast,
-                                    selectedSortOrder === option && styles.dropdownItemSelected
+                                    selectedSortOrder === option && styles.dropdownItemSelected,
                                 ]}
                                 onPress={() => {
                                     setSelectedSortOrder(option)
                                     setSortDropdownVisible(false)
                                 }}
                             >
-                                <Text style={[
-                                    styles.dropdownItemText,
-                                    selectedSortOrder === option && styles.dropdownItemTextSelected
-                                ]}>
+                                <Text
+                                    style={[
+                                        styles.dropdownItemText,
+                                        selectedSortOrder === option && styles.dropdownItemTextSelected,
+                                    ]}
+                                >
                                     {option}
                                 </Text>
                             </TouchableOpacity>
