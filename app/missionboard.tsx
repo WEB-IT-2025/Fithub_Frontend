@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import {
     Animated,
     Image,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -15,6 +16,7 @@ import {
     View,
     useWindowDimensions,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import missionsData, { Mission } from '../components/Mission'
 import MissionList from '../components/MissionList'
@@ -42,6 +44,8 @@ interface MissionBoardProps {
 }
 
 const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
+    const insets = useSafeAreaInsets()
+    const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
     const [missions, setMissions] = useState(missionsData)
     const [apiMissions, setApiMissions] = useState<ApiMission[]>([])
     const [type, setType] = useState<MissionType>('daily')
@@ -56,6 +60,20 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const sliderMargin = 8
     const sliderCount = 2
     const sliderWidth = toggleWidth > 0 ? (toggleWidth - sliderMargin * 2) / sliderCount : 0
+
+    // SafeAreaInsetsが確実に取得できるまで待つ
+    useEffect(() => {
+        // iOSの場合はinsets.topが20以上、Androidの場合は0以上であることを確認
+        const isInsetsReady = Platform.OS === 'ios' ? insets.top >= 20 : insets.top >= 0
+
+        if (isInsetsReady) {
+            // 少し遅延してから表示（SafeAreaが確実に適用されるまで）
+            const timer = setTimeout(() => {
+                setIsSafeAreaReady(true)
+            }, 300)
+            return () => clearTimeout(timer)
+        }
+    }, [insets])
 
     // ユーザーIDとトークンを取得
     useEffect(() => {
@@ -126,11 +144,11 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
 
     // ユーザーIDとトークンが取得できたら初期データを読み込み
     useEffect(() => {
-        if (userId && sessionToken) {
+        if (userId && sessionToken && isSafeAreaReady) {
             // 未完了ミッションのみ取得
             fetchMissions(type, false)
         }
-    }, [userId, sessionToken, type])
+    }, [userId, sessionToken, type, isSafeAreaReady])
 
     // スライダー位置を計算
     const getLeft = (t: MissionType) => {
@@ -139,13 +157,16 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
         return sliderMargin + sliderWidth
     }
 
+    // スライダー位置を計算とアニメーション（SafeAreaが準備できてから）
     useEffect(() => {
+        if (!isSafeAreaReady) return
+
         Animated.timing(sliderAnim, {
             toValue: getLeft(type),
             duration: 200,
             useNativeDriver: false,
         }).start()
-    }, [type, toggleWidth])
+    }, [type, toggleWidth, isSafeAreaReady])
 
     // APIミッションをローカル形式に変換
     const convertApiMissionsToLocal = (apiMissions: ApiMission[]): Mission[] => {
@@ -276,6 +297,11 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
 
         // APIミッションからも削除
         setApiMissions((prev) => prev.filter((m) => !claimableIds.includes(m.mission_id)))
+    }
+
+    // SafeAreaInsetsが準備できるまでローディング表示
+    if (!isSafeAreaReady) {
+        return <View style={{ flex: 1, backgroundColor: 'transparent' }} />
     }
 
     return (
