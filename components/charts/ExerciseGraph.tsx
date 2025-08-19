@@ -18,6 +18,13 @@ interface UserData {
         day: string
         exercise_quantity: number
     }>
+    hourly_steps?: Array<{
+        time: string
+        timeValue: number
+        steps: number
+        totalSteps: number
+        timestamp: string
+    }>
 }
 
 interface ExerciseGraphProps {
@@ -35,10 +42,58 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     onChartTypeChange,
     isLoading = false,
 }) => {
-    // 日別歩数データ取得メソッド（2時間ごと13本のダミーデータ）
+    // 日別歩数データ取得メソッド（2時間ごと13本のデータ）
     const getDailyStepsData = () => {
-        // ダミーデータ（朝少なめ→昼多め→夜減少の現実的な推移）
-        return [200, 300, 400, 700, 1000, 1100, 1200, 1100, 900, 600, 400, 200, 100]
+        console.log('🕒 ExerciseGraph: getDailyStepsData呼び出し', {
+            userData: !!userData,
+            hourly_steps: userData?.hourly_steps,
+            hourly_steps_length: userData?.hourly_steps ? userData.hourly_steps.length : 0,
+        })
+
+        if (userData?.hourly_steps && userData.hourly_steps.length > 0) {
+            // 現在の時刻を取得
+            const now = new Date()
+            const currentHour = now.getHours()
+
+            console.log('🕒 現在時刻:', {
+                currentHour,
+                currentTime: now.toLocaleTimeString(),
+            })
+
+            // APIから取得した時間別データを2時間ごとにグループ化
+            const hourlyData = new Array(13).fill(0) // 0,2,4,6,8,10,12,14,16,18,20,22,24の13区間
+
+            console.log('🕒 ExerciseGraph: 時間別データを処理開始', userData.hourly_steps)
+
+            userData.hourly_steps.forEach((item, index) => {
+                // timeValueを使ってインデックスを計算（timeValue は 0,2,4,6,8,10,12,14,16,18,20,22）
+                const hourIndex = item.timeValue / 2 // 2時間ごとの区間に変換 (0,1,2,3,4,5,6,7,8,9,10,11)
+
+                // 現在時刻より早いデータのみ処理する
+                if (item.timeValue <= currentHour) {
+                    console.log(
+                        `🕒 ExerciseGraph: アイテム${index}: timeValue=${item.timeValue}, steps=${item.steps}, hourIndex=${hourIndex} (現在時刻より早い)`
+                    )
+                    if (hourIndex >= 0 && hourIndex < 12) {
+                        // 0-11のインデックス（12区間）
+                        hourlyData[hourIndex] = item.steps // 各区間の歩数
+                    }
+                } else {
+                    console.log(
+                        `🕒 ExerciseGraph: アイテム${index}: timeValue=${item.timeValue}, steps=${item.steps} (現在時刻より未来なのでスキップ)`
+                    )
+                }
+            })
+
+            // 24時の区間（インデックス12）は通常0なので、そのまま0で良い
+
+            console.log('🕒 時間別歩数データ使用（現在時刻フィルタ適用後）:', hourlyData)
+            return hourlyData
+        } else {
+            // ダミーデータ（朝少なめ→昼多め→夜減少の現実的な推移）
+            console.log('🕒 ダミー時間別歩数データ使用')
+            return [200, 300, 400, 700, 1000, 1100, 1200, 1100, 900, 600, 400, 200, 100]
+        }
     }
 
     // 週別歩数データ取得メソッド
@@ -85,13 +140,25 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     // 表示用歩数計算メソッド（合計・平均）
     const getDisplaySteps = () => {
         const stepsData = getStepsData()
+        console.log('📊 ExerciseGraph: getDisplaySteps呼び出し', {
+            period,
+            stepsDataLength: stepsData.length,
+            stepsData: stepsData,
+            userData_exists: !!userData,
+            hourly_steps_exists: !!userData?.hourly_steps,
+        })
+
         if (period === '週' || period === '月') {
             if (stepsData.length === 0) return 0
             // 平均歩数
-            return Math.round(stepsData.reduce((sum, steps) => sum + steps, 0) / stepsData.length)
+            const average = Math.round(stepsData.reduce((sum, steps) => sum + steps, 0) / stepsData.length)
+            console.log('📊 ExerciseGraph: 平均計算結果', { period, average, stepsData })
+            return average
         } else {
             // 合計歩数
-            return stepsData.reduce((sum, steps) => sum + steps, 0)
+            const total = stepsData.reduce((sum, steps) => sum + steps, 0)
+            console.log('📊 ExerciseGraph: 合計計算結果', { period, total, stepsData })
+            return total
         }
     }
 
@@ -122,6 +189,34 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
         const chartWidth = responsiveWidth(95)
         const chartHeight = responsiveHeight(20)
 
+        // 折れ線グラフ用に現在時刻までのデータを制限
+        let chartData = barData
+        let chartLabels = labels
+
+        if (chartType === 'line') {
+            const now = new Date()
+            const currentHour = now.getHours()
+            // 現在時刻の2時間区間を計算（例：14時なら7番目の区間）
+            const currentIndex = Math.floor(currentHour / 2) + 1 // +1は現在の区間も含める
+
+            console.log('📈 折れ線グラフ: 現在時刻によるデータ制限', {
+                currentHour,
+                currentIndex,
+                originalDataLength: barData.length,
+                originalData: barData,
+            })
+
+            // 現在時刻までのデータのみを使用
+            chartData = barData.slice(0, currentIndex)
+            chartLabels = labels.slice(0, currentIndex)
+
+            console.log('📈 折れ線グラフ: 制限後のデータ', {
+                chartDataLength: chartData.length,
+                chartData,
+                chartLabels,
+            })
+        }
+
         return (
             <View style={{ alignItems: 'center' }}>
                 {chartType === 'bar' ?
@@ -132,8 +227,8 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                         height={chartHeight}
                     />
                 :   <CustomDailyLineChart
-                        data={barData}
-                        labels={labels}
+                        data={chartData}
+                        labels={chartLabels}
                         width={chartWidth}
                         height={chartHeight}
                     />

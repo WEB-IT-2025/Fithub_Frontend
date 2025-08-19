@@ -35,6 +35,13 @@ interface UserData {
         day: string
         count: string
     }>
+    hourly_steps?: Array<{
+        time: string
+        timeValue: number
+        steps: number
+        totalSteps: number
+        timestamp: string
+    }>
 }
 
 interface User {
@@ -92,6 +99,7 @@ const ProfileContent = ({
     const [petData, setPetData] = useState<PetData | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [isPetLoading, setIsPetLoading] = useState(false)
+    const [isHourlyDataLoading, setIsHourlyDataLoading] = useState(false)
     const sliderAnim = useRef(new Animated.Value(0)).current
     const healthAnim = useRef(new Animated.Value(0)).current
     const sizeAnim = useRef(new Animated.Value(0)).current
@@ -150,6 +158,84 @@ const ProfileContent = ({
         }
     }, [isOwnProfile])
 
+    // APIから2時間ごとの歩数データを取得する関数
+    const fetchHourlyStepsData = useCallback(async () => {
+        if (!isOwnProfile || isHourlyDataLoading) return null // 他人のプロフィールまたは既にローディング中の場合は取得しない
+
+        try {
+            setIsHourlyDataLoading(true)
+
+            // AsyncStorageからトークンを取得
+            const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+            if (!token) {
+                console.log('Profile: トークンがありません（hourly）')
+                return null
+            }
+
+            console.log('🕒 Profile: 時間別データ取得開始')
+
+            // 時間別データを取得
+            const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            if (hourlyResponse.ok) {
+                const hourlyData = await hourlyResponse.json()
+                console.log('✅ Profile: 時間別データ取得成功', hourlyData)
+
+                if (hourlyData.success && hourlyData.data && hourlyData.data.hourly_data) {
+                    console.log('🕒 Profile: 時間別データの詳細:', {
+                        dataType: typeof hourlyData.data.hourly_data,
+                        isArray: Array.isArray(hourlyData.data.hourly_data),
+                        length: hourlyData.data.hourly_data.length,
+                        firstItem: hourlyData.data.hourly_data[0],
+                        allData: hourlyData.data.hourly_data,
+                    })
+
+                    // データが配列でない場合の対処
+                    if (!Array.isArray(hourlyData.data.hourly_data)) {
+                        console.log('❌ Profile: 時間別データが配列ではありません', hourlyData.data.hourly_data)
+                        return null
+                    }
+
+                    // データの各要素が期待される形式かチェック
+                    const isValidData = hourlyData.data.hourly_data.every(
+                        (item) =>
+                            typeof item === 'object' &&
+                            typeof item.timeValue === 'number' &&
+                            typeof item.steps === 'number'
+                    )
+
+                    if (!isValidData) {
+                        console.log('❌ Profile: 時間別データの形式が不正です', hourlyData.data.hourly_data)
+                        return null
+                    }
+
+                    console.log('✅ Profile: 時間別データ検証完了')
+                    return hourlyData.data.hourly_data
+                } else {
+                    console.log('❌ Profile: APIレスポンスが不正です', {
+                        success: hourlyData.success,
+                        hasData: !!hourlyData.data,
+                        hasHourlyData: !!(hourlyData.data && hourlyData.data.hourly_data),
+                    })
+                }
+            } else {
+                console.log('❌ Profile: 時間別データ取得失敗', hourlyResponse.status)
+            }
+        } catch (error) {
+            console.error('❌ Profile: 時間別データ取得エラー:', error)
+        } finally {
+            setIsHourlyDataLoading(false)
+        }
+
+        return null
+    }, [isOwnProfile, isHourlyDataLoading])
+
     // APIからユーザーデータを取得する関数
     const fetchUserData = useCallback(async () => {
         if (!isOwnProfile) return // 他人のプロフィールの場合はAPIからデータを取得しない
@@ -181,7 +267,26 @@ const ProfileContent = ({
                 console.log('✅ Profile: ユーザーデータ取得成功', userData)
 
                 if (userData.success && userData.data) {
-                    setUserData(userData.data)
+                    // 時間別データも取得して結合
+                    const hourlySteps = await fetchHourlyStepsData()
+                    console.log('🔗 Profile: データ結合処理:', {
+                        userDataExists: !!userData.data,
+                        hourlyStepsExists: !!hourlySteps,
+                        hourlyStepsLength: hourlySteps ? hourlySteps.length : 0,
+                    })
+
+                    const combinedUserData = {
+                        ...userData.data,
+                        hourly_steps: hourlySteps,
+                    }
+
+                    console.log('🔗 Profile: 結合後データ:', {
+                        today: combinedUserData.today,
+                        recent_exercise: combinedUserData.recent_exercise ? combinedUserData.recent_exercise.length : 0,
+                        hourly_steps: combinedUserData.hourly_steps ? combinedUserData.hourly_steps.length : 0,
+                    })
+
+                    setUserData(combinedUserData)
 
                     // ユーザー基本情報も設定
                     if (userData.data.user_name || userData.data.user_id) {
@@ -201,7 +306,7 @@ const ProfileContent = ({
         } finally {
             setIsLoading(false)
         }
-    }, [isOwnProfile, setIsLoading, setUserData, setUser])
+    }, [isOwnProfile])
 
     // SafeAreaInsetsが確実に取得できるまで待つ
     useEffect(() => {
@@ -225,11 +330,11 @@ const ProfileContent = ({
 
     // コンポーネントマウント時にデータを取得
     useEffect(() => {
-        if (!externalUserData && isOwnProfile) {
+        if (!externalUserData && isOwnProfile && !isLoading) {
             fetchUserData()
             fetchMainPet()
         }
-    }, [externalUserData, isOwnProfile, fetchUserData, fetchMainPet])
+    }, [externalUserData, isOwnProfile])
 
     // 外部データが更新された場合に内部状態を更新
     useEffect(() => {
@@ -237,6 +342,50 @@ const ProfileContent = ({
             setUserData(externalUserData)
         }
     }, [externalUserData])
+
+    // 期間が「日」に変更された時、時間別データが不足している場合は取得
+    useEffect(() => {
+        const fetchHourlyDataIfNeeded = async () => {
+            console.log('🕒 期間変更チェック:', {
+                period,
+                isOwnProfile,
+                userDataExists: !!userData,
+                hourlyStepsExists: !!userData?.hourly_steps,
+                isHourlyDataLoading,
+            })
+
+            // 条件: 期間が「日」、自分のプロフィール、ユーザーデータ存在、時間別データなし、ローディング中でない
+            if (period === '日' && isOwnProfile && userData && !userData.hourly_steps && !isHourlyDataLoading) {
+                console.log('🕒 期間が「日」に変更されました。時間別データを取得します。')
+                const hourlySteps = await fetchHourlyStepsData()
+                console.log('🕒 期間変更時取得データ:', {
+                    hourlySteps,
+                    isArray: Array.isArray(hourlySteps),
+                    length: hourlySteps ? hourlySteps.length : 0,
+                })
+                if (hourlySteps && hourlySteps.length > 0) {
+                    console.log('🕒 期間変更時データ取得成功:', hourlySteps.length)
+                    setUserData((prevData) => {
+                        // prevDataがnullでないことを確認
+                        if (!prevData) return prevData
+
+                        const newData = {
+                            ...prevData,
+                            hourly_steps: hourlySteps,
+                        }
+                        console.log('🕒 期間変更時データ更新完了:', {
+                            hourly_steps: newData.hourly_steps ? newData.hourly_steps.length : 0,
+                        })
+                        return newData
+                    })
+                } else {
+                    console.log('❌ 時間別データの取得に失敗しました')
+                }
+            }
+        }
+
+        fetchHourlyDataIfNeeded()
+    }, [period, isOwnProfile, userData?.today?.date, isHourlyDataLoading, fetchHourlyStepsData])
 
     // スライダーアニメーション
     useEffect(() => {
@@ -633,7 +782,16 @@ const ProfileContent = ({
 
             {/* ExerciseGraphコンポーネント */}
             <ExerciseGraph
-                userData={userData || undefined}
+                userData={(() => {
+                    // デバッグ用：現在のuserDataの内容をログ出力
+                    console.log('🔍 ProfileContent: ExerciseGraphに渡すuserData:', {
+                        today: userData?.today,
+                        recent_exercise: userData?.recent_exercise ? `${userData.recent_exercise.length}件` : 'なし',
+                        hourly_steps: userData?.hourly_steps ? `${userData.hourly_steps.length}件` : 'なし',
+                        hourly_steps_data: userData?.hourly_steps,
+                    })
+                    return userData || undefined
+                })()}
                 period={period}
                 chartType={chartType}
                 onChartTypeChange={setChartType}
