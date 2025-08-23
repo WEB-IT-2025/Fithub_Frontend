@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import {
     faAddressBook,
@@ -9,6 +9,7 @@ import {
     faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import {
     Alert,
@@ -30,13 +31,86 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import TabBar from '../../components/TabBar'
 import OtherProfile from '../other-profile'
 
-// ステータスごとのサイズ
+// APIベースURL設定
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+
+// デバッグモード設定
+const DEBUG_MODE = __DEV__ // 開発モード時のみデバッグログを出力
+
+// ストレージキー
+const STORAGE_KEYS = {
+    SESSION_TOKEN: 'session_token',
+    USER_ID: 'user_id',
+}
+
+// APIレスポンスの型定義
+interface ApiGroupMember {
+    user_id: string
+    user_name: string
+    user_icon: string
+    is_leader: boolean
+    role: 'MEMBER' | 'GROUP_LEADER'
+    main_pet: {
+        pet_name: string
+        item_id: string
+        pet_size: number
+        pet_intimacy: number
+        pet_image: string
+    }
+}
+
+// 表示用統合型（APIとモックの両方に対応）
+interface DisplayMember {
+    user_id: string
+    user_name?: string
+    name?: string
+    user_icon?: string
+    is_leader?: boolean
+    role?: string
+    main_pet?: {
+        pet_name: string
+        item_id: string
+        pet_size: number
+        pet_intimacy: number
+        pet_image: string
+    }
+    pet?: {
+        pet_id: string
+        pet_size: number
+        pet_state: number
+        pet_pictures: string
+    }
+}
+
+// ペットサイズに基づく表示サイズ（APIのpet_sizeに対応）
 const statusToSize: Record<number, number> = {
     1: 48,
-    2: 64,
-    3: 80,
-    4: 96,
-    5: 112,
+    2: 56,
+    3: 64,
+    4: 72,
+    5: 80,
+    // APIから受け取る可能性のあるより大きなサイズにも対応
+    10: 88,
+    20: 96,
+    30: 104,
+    40: 112,
+    50: 120,
+    // 最大サイズ
+    100: 128,
+}
+
+// ペット画像のマッピング（APIのpet_imageに対応）
+const petImageMap: Record<string, any> = {
+    'tora_cat.png': require('@/assets/images/tora_cat.png'),
+    'pome.png': require('@/assets/images/pome.png'),
+    'cat1.png': require('@/assets/images/cat1.png'),
+    'mike_cat.png': require('@/assets/images/mike_cat.png'),
+    'black_cat.png': require('@/assets/images/black_cat.png'),
+    'vitiligo_cat.png': require('@/assets/images/vitiligo_cat.png'),
+    'fithub_cat.png': require('@/assets/images/fithub_cat.png'),
+    'ameshort_cat.png': require('@/assets/images/ameshort_cat.png'),
+    // デフォルト画像
+    default: require('@/assets/images/cat1.png'),
 }
 
 // 仮のAPIレスポンス例
@@ -149,19 +223,183 @@ const rooms = [
 ]
 
 const RoomScreen = () => {
-    const { roomId } = useLocalSearchParams<{ roomId: string }>()
+    const { roomId, groupName, groupId } = useLocalSearchParams<{
+        roomId: string
+        groupName: string
+        groupId: string
+    }>()
     const router = useRouter()
 
-    // --- RoomScreen内で部屋名を取得 ---
+    // --- パラメータから受け取ったグループ名を使用し、フォールバックとして従来のロジックを保持 ---
     const room = rooms.find((r) => String(r.id) === String(roomId))
-    const roomName = room ? room.name : 'ルーム'
+    const roomName = groupName || (room ? room.name : 'ルーム')
 
     const [menuOpen, setMenuOpen] = useState(false)
     const [membersModalVisible, setMembersModalVisible] = useState(false)
     const [userDetailModalVisible, setUserDetailModalVisible] = useState(false)
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [profileKey, setProfileKey] = useState(0) // プロフィール強制再レンダリング用のキー
+    const [groupMembers, setGroupMembers] = useState<ApiGroupMember[]>([]) // APIから取得したメンバー情報
+    const [loading, setLoading] = useState(false)
+    const [sessionToken, setSessionToken] = useState<string | null>(null)
+    const [isInitialized, setIsInitialized] = useState(false) // 初期化フラグ
     const anim = useRef(new Animated.Value(0)).current
+
+    // セッショントークンを取得する関数
+    const getSessionToken = async (): Promise<string | null> => {
+        try {
+            const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+            return token
+        } catch (error) {
+            console.error('❌ トークン取得エラー:', error)
+            return null
+        }
+    }
+
+    // 認証情報を読み込む
+    const loadAuthInfo = async () => {
+        try {
+            const token = await getSessionToken()
+            setSessionToken(token)
+            setIsInitialized(true) // 初期化完了をマーク
+            if (DEBUG_MODE) {
+                console.log('🔐 セッショントークン取得:', token ? 'あり' : 'なし')
+            }
+        } catch (error) {
+            console.error('❌ 認証情報読み込みエラー:', error)
+            setIsInitialized(true) // エラーでも初期化完了をマーク
+        }
+    }
+
+    // グループメンバー情報を取得する関数
+    const fetchGroupMembers = useCallback(async () => {
+        try {
+            setLoading(true)
+
+            // 常に最新のトークンを取得する
+            const currentToken = await getSessionToken()
+
+            if (DEBUG_MODE) {
+                console.log('🔍 デバッグ情報:')
+                console.log('- roomId:', roomId)
+                console.log('- groupId:', groupId)
+                console.log('- currentToken:', currentToken ? `${currentToken.substring(0, 20)}...` : 'null')
+            }
+
+            if (!currentToken) {
+                if (DEBUG_MODE) console.warn('⚠️ セッショントークンが見つかりません。ログインが必要です。')
+                setGroupMembers([])
+                return
+            }
+
+            // パラメータから受け取ったgroupIdを優先し、なければroomIdから生成
+            const apiGroupId = groupId || (roomId?.startsWith('g') ? roomId : `g${roomId}`)
+            const apiUrl = `${API_BASE_URL}/api/group/members/list/${apiGroupId}`
+
+            if (DEBUG_MODE) {
+                console.log('👥 グループメンバーAPI呼び出し開始:')
+                console.log('- API URL:', apiUrl)
+                console.log('- API Group ID:', apiGroupId)
+                console.log('- Original roomId:', roomId)
+                console.log('- Passed groupId:', groupId)
+                console.log('- Authorization Header:', `Bearer ${currentToken?.substring(0, 20)}...`)
+            }
+
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${currentToken}`,
+                },
+            })
+
+            console.log('📡 グループメンバーAPI応答:')
+            console.log('- Status:', response.status)
+            console.log('- Status Text:', response.statusText)
+            if (DEBUG_MODE) {
+                console.log('- Headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2))
+            }
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                console.error('❌ API エラー詳細:')
+                console.error('- Status:', response.status)
+                console.error('- Status Text:', response.statusText)
+                console.error('- Error Body:', errorText)
+
+                if (response.status === 401) {
+                    console.error('❌ 認証エラー: トークンが無効または期限切れです')
+                    setSessionToken(null)
+                    await AsyncStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN)
+                    throw new Error('認証が必要です。再度ログインしてください。')
+                }
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
+            }
+
+            const responseText = await response.text()
+            if (DEBUG_MODE) {
+                console.log('📄 レスポンスボディ（テキスト）:', responseText)
+            }
+
+            let data: ApiGroupMember[]
+            try {
+                data = JSON.parse(responseText)
+                if (DEBUG_MODE) {
+                    console.log('✅ パースされたJSONデータ:', JSON.stringify(data, null, 2))
+                }
+            } catch (parseError) {
+                console.error('❌ JSON パースエラー:', parseError)
+                if (DEBUG_MODE) {
+                    console.error('❌ レスポンステキスト:', responseText)
+                }
+                throw new Error(`JSON parse error: ${parseError}`)
+            }
+
+            if (DEBUG_MODE) {
+                console.log('✅ APIから取得したグループメンバーデータ:')
+                console.log('- データ数:', data.length)
+                data.forEach((member, index) => {
+                    console.log(`- メンバー${index + 1}:`, {
+                        user_id: member.user_id,
+                        user_name: member.user_name,
+                        is_leader: member.is_leader,
+                        pet_name: member.main_pet?.pet_name,
+                        pet_size: member.main_pet?.pet_size,
+                        pet_image: member.main_pet?.pet_image,
+                    })
+                })
+            }
+
+            setGroupMembers(data)
+        } catch (error) {
+            console.error('❌ グループメンバー取得失敗:')
+            console.error('- Error:', error)
+            console.error('- Error message:', error instanceof Error ? error.message : 'Unknown error')
+            console.error('- Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+
+            // エラーの場合は従来のモックデータを使用
+            setGroupMembers([])
+        } finally {
+            setLoading(false)
+        }
+    }, [roomId, groupId]) // 依存配列を最小限に絞る
+
+    // コンポーネント初期化の統合useEffect
+    useEffect(() => {
+        const initializeScreen = async () => {
+            if (!isInitialized) {
+                await loadAuthInfo()
+            }
+        }
+        initializeScreen()
+    }, [isInitialized])
+
+    // 初期化後にメンバー情報を取得
+    useEffect(() => {
+        if (isInitialized && roomId) {
+            fetchGroupMembers()
+        }
+    }, [isInitialized, roomId, groupId]) // fetchGroupMembersを依存配列から除外
 
     // メンバー一覧を表示
     const handleShowMembers = () => {
@@ -178,6 +416,18 @@ const RoomScreen = () => {
         }, 200)
     }
 
+    // メンバー詳細を更新（API対応）
+    const getMemberDetails = (member: DisplayMember) => {
+        if (member.main_pet) {
+            // APIデータの場合
+            return `ペット: ${member.main_pet.pet_name || 'なし'} | サイズ: ${member.main_pet.pet_size || 0} | 親密度: ${member.main_pet.pet_intimacy || 0}`
+        } else if (member.pet) {
+            // モックデータの場合
+            return `ペットサイズ: ${member.pet.pet_size} | 健康度: ${member.pet.pet_state}`
+        }
+        return 'ペット情報なし'
+    }
+
     // 退会確認ダイアログ
     const handleLeaveGroup = () => {
         Alert.alert(
@@ -191,14 +441,93 @@ const RoomScreen = () => {
                 {
                     text: 'はい',
                     style: 'destructive',
-                    onPress: () => {
-                        // group.tsxに遷移
-                        router.push('/(tabs)/group')
+                    onPress: async () => {
+                        await leaveGroup()
                     },
                 },
             ],
             { cancelable: true }
         )
+    }
+
+    // グループ退会API呼び出し
+    const leaveGroup = async () => {
+        try {
+            setLoading(true)
+
+            // 常に最新のトークンを取得する
+            const currentToken = await getSessionToken()
+
+            console.log('🚪 グループ退会処理開始:')
+            console.log('- roomId:', roomId)
+            console.log('- groupId:', groupId)
+            console.log('- currentToken:', currentToken ? `${currentToken.substring(0, 20)}...` : 'null')
+
+            if (!currentToken) {
+                console.warn('⚠️ セッショントークンが見つかりません。ログインが必要です。')
+                Alert.alert('エラー', '認証が必要です。再度ログインしてください。')
+                return
+            }
+
+            // パラメータから受け取ったgroupIdを優先し、なければroomIdから生成
+            const apiGroupId = groupId || (roomId?.startsWith('g') ? roomId : `g${roomId}`)
+            const apiUrl = `${API_BASE_URL}/api/group/members/leave/${apiGroupId}`
+
+            console.log('🚪 グループ退会API呼び出し開始:')
+            console.log('- API URL:', apiUrl)
+            console.log('- API Group ID:', apiGroupId)
+            console.log('- Authorization Header:', `Bearer ${currentToken?.substring(0, 20)}...`)
+
+            const response = await fetch(apiUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${currentToken}`,
+                },
+            })
+
+            console.log('📡 グループ退会API応答:')
+            console.log('- Status:', response.status)
+            console.log('- Status Text:', response.statusText)
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                console.error('❌ グループ退会APIエラー:')
+                console.error('- Status:', response.status)
+                console.error('- Status Text:', response.statusText)
+                console.error('- Error Body:', errorText)
+
+                if (response.status === 401) {
+                    console.error('❌ 認証エラー: トークンが無効または期限切れです')
+                    Alert.alert('エラー', '認証が必要です。再度ログインしてください。')
+                    return
+                }
+
+                Alert.alert('エラー', 'グループ退会に失敗しました。もう一度お試しください。')
+                return
+            }
+
+            console.log('✅ グループ退会成功')
+
+            // 退会成功時の処理
+            Alert.alert('退会完了', 'グループから退会しました。', [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        // グループ一覧画面に戻る
+                        router.push('/(tabs)/group')
+                    },
+                },
+            ])
+        } catch (error) {
+            console.error('❌ グループ退会処理失敗:')
+            console.error('- Error:', error)
+            console.error('- Error message:', error instanceof Error ? error.message : 'Unknown error')
+
+            Alert.alert('エラー', 'グループ退会処理中にエラーが発生しました。')
+        } finally {
+            setLoading(false)
+        }
     }
 
     const menuItems = [
@@ -221,10 +550,78 @@ const RoomScreen = () => {
         },
     ]
 
-    // ペットのランダム位置を初期化
-    const [petPositions] = useState(() =>
-        getNonOverlappingPositions(groupUsers.length, (idx) => statusToSize[groupUsers[idx].pet.pet_size] || 64)
-    )
+    // APIデータとモックデータを組み合わせて表示用データを作成
+    const displayMembers: DisplayMember[] = useMemo(() => {
+        return groupMembers.length > 0 ?
+                groupMembers.map((member) => ({
+                    user_id: member.user_id,
+                    user_name: member.user_name,
+                    user_icon: member.user_icon,
+                    is_leader: member.is_leader,
+                    role: member.role,
+                    main_pet: member.main_pet,
+                }))
+            :   groupUsers.map((user) => ({
+                    user_id: user.user_id,
+                    name: user.name,
+                    pet: user.pet,
+                }))
+    }, [groupMembers])
+
+    // ペットのランダム位置を初期化（メンバー数に応じて動的に計算）
+    const [petPositions, setPetPositions] = useState<{ top: number; left: number }[]>([])
+
+    // メンバー情報が更新されたときにペット位置を再計算
+    useEffect(() => {
+        if (displayMembers.length > 0) {
+            const positions = getNonOverlappingPositions(displayMembers.length, (idx) => {
+                const member = displayMembers[idx]
+                if (member.main_pet?.pet_size) {
+                    // APIデータの場合
+                    return statusToSize[member.main_pet.pet_size] || 64
+                } else if (member.pet?.pet_size) {
+                    // モックデータの場合
+                    return statusToSize[member.pet.pet_size] || 64
+                }
+                return 64
+            })
+            setPetPositions(positions)
+        }
+    }, [displayMembers.length, groupMembers.length]) // より具体的な依存関係を指定
+
+    // ペット画像を取得する関数
+    const getPetImage = (member: DisplayMember) => {
+        if (member.main_pet?.pet_image) {
+            // APIデータの場合
+            const petImage = member.main_pet.pet_image
+            return petImageMap[petImage] || petImageMap.default
+        } else {
+            // モックデータの場合
+            return require('@/assets/images/cat1.png')
+        }
+    }
+
+    // ペットサイズを取得する関数
+    const getPetSize = (member: DisplayMember) => {
+        if (member.main_pet?.pet_size) {
+            // APIデータの場合
+            return statusToSize[member.main_pet.pet_size] || 64
+        } else if (member.pet?.pet_size) {
+            // モックデータの場合
+            return statusToSize[member.pet.pet_size] || 64
+        }
+        return 64
+    }
+
+    // ユーザー名を取得する関数
+    const getUserName = (member: DisplayMember) => {
+        return member.user_name || member.name || 'Unknown'
+    }
+
+    // キーを生成する関数
+    const getMemberKey = (member: DisplayMember) => {
+        return member.user_id || member.pet?.pet_id || 'unknown'
+    }
 
     const toggleMenu = () => {
         setMenuOpen((prev) => {
@@ -268,37 +665,44 @@ const RoomScreen = () => {
 
                 {/* ペット画像をランダム配置 */}
                 <View style={styles.petArea}>
-                    {groupUsers.map((user, idx) => (
-                        <TouchableOpacity
-                            key={user.pet.pet_id}
-                            style={[
-                                {
-                                    position: 'absolute',
-                                    top: petPositions[idx].top,
-                                    left: petPositions[idx].left,
-                                },
-                            ]}
-                            onPress={() => {
-                                setSelectedUser(user)
-                                setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
-                                setTimeout(() => {
-                                    setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
-                                }, 500)
-                            }}
-                        >
-                            <Image
-                                source={require('@/assets/images/cat1.png')}
+                    {loading && (
+                        <View style={styles.loadingContainer}>
+                            <Text style={styles.loadingText}>メンバー情報を読み込み中...</Text>
+                        </View>
+                    )}
+
+                    {!loading &&
+                        displayMembers.map((member, idx) => (
+                            <TouchableOpacity
+                                key={getMemberKey(member)}
                                 style={[
-                                    styles.petImage,
                                     {
-                                        width: statusToSize[user.pet.pet_size] || 64, // 万一undefinedなら64
-                                        height: statusToSize[user.pet.pet_size] || 64,
+                                        position: 'absolute',
+                                        top: petPositions[idx]?.top || 100,
+                                        left: petPositions[idx]?.left || 100,
                                     },
                                 ]}
-                                resizeMode='contain'
-                            />
-                        </TouchableOpacity>
-                    ))}
+                                onPress={() => {
+                                    setSelectedUser(member)
+                                    setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+                                    setTimeout(() => {
+                                        setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+                                    }, 500)
+                                }}
+                            >
+                                <Image
+                                    source={getPetImage(member)}
+                                    style={[
+                                        styles.petImage,
+                                        {
+                                            width: getPetSize(member),
+                                            height: getPetSize(member),
+                                        },
+                                    ]}
+                                    resizeMode='contain'
+                                />
+                            </TouchableOpacity>
+                        ))}
                 </View>
 
                 {/* フローティングメニュー */}
@@ -389,23 +793,25 @@ const RoomScreen = () => {
                             </View>
 
                             <FlatList
-                                data={groupUsers}
-                                keyExtractor={(item) => item.user_id}
+                                data={displayMembers}
+                                keyExtractor={(item) => getMemberKey(item)}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
                                         style={styles.memberItem}
                                         onPress={() => handleShowUserDetail(item)}
                                     >
                                         <Image
-                                            source={require('@/assets/images/cat1.png')}
+                                            source={getPetImage(item)}
                                             style={styles.memberPetImage}
                                             resizeMode='contain'
                                         />
                                         <View style={styles.memberInfo}>
-                                            <Text style={styles.memberName}>{item.name}</Text>
-                                            <Text style={styles.memberDetails}>
-                                                ペットサイズ: {item.pet.pet_size} | 健康度: {item.pet.pet_state}
-                                            </Text>
+                                            <View style={styles.memberNameContainer}>
+                                                <Text style={styles.memberName}>{getUserName(item)}</Text>
+                                                {/* リーダーバッジ表示（APIデータの場合のみ） */}
+                                                {item.is_leader && <Text style={styles.leaderText}>👑 リーダー</Text>}
+                                            </View>
+                                            <Text style={styles.memberDetails}>{getMemberDetails(item)}</Text>
                                         </View>
                                     </TouchableOpacity>
                                 )}
@@ -435,7 +841,7 @@ const RoomScreen = () => {
                             <SafeAreaView style={styles.fullScreenModal}>
                                 <OtherProfile
                                     key={profileKey}
-                                    userName={selectedUser.name}
+                                    userName={getUserName(selectedUser)}
                                     userData={{
                                         today: {
                                             steps: 5000,
@@ -464,7 +870,7 @@ const RoomScreen = () => {
                             >
                                 <OtherProfile
                                     key={profileKey}
-                                    userName={selectedUser.name}
+                                    userName={getUserName(selectedUser)}
                                     userData={{
                                         today: {
                                             steps: 5000,
@@ -529,6 +935,24 @@ const styles = StyleSheet.create({
         // borderRadius: 32,
         // borderWidth: 2,
         // borderColor: '#fff',
+    },
+    loadingContainer: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: [{ translateX: -100 }, { translateY: -20 }],
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingText: {
+        fontSize: 16,
+        color: '#666',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
     },
     menuArea: {
         position: 'absolute',
@@ -635,11 +1059,25 @@ const styles = StyleSheet.create({
     memberInfo: {
         flex: 1,
     },
+    memberNameContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
     memberName: {
         fontSize: 16,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 4,
+        marginRight: 8,
+    },
+    leaderText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#FFD700',
+        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
     },
     memberDetails: {
         fontSize: 14,
