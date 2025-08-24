@@ -740,8 +740,8 @@ const GroupScreen = () => {
                     <TouchableOpacity
                         style={styles.addButton}
                         onPress={() => {
-                            // 新しいグループ作成機能を追加予定
-                            console.log('新しいグループを作成')
+                            // グループ作成画面に遷移
+                            router.push('/group-create')
                         }}
                     >
                         <Ionicons
