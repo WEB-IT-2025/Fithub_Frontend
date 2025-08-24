@@ -18,7 +18,46 @@ const STORAGE_KEYS = {
 }
 
 // API設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
+
+// JWT解析ヘルパー関数
+const parseJwtPayload = (token: string): any | null => {
+    try {
+        const parts = token.split('.')
+        if (parts.length !== 3) return null
+
+        const payload = parts[1]
+        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+
+        switch (base64.length % 4) {
+            case 2:
+                base64 += '=='
+                break
+            case 3:
+                base64 += '='
+                break
+        }
+
+        return JSON.parse(atob(base64))
+    } catch {
+        return null
+    }
+}
+
+// コントリビューションデータの型定義（実際のAPIレスポンスに合わせて修正）
+interface ContributionData {
+    success: boolean
+    data: {
+        user_id: string
+        recent_contributions: Array<{
+            day: string
+            count: string
+        }>
+        weekly_total: number
+        monthly_total: number
+        last_updated: string
+    }
+}
 
 // プロフィール画面で使用するデータの型定義
 interface UserData {
@@ -100,10 +139,73 @@ const ProfileContent = ({
     const [isLoading, setIsLoading] = useState(false)
     const [isPetLoading, setIsPetLoading] = useState(false)
     const [isHourlyDataLoading, setIsHourlyDataLoading] = useState(false)
+    const [contributionData, setContributionData] = useState<ContributionData | null>(null)
+    const [isContributionLoading, setIsContributionLoading] = useState(false)
     const sliderAnim = useRef(new Animated.Value(0)).current
     const healthAnim = useRef(new Animated.Value(0)).current
     const sizeAnim = useRef(new Animated.Value(0)).current
     const ageAnim = useRef(new Animated.Value(0)).current
+
+    // コントリビューションデータを取得する関数
+    const fetchContributionData = useCallback(async () => {
+        if (!isOwnProfile) return // 他人のプロフィールの場合は取得しない
+
+        console.log('🔄 コントリビューションデータ取得開始')
+        setIsContributionLoading(true)
+
+        try {
+            // セッショントークンを取得
+            const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+            if (!token) {
+                console.warn('⚠️ セッショントークンが見つかりません')
+                return
+            }
+
+            // JWTからユーザーIDを抽出
+            const payload = parseJwtPayload(token)
+            const userId = payload?.user_id
+
+            if (!userId) {
+                console.error('❌ JWTからユーザーIDを取得できませんでした')
+                return
+            }
+
+            const apiUrl = `${API_BASE_URL}/api/data/contribution/${userId}`
+            console.log('📡 コントリビューションAPI呼び出し:', apiUrl)
+            console.log('👤 使用ユーザーID:', userId)
+
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+
+            console.log('📡 コントリビューションAPI応答:', response.status)
+
+            if (response.ok) {
+                const data: ContributionData = await response.json()
+                console.log('✅ コントリビューションデータ取得成功:', data)
+
+                if (data.success) {
+                    setContributionData(data)
+                    console.log(`📊 今週の総コントリビューション数: ${data.data.weekly_total}`)
+                    console.log(`📊 今月の総コントリビューション数: ${data.data.monthly_total}`)
+                    console.log(`📅 データ更新日: ${data.data.last_updated}`)
+                } else {
+                    console.warn('⚠️ コントリビューションAPIからsuccessがfalse')
+                }
+            } else {
+                const errorText = await response.text()
+                console.error('❌ コントリビューションAPI失敗:', response.status, errorText)
+            }
+        } catch (error) {
+            console.error('❌ コントリビューション取得エラー:', error)
+        } finally {
+            setIsContributionLoading(false)
+        }
+    }, [isOwnProfile])
 
     // APIからメインペットデータを取得する関数
     const fetchMainPet = useCallback(async () => {
@@ -333,6 +435,7 @@ const ProfileContent = ({
         if (!externalUserData && isOwnProfile && !isLoading) {
             fetchUserData()
             fetchMainPet()
+            fetchContributionData() // コントリビューションデータも自動取得
         }
     }, [externalUserData, isOwnProfile])
 
@@ -516,14 +619,32 @@ const ProfileContent = ({
         }
     }
 
-    // コントリビューションデータ取得メソッド（最新を右、古いものを左）
+    // コントリビューションデータ取得メソッド（新しいAPIから取得したデータを使用）
     const getContributionsData = () => {
-        if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
-            // 直近7日分のデータを時系列順に並べる（左が古い、右が新しい）
+        if (contributionData?.data?.recent_contributions && contributionData.data.recent_contributions.length > 0) {
+            // APIから取得した直近7日分のデータを時系列順に並べる（左が古い、右が新しい）
+            const contributions = contributionData.data.recent_contributions
+                .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()) // 日付順にソート
+                .slice(-7) // 直近7日分を取得
+                .map((contribution) => parseInt(contribution.count, 10))
+
+            console.log('📊 APIから取得したコントリビューションデータ:', contributions)
+            console.log('📊 元データ:', contributionData.data.recent_contributions)
+
+            // 7日に満たない場合は左側を0で埋める
+            while (contributions.length < 7) {
+                contributions.unshift(0)
+            }
+
+            return contributions
+        } else if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
+            // フォールバック: 既存のuserDataから取得
             const contributions = userData.recent_contributions
                 .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()) // 日付順にソート
                 .slice(-7) // 直近7日分を取得
                 .map((contribution) => parseInt(contribution.count, 10))
+
+            console.log('📊 userDataから取得したコントリビューションデータ:', contributions)
 
             // 7日に満たない場合は左側を0で埋める
             while (contributions.length < 7) {
@@ -533,6 +654,9 @@ const ProfileContent = ({
             return contributions
         } else {
             // ダミー値も左が古い、右が新しい（時系列順）
+            console.log('⚠️ コントリビューションデータなし - ダミーデータを使用')
+            console.log('⚠️ contributionData:', contributionData)
+            console.log('⚠️ userData?.recent_contributions:', userData?.recent_contributions)
             return [2, 0, 7, 12, 17, 22, 4]
         }
     }
@@ -632,7 +756,10 @@ const ProfileContent = ({
             :   <Text style={styles.userName}>{user?.user_name || userName || 'Nguyen Duc Huynh'}</Text>}
 
             {/* コントリビューション（週のみ） */}
-            <Text style={styles.sectionLabel}>今週のコントリビューション</Text>
+            <Text style={styles.sectionLabel}>
+                今週のコントリビューション
+                {isContributionLoading && <Text style={{ fontSize: 12, color: '#666' }}> (取得中...)</Text>}
+            </Text>
             <View style={styles.contributionBoard}>
                 <View style={styles.contributionRow}>
                     {getContributionsData().map((count, idx) => {

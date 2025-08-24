@@ -485,6 +485,14 @@ const ConfigScreen = () => {
             const result = await fetchUserInfo(token)
             if (result) {
                 console.log('✅ ネイティブfetch成功 - ユーザー情報取得完了')
+
+                // ユーザー情報取得成功時にユーザーIDを保存
+                if (result.user_id) {
+                    console.log('💾 fetchUserInfo成功 - ユーザーID保存:', result.user_id)
+                    await setStorageItem(STORAGE_KEYS.USER_ID, result.user_id)
+                    setUserId(result.user_id)
+                }
+
                 return result
             } else {
                 console.log('❌ ユーザー情報取得失敗')
@@ -588,6 +596,14 @@ const ConfigScreen = () => {
                 })
 
                 if (data.success && data.data) {
+                    // sync成功時にユーザーIDも保存
+                    const payload = parseJwtPayload(token)
+                    if (payload && payload.user_id) {
+                        console.log('💾 syncUserData成功 - ユーザーID保存:', payload.user_id)
+                        await setStorageItem(STORAGE_KEYS.USER_ID, payload.user_id)
+                        // setUserIdは呼び出し元で行う
+                    }
+
                     return data.data
                 } else {
                     console.warn('⚠️ データ同期レスポンス形式が予期しない:', data)
@@ -617,25 +633,26 @@ const ConfigScreen = () => {
     // OAuth URLの取得（ログイン用）
     const getOAuthUrlForLogin = async (provider: 'google' | 'github'): Promise<string | null> => {
         try {
+            // コールバックURLを追加（API仕様に従って）
+            const callbackUrl = encodeURIComponent('fithub://oauth')
+
             // ログイン専用エンドポイント（state: login_xxx形式）
-            const response = await fetch(`${API_BASE_URL}/api/auth/login/${provider}`)
+            const apiUrl = `${API_BASE_URL}/api/auth/login/${provider}?callback_url=${callbackUrl}`
+            console.log(`🔍 ${provider} ログインAPI呼び出し:`, apiUrl)
+
+            const response = await fetch(apiUrl)
 
             if (response.ok) {
                 const data = await response.json()
                 console.log(`📋 ${provider} ログインURL取得レスポンス:`, data)
 
                 if (data.success) {
-                    let oauthUrl = null
-
-                    if (provider === 'google' && data.google_oauth_url) {
-                        oauthUrl = data.google_oauth_url
-                    } else if (provider === 'github' && data.github_oauth_url) {
-                        oauthUrl = data.github_oauth_url
-                    }
+                    // 実際のAPIレスポンス形式に合わせて修正
+                    const oauthUrl = data.google_oauth_url || data.github_oauth_url
 
                     if (oauthUrl) {
                         console.log(`✅ ${provider} ログインURL取得成功:`, oauthUrl)
-                        console.log(`🔍 Intent: ${data.intent}, State: ${data.state}`)
+                        console.log(`🔍 State: ${data.state}`)
                         return oauthUrl
                     } else {
                         console.error(`❌ ${provider} ログインURLが見つかりません:`, data)
@@ -660,25 +677,26 @@ const ConfigScreen = () => {
     // 新規登録用のOAuth URL取得
     const getOAuthUrlForRegister = async (provider: 'google' | 'github'): Promise<string | null> => {
         try {
+            // コールバックURLを追加（API仕様に従って）
+            const callbackUrl = encodeURIComponent('fithub://oauth')
+
             // 新規登録用のエンドポイント（state: register_xxx形式）
-            const response = await fetch(`${API_BASE_URL}/api/auth/${provider}`)
+            const apiUrl = `${API_BASE_URL}/api/auth/${provider}?callback_url=${callbackUrl}`
+            console.log(`🔍 ${provider} 新規登録API呼び出し:`, apiUrl)
+
+            const response = await fetch(apiUrl)
 
             if (response.ok) {
                 const data = await response.json()
                 console.log(`📋 ${provider} 新規登録URL取得レスポンス:`, data)
 
                 if (data.success) {
-                    let oauthUrl = null
-
-                    if (provider === 'google' && data.google_oauth_url) {
-                        oauthUrl = data.google_oauth_url
-                    } else if (provider === 'github' && data.github_oauth_url) {
-                        oauthUrl = data.github_oauth_url
-                    }
+                    // 実際のAPIレスポンス形式に合わせて修正
+                    const oauthUrl = data.google_oauth_url || data.github_oauth_url
 
                     if (oauthUrl) {
                         console.log(`✅ ${provider} 新規登録URL取得成功:`, oauthUrl)
-                        console.log(`🔍 Intent: ${data.intent}, State: ${data.state}`)
+                        console.log(`🔍 State: ${data.state}`)
                         return oauthUrl
                     } else {
                         console.error(`❌ ${provider} 新規登録URLが見つかりません:`, data)
@@ -1455,6 +1473,17 @@ const ConfigScreen = () => {
 
             if (syncResult) {
                 setLastSyncTime(new Date(syncResult.synced_at))
+
+                // JWTからユーザーIDを抽出して保存
+                const payload = parseJwtPayload(sessionToken)
+                if (payload && payload.user_id) {
+                    console.log('💾 sync成功 - ユーザーID保存:', payload.user_id)
+                    await setStorageItem(STORAGE_KEYS.USER_ID, payload.user_id)
+                    setUserId(payload.user_id)
+                } else {
+                    console.warn('⚠️ JWTからユーザーIDを取得できませんでした')
+                }
+
                 Alert.alert(
                     '同期完了',
                     `データ同期が完了しました！\n\n` +
@@ -2024,14 +2053,38 @@ WebClient ID: ${process.env.EXPO_PUBLIC_WEBCLIENTID?.substring(0, 20)}...
             <ScrollView style={styles.scrollView}>
                 <View style={styles.loginContainer}>
                     <Text style={styles.title}>Fithub</Text>
-                    <Text style={styles.subtitle}>ログインまたは新規登録</Text>
+                    <Text style={styles.subtitle}>アカウントでログイン</Text>
 
                     <View style={styles.buttonContainer}>
                         <Button
-                            title='Googleで続行'
+                            title='🔑 Googleでログイン'
                             onPress={() => handleOAuthLogin('google')}
                             disabled={isLoading}
                             color='#4285f4'
+                        />
+                        <Button
+                            title='🔑 GitHubでログイン'
+                            onPress={() => handleOAuthLogin('github')}
+                            disabled={isLoading}
+                            color='#333'
+                        />
+                    </View>
+
+                    <Text style={styles.separatorText}>または</Text>
+
+                    <Text style={styles.registerSubtitle}>新規アカウント作成</Text>
+                    <View style={styles.buttonContainer}>
+                        <Button
+                            title='📝 Googleで新規登録'
+                            onPress={() => handleOAuthRegister('google')}
+                            disabled={isLoading}
+                            color='#34a853'
+                        />
+                        <Button
+                            title='📝 GitHubで新規登録'
+                            onPress={() => handleOAuthRegister('github')}
+                            disabled={isLoading}
+                            color='#24292e'
                         />
                     </View>
 
@@ -2403,6 +2456,21 @@ const styles = StyleSheet.create({
         color: '#757575',
         textAlign: 'center',
         lineHeight: 20,
+    },
+    separatorText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginVertical: 20,
+        fontWeight: '500',
+    },
+    registerSubtitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center',
+        marginBottom: 15,
+        marginTop: 5,
     },
 })
 

@@ -32,7 +32,7 @@ import TabBar from '../../components/TabBar'
 import OtherProfile from '../other-profile'
 
 // APIベースURL設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
 
 // デバッグモード設定
 const DEBUG_MODE = __DEV__ // 開発モード時のみデバッグログを出力

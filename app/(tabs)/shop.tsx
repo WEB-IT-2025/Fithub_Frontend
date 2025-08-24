@@ -41,7 +41,7 @@ interface ShopResponse {
 }
 
 // 環境変数からAPIベースURLを取得
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_TEST_URL
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL
 console.log('API_BASE_URL:', API_BASE_URL)
 // 画像マッピング用の関数
 const getImageSource = (imageFileName: string) => {
