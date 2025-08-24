@@ -34,6 +34,36 @@ const GroupCreateScreen = () => {
     // 参加上限の選択肢（2-10人）
     const participantOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+    // 利用可能なペット画像の配列
+    const petImages = [
+        'ameshort_cat',
+        'black_cat',
+        'bulldog',
+        'cat1',
+        'chihuahua',
+        'chinpan',
+        'fithub_cat',
+        'gingin_penguin',
+        'mike_cat',
+        'panda',
+        'penguin',
+        'pome',
+        'rabbit',
+        'shiba_dog',
+        'slime',
+        'takopee',
+        'toipo',
+        'tora_cat',
+        'vitiligo_cat',
+        'zebra'
+    ]
+
+    // ランダムなペット画像を選択する関数
+    const getRandomPetImage = () => {
+        const randomIndex = Math.floor(Math.random() * petImages.length)
+        return petImages[randomIndex]
+    }
+
     // セッショントークンを取得する関数
     const getSessionToken = async (): Promise<string | null> => {
         try {
@@ -70,7 +100,7 @@ const GroupCreateScreen = () => {
                 body: JSON.stringify({
                     group_name: groupName.trim(),
                     max_person: maxPerson,
-                    back_image: 'black_cat', // デフォルト値
+                    back_image: getRandomPetImage(), // ランダムなペット画像を設定
                     is_private: isPrivate,
                 }),
             })
