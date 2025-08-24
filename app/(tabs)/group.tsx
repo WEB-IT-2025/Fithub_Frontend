@@ -19,7 +19,7 @@ import {
 import TabBar from '../../components/TabBar'
 
 // APIベースURL設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
 
 // ストレージキー
 const STORAGE_KEYS = {

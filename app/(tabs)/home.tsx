@@ -83,7 +83,7 @@ const HomeScreen = () => {
             }
             console.log('トークン取得成功:', token.substring(0, 10) + '...')
 
-            const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(
+            const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(
                 /\/+$/,
                 ''
             )
@@ -171,7 +171,7 @@ const HomeScreen = () => {
             try {
                 const token = await AsyncStorage.getItem('session_token')
                 if (!token) return
-                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(
+                const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(
                     /\/+$/,
                     ''
                 )

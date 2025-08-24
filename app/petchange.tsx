@@ -30,7 +30,7 @@ import styles from './style/petchange.styles'
 const PET_NAME = 'とりゃー' // home.tsxと同じペット名を参照
 
 // API設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
 
 // カテゴリーと並び順の選択肢
 const CATEGORIES = ['すべて', '猫', '犬', '水生動物', 'その他']

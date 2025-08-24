@@ -18,7 +18,7 @@ const STORAGE_KEYS = {
 }
 
 // API設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(/\/+$/, '')
 
 // プロフィール画面で使用するデータの型定義
 interface UserData {

@@ -101,7 +101,7 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
 
         try {
             setLoading(true)
-            const apiUrl = `${process.env.EXPO_PUBLIC_API_TEST_URL}/api/mission/details?user_id=${userId}&category=${category}&cleared=${cleared}`
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/mission/details?user_id=${userId}&category=${category}&cleared=${cleared}`
             console.log('🚀 ミッションAPI呼び出し:', apiUrl)
             console.log('🔑 認証トークン使用:', sessionToken ? '有り' : '無し')
 
@@ -220,7 +220,7 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
         }
 
         try {
-            const apiUrl = `${process.env.EXPO_PUBLIC_API_TEST_URL}/api/mission/clear`
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/mission/clear`
             console.log('🚀 ミッションクリアAPI呼び出し:', apiUrl)
             console.log('📤 送信データ:', { mission_id: missionId })
 
