@@ -27,6 +27,30 @@ const STORAGE_KEYS = {
     USER_ID: 'user_id',
 }
 
+// JWT解析ヘルパー関数
+const parseJwtPayload = (token: string): any | null => {
+    try {
+        const parts = token.split('.')
+        if (parts.length !== 3) return null
+
+        const payload = parts[1]
+        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+
+        switch (base64.length % 4) {
+            case 2:
+                base64 += '=='
+                break
+            case 3:
+                base64 += '='
+                break
+        }
+
+        return JSON.parse(atob(base64))
+    } catch {
+        return null
+    }
+}
+
 // API response type for search
 interface ApiGroupData {
     group_id: string
@@ -244,7 +268,6 @@ const GroupScreen = () => {
     const fetchUserGroups = useCallback(async () => {
         try {
             setLoading(true)
-            console.log('🏠 ユーザーグループAPI呼び出し開始:', `${API_BASE_URL}/api/group/member/userlist`)
 
             // 現在のセッショントークンを取得
             const currentToken = sessionToken || (await getSessionToken())
@@ -255,9 +278,22 @@ const GroupScreen = () => {
                 return
             }
 
-            console.log('🔐 認証トークン使用:', currentToken.substring(0, 20) + '...')
+            // JWTからユーザーIDを抽出
+            const payload = parseJwtPayload(currentToken)
+            const userId = payload?.user_id
 
-            const response = await fetch(`${API_BASE_URL}/api/group/member/userlist`, {
+            if (!userId) {
+                console.error('❌ JWTからユーザーIDを取得できませんでした')
+                setUserGroups([])
+                return
+            }
+
+            const apiUrl = `${API_BASE_URL}/api/group/member/userlist/${userId}`
+            console.log('🏠 ユーザーグループAPI呼び出し開始:', apiUrl)
+            console.log('🔐 認証トークン使用:', currentToken.substring(0, 20) + '...')
+            console.log('👤 使用ユーザーID:', userId)
+
+            const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
