@@ -485,14 +485,14 @@ const ConfigScreen = () => {
             const result = await fetchUserInfo(token)
             if (result) {
                 console.log('✅ ネイティブfetch成功 - ユーザー情報取得完了')
-                
+
                 // ユーザー情報取得成功時にユーザーIDを保存
                 if (result.user_id) {
                     console.log('💾 fetchUserInfo成功 - ユーザーID保存:', result.user_id)
                     await setStorageItem(STORAGE_KEYS.USER_ID, result.user_id)
                     setUserId(result.user_id)
                 }
-                
+
                 return result
             } else {
                 console.log('❌ ユーザー情報取得失敗')
@@ -603,7 +603,7 @@ const ConfigScreen = () => {
                         await setStorageItem(STORAGE_KEYS.USER_ID, payload.user_id)
                         // setUserIdは呼び出し元で行う
                     }
-                    
+
                     return data.data
                 } else {
                     console.warn('⚠️ データ同期レスポンス形式が予期しない:', data)
@@ -635,11 +635,11 @@ const ConfigScreen = () => {
         try {
             // コールバックURLを追加（API仕様に従って）
             const callbackUrl = encodeURIComponent('fithub://oauth')
-            
+
             // ログイン専用エンドポイント（state: login_xxx形式）
             const apiUrl = `${API_BASE_URL}/api/auth/login/${provider}?callback_url=${callbackUrl}`
             console.log(`🔍 ${provider} ログインAPI呼び出し:`, apiUrl)
-            
+
             const response = await fetch(apiUrl)
 
             if (response.ok) {
@@ -649,7 +649,7 @@ const ConfigScreen = () => {
                 if (data.success) {
                     // 実際のAPIレスポンス形式に合わせて修正
                     const oauthUrl = data.google_oauth_url || data.github_oauth_url
-                    
+
                     if (oauthUrl) {
                         console.log(`✅ ${provider} ログインURL取得成功:`, oauthUrl)
                         console.log(`🔍 State: ${data.state}`)
@@ -679,11 +679,11 @@ const ConfigScreen = () => {
         try {
             // コールバックURLを追加（API仕様に従って）
             const callbackUrl = encodeURIComponent('fithub://oauth')
-            
+
             // 新規登録用のエンドポイント（state: register_xxx形式）
             const apiUrl = `${API_BASE_URL}/api/auth/${provider}?callback_url=${callbackUrl}`
             console.log(`🔍 ${provider} 新規登録API呼び出し:`, apiUrl)
-            
+
             const response = await fetch(apiUrl)
 
             if (response.ok) {
@@ -693,7 +693,7 @@ const ConfigScreen = () => {
                 if (data.success) {
                     // 実際のAPIレスポンス形式に合わせて修正
                     const oauthUrl = data.google_oauth_url || data.github_oauth_url
-                    
+
                     if (oauthUrl) {
                         console.log(`✅ ${provider} 新規登録URL取得成功:`, oauthUrl)
                         console.log(`🔍 State: ${data.state}`)
@@ -1473,7 +1473,7 @@ const ConfigScreen = () => {
 
             if (syncResult) {
                 setLastSyncTime(new Date(syncResult.synced_at))
-                
+
                 // JWTからユーザーIDを抽出して保存
                 const payload = parseJwtPayload(sessionToken)
                 if (payload && payload.user_id) {
@@ -1483,7 +1483,7 @@ const ConfigScreen = () => {
                 } else {
                     console.warn('⚠️ JWTからユーザーIDを取得できませんでした')
                 }
-                
+
                 Alert.alert(
                     '同期完了',
                     `データ同期が完了しました！\n\n` +
