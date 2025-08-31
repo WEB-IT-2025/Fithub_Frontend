@@ -280,27 +280,71 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
         // クリア可能なミッションのIDを収集
         const claimableIds: string[] = []
 
-        // ローカルミッションから削除
+        // ローカルミッションからクリア可能なミッションを特定
+        missions.forEach((m) => {
+            const isClaimable =
+                m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
+
+            if (m.type === type && isClaimable && m.board === 'display') {
+                claimableIds.push(m.id)
+            }
+        })
+
+        // APIミッションからもクリア可能なミッションを特定
+        apiMissions.forEach((m) => {
+            const isClaimable = m.clear_status === 1 || parseFloat(m.progress_percentage) >= 100
+            if (m.mission_category === type && isClaimable) {
+                claimableIds.push(m.mission_id)
+            }
+        })
+
+        // 重複を削除
+        const uniqueClaimableIds = [...new Set(claimableIds)]
+
+        // 各ミッションを順次アニメーション
+        for (let i = 0; i < uniqueClaimableIds.length; i++) {
+            const id = uniqueClaimableIds[i]
+            
+            // アニメーション実行
+            await new Promise<void>((resolve) => {
+                setClearedId(id)
+                clearAnim.setValue(0)
+                
+                // 2段階アニメーション: 360°回転 → クリア表示
+                Animated.sequence([
+                    // 1️⃣ 360°のY軸回転（1回転）
+                    Animated.timing(clearAnim, {
+                        toValue: 0.5,
+                        duration: 800, // 0.8秒でスピン
+                        useNativeDriver: true,
+                    }),
+                    // 2️⃣ クリア表示待機時間
+                    Animated.delay(1200), // 1.2秒間表示
+                ]).start(() => {
+                    setClearedId(null)
+                    resolve()
+                })
+            })
+
+            // APIにクリア通知を送信
+            await sendMissionClear(id)
+        }
+
+        // 全アニメーション完了後にミッションを削除
         setMissions((prev) =>
             prev.map((m) => {
                 const isClaimable =
                     m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
 
                 if (m.type === type && isClaimable && m.board === 'display') {
-                    claimableIds.push(m.id)
                     return { ...m, board: 'hidden' }
                 }
                 return m
             })
         )
 
-        // APIにクリア通知を一括送信
-        for (const missionId of claimableIds) {
-            await sendMissionClear(missionId)
-        }
-
         // APIミッションからも削除
-        setApiMissions((prev) => prev.filter((m) => !claimableIds.includes(m.mission_id)))
+        setApiMissions((prev) => prev.filter((m) => !uniqueClaimableIds.includes(m.mission_id)))
     }
 
     // SafeAreaInsetsが準備できるまでローディング表示
