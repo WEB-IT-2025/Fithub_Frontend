@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core'
-import { faG, faPerson } from '@fortawesome/free-solid-svg-icons'
+import { faCheckCircle, faG, faPerson } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
@@ -16,6 +16,12 @@ interface MissionItemProps {
 }
 
 const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId, clearAnim, missionIcon }) => {
+    // Y軸回転用のアニメーション値（540° = 1.5回転）
+    const rotateY = clearAnim.interpolate({
+        inputRange: [0, 0.5],
+        outputRange: ['0deg', '540deg'],
+    })
+
     // 画像表示ロジック
     const renderMissionImage = () => {
         // プロパティで渡されたアイコンを優先
@@ -116,63 +122,66 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
                         :   '0/1'}
                     </Text>
                 </View>
-                {/* 左側に画像 or アイコン表示 */}
-                {renderMissionImage()}
-                <View style={styles.missionTextContainer}>
-                    {/* タイトル */}
-                    <Text style={styles.missionTitleCustom}>{mission.title}</Text>
-                    {/* 説明 */}
-                    <Text style={styles.missionDescCustom}>
-                        {mission.description}
-                        {mission.missionGoal !== undefined && ` (目標: ${mission.missionGoal})`}
-                    </Text>
-                    {/* 1行空白 */}
-                    <View style={{ height: 8 }} />
-                    {/* プログレスバー */}
-                    <View style={styles.progressBarBackground}>
-                        <View
-                            style={[
-                                styles.progressBarFill,
-                                {
-                                    width: (() => {
-                                        if (mission.currentStatus !== undefined && mission.missionGoal !== undefined) {
-                                            // APIから取得した進捗データを使用
-                                            const progress = Math.min(
-                                                (mission.currentStatus / mission.missionGoal) * 100,
-                                                100
-                                            )
-                                            return `${progress}%`
-                                        } else {
-                                            // フォールバック: clearTimeまたはstatusベースのロジック
-                                            return isClaimable() ? '100%' : '0%'
-                                        }
-                                    })(),
-                                },
-                            ]}
-                        />
-                    </View>
-                </View>
-                {clearedId === mission.id && (
-                    <Animated.View
-                        style={[
-                            styles.clearAnim,
-                            {
-                                opacity: clearAnim,
-                                transform: [
-                                    {
-                                        scale: clearAnim.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: [0.7, 1.4],
-                                        }),
-                                    },
-                                ],
-                            },
-                        ]}
-                        pointerEvents='none'
-                    >
-                        <Text style={styles.clearText}>Clear!</Text>
-                    </Animated.View>
-                )}
+
+                {/* カードのメインコンテンツ */}
+                <Animated.View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        width: '100%',
+                        transform: [
+                            { perspective: 1000 },
+                            { rotateY: clearedId === mission.id ? rotateY : '0deg' },
+                        ],
+                    }}
+                >
+                    {/* 表面コンテンツ */}
+                    {clearedId !== mission.id && (
+                        <>
+                            {renderMissionImage()}
+                            <View style={styles.missionTextContainer}>
+                                <Text style={styles.missionTitleCustom}>{mission.title}</Text>
+                                <Text style={styles.missionDescCustom}>
+                                    {mission.description}
+                                    {mission.missionGoal !== undefined && ` (目標: ${mission.missionGoal})`}
+                                </Text>
+                                <View style={{ height: 8 }} />
+                                <View style={styles.progressBarBackground}>
+                                    <View
+                                        style={[
+                                            styles.progressBarFill,
+                                            {
+                                                width: (() => {
+                                                    if (mission.currentStatus !== undefined && mission.missionGoal !== undefined) {
+                                                        const progress = Math.min(
+                                                            (mission.currentStatus / mission.missionGoal) * 100,
+                                                            100
+                                                        )
+                                                        return `${progress}%`
+                                                    } else {
+                                                        return isClaimable() ? '100%' : '0%'
+                                                    }
+                                                })(),
+                                            },
+                                        ]}
+                                    />
+                                </View>
+                            </View>
+                        </>
+                    )}
+
+                    {/* 裏面コンテンツ（CLEAR表示） */}
+                    {clearedId === mission.id && (
+                        <View style={styles.clearContent}>
+                            <FontAwesomeIcon 
+                                icon={faCheckCircle} 
+                                size={32} 
+                                color='#fff' 
+                            />
+                            <Text style={styles.clearTitle}>CLEAR!</Text>
+                        </View>
+                    )}
+                </Animated.View>
             </TouchableOpacity>
         </View>
     )
@@ -249,6 +258,26 @@ const styles = StyleSheet.create({
         textShadowColor: '#fff',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
+    },
+    clearContent: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 88, // ミッションカードの高さと同じに設定
+        backgroundColor: '#4caf50',
+        borderRadius: 10,
+        transform: [{ rotateY: '180deg' }],
+        marginLeft: 12, // アイコン領域の幅分オフセット
+    },
+    clearTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginLeft: 12,
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
     },
 })
 

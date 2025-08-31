@@ -251,13 +251,17 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const handleReceive = (id: string) => {
         setClearedId(id)
         clearAnim.setValue(0)
+        
+        // 2段階アニメーション: 540°回転 → クリア表示
         Animated.sequence([
+            // 1️⃣ 540°のY軸回転（1.5回転）
             Animated.timing(clearAnim, {
-                toValue: 1,
-                duration: 600,
+                toValue: 0.5,
+                duration: 800, // 0.8秒でスピン
                 useNativeDriver: true,
             }),
-            Animated.delay(400),
+            // 2️⃣ クリア表示待機時間
+            Animated.delay(1200), // 1.2秒間表示
         ]).start(() => {
             setClearedId(null)
             // APIにクリア通知を送信
