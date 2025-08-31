@@ -19,7 +19,7 @@ const MissionItem: React.FC<MissionItemProps> = ({ mission, onReceive, clearedId
     // Y軸回転用のアニメーション値（540° = 1.5回転）
     const rotateY = clearAnim.interpolate({
         inputRange: [0, 0.5],
-        outputRange: ['0deg', '540deg'],
+        outputRange: ['0deg', '360deg'],
     })
 
     // 画像表示ロジック
@@ -264,10 +264,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        height: 88, // ミッションカードの高さと同じに設定
+        height: 68, // ミッションカードの高さと同じに設定
         backgroundColor: '#4caf50',
         borderRadius: 10,
-        transform: [{ rotateY: '180deg' }],
         marginLeft: 12, // アイコン領域の幅分オフセット
     },
     clearTitle: {
