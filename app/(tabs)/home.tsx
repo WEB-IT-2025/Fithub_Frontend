@@ -83,16 +83,43 @@ const HomeScreen = () => {
             }
             console.log('トークン取得成功:', token.substring(0, 10) + '...')
 
+            // JWTからユーザーIDを取得
+            const parseJwtPayload = (token: string): any | null => {
+                try {
+                    const parts = token.split('.')
+                    if (parts.length !== 3) return null
+                    const payload = parts[1]
+                    let base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+                    switch (base64.length % 4) {
+                        case 2:
+                            base64 += '=='
+                            break
+                        case 3:
+                            base64 += '='
+                            break
+                    }
+                    return JSON.parse(atob(base64))
+                } catch {
+                    return null
+                }
+            }
+
+            const payload = parseJwtPayload(token)
+            const userId = payload?.user_id
+            if (!userId) {
+                console.log('ユーザーIDが取得できません')
+                return
+            }
+
             const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(
                 /\/+$/,
                 ''
             )
             console.log('APIベースURL:', API_BASE_URL)
 
-            const res = await fetch(`${API_BASE_URL}/api/pet/profile`, {
+            const res = await fetch(`${API_BASE_URL}/api/pet/profile/${userId}`, {
                 method: 'GET',
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             })
