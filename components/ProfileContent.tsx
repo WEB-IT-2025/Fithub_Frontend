@@ -328,22 +328,35 @@ const ProfileContent = ({
     )
 
     // APIからメインペットデータを取得する関数
-    const fetchMainPet = useCallback(async () => {
-        if (!isOwnProfile) return // 他人のプロフィールの場合は取得しない
-
+    const fetchMainPet = useCallback(async (targetUserId?: string) => {
         console.log('メインペット情報取得開始')
         setIsPetLoading(true)
         try {
-            const token = await AsyncStorage.getItem('session_token')
-            if (!token) {
-                console.log('トークンが見つかりません')
+            let actualUserId: string | undefined
+
+            if (isOwnProfile) {
+                // 自分のプロフィールの場合はJWTからユーザーIDを取得
+                const token = await AsyncStorage.getItem('session_token')
+                if (!token) {
+                    console.log('トークンが見つかりません')
+                    return
+                }
+
+                const payload = parseJwtPayload(token)
+                actualUserId = payload?.user_id
+            } else {
+                // 他人のプロフィールの場合は渡されたuserIdを使用
+                actualUserId = targetUserId || userId
+            }
+
+            if (!actualUserId) {
+                console.log('ユーザーIDが取得できません')
                 return
             }
 
-            const response = await fetch(`${API_BASE_URL}/api/pet/profile`, {
+            const response = await fetch(`${API_BASE_URL}/api/pet/profile/${actualUserId}`, {
                 method: 'GET',
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             })
@@ -378,7 +391,7 @@ const ProfileContent = ({
         } finally {
             setIsPetLoading(false)
         }
-    }, [isOwnProfile])
+    }, [isOwnProfile, userId])
 
     // APIから2時間ごとの歩数データを取得する関数
     const fetchHourlyStepsData = useCallback(async () => {
@@ -692,12 +705,13 @@ const ProfileContent = ({
             fetchMainPet()
             fetchContributionData() // 自分のプロフィール用
         } else {
-            // 他人のプロフィールの場合もコントリビューションデータと運動データを取得
+            // 他人のプロフィールの場合もコントリビューションデータと運動データ、ペット情報を取得
             console.log('🎯 ProfileContent: 他人のプロフィールのデータ取得')
             const targetUserId = userId || userName
             if (targetUserId) {
                 fetchContributionData(targetUserId) // userIdを優先、なければuserNameを使用
                 fetchOtherUserData(targetUserId) // 運動データも取得
+                fetchMainPet(targetUserId) // ペット情報も取得
             }
         }
     }, [isOwnProfile, userId, userName]) // userIdも依存配列に追加
@@ -1099,7 +1113,7 @@ const ProfileContent = ({
             <View style={styles.petParamRow}>
                 {/* ペット画像 */}
                 <View style={styles.petParamImageWrapper}>
-                    {isOwnProfile ?
+                    {petData ?
                         <Image
                             source={getPetImage()}
                             style={styles.petParamImage}
@@ -1113,11 +1127,9 @@ const ProfileContent = ({
                     collapsable={false}
                 >
                     <Text style={styles.petParamName}>
-                        {isOwnProfile ?
-                            isPetLoading ?
-                                'ローディング中...'
-                            :   petData?.main_pet_user_name || petData?.main_pet_name || 'ペット名なし'
-                        :   'ペット'}
+                        {isPetLoading ?
+                            'ローディング中...'
+                        :   petData?.main_pet_user_name || petData?.main_pet_name || 'ペット名なし'}
                     </Text>
                     <View
                         style={styles.indicatorColumn}
