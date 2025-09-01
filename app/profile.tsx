@@ -35,7 +35,7 @@ const Profile = ({ userName, userData, onClose }: ProfileProps) => {
         <View style={[styles.container, { paddingTop: responsiveHeight(0.5) }]}>
             <ProfileContent
                 userName={userName}
-                userData={userData}
+                // userData={userData}  // 自分のプロフィールの場合は渡さず、内部でAPI取得させる
                 onClose={onClose}
                 showTitle={true}
                 isOwnProfile={true}
