@@ -842,6 +842,7 @@ const RoomScreen = () => {
                                 <OtherProfile
                                     key={profileKey}
                                     userName={getUserName(selectedUser)}
+                                    userId={selectedUser.user_id}
                                     userData={{
                                         today: {
                                             steps: 5000,
@@ -871,6 +872,7 @@ const RoomScreen = () => {
                                 <OtherProfile
                                     key={profileKey}
                                     userName={getUserName(selectedUser)}
+                                    userId={selectedUser.user_id}
                                     userData={{
                                         today: {
                                             steps: 5000,

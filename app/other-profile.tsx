@@ -27,16 +27,18 @@ interface UserData {
 
 interface OtherProfileProps {
     userName: string
+    userId?: string // ユーザーIDを追加
     userData: UserData
     onClose: () => void
 }
 
-const OtherProfile = ({ userName, userData, onClose }: OtherProfileProps) => {
+const OtherProfile = ({ userName, userId, userData, onClose }: OtherProfileProps) => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <View style={[styles.container, { paddingTop: responsiveHeight(0.5) }]}>
                 <ProfileContent
                     userName={userName}
+                    userId={userId}
                     userData={userData}
                     onClose={onClose}
                     showTitle={false}
