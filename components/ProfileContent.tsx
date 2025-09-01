@@ -44,6 +44,36 @@ const parseJwtPayload = (token: string): any | null => {
     }
 }
 
+// 新しい週歩数データの型定義
+interface WeeklyStepsData {
+    success: boolean
+    data: {
+        user_id: string
+        recent_exercise: Array<{
+            day: string
+            exercise_quantity: number
+        }>
+        total_steps: string
+        period: string
+        last_updated: string
+    }
+}
+
+// 新しい月歩数データの型定義
+interface MonthlyStepsData {
+    success: boolean
+    data: {
+        user_id: string
+        recent_exercise: Array<{
+            day: string
+            exercise_quantity: number
+        }>
+        total_steps: string
+        period: string
+        last_updated: string
+    }
+}
+
 // コントリビューションデータの型定義（実際のAPIレスポンスに合わせて修正）
 interface ContributionData {
     success: boolean
@@ -81,6 +111,18 @@ interface UserData {
         totalSteps: number
         timestamp: string
     }>
+    // 週歩数データの新しいフィールド
+    weekly_total_steps?: number
+    weekly_period?: string
+    weekly_last_updated?: string
+    // 月歩数データの新しいフィールド
+    monthly_exercise?: Array<{
+        day: string
+        exercise_quantity: number
+    }>
+    monthly_total_steps?: number
+    monthly_period?: string
+    monthly_last_updated?: string
 }
 
 interface User {
@@ -105,6 +147,7 @@ interface PetData {
 
 interface ProfileContentProps {
     userName?: string
+    userId?: string // 実際のユーザーID
     userData?: UserData | null
     onClose?: () => void
     showTitle?: boolean // タイトルと下線を表示するかどうか
@@ -123,6 +166,7 @@ const contributionColors = [
 
 const ProfileContent = ({
     userName,
+    userId,
     userData: externalUserData,
     onClose,
     showTitle = true,
@@ -147,83 +191,172 @@ const ProfileContent = ({
     const ageAnim = useRef(new Animated.Value(0)).current
 
     // コントリビューションデータを取得する関数
-    const fetchContributionData = useCallback(async () => {
-        if (!isOwnProfile) return // 他人のプロフィールの場合は取得しない
+    const fetchContributionData = useCallback(
+        async (targetUserId?: string) => {
+            setIsContributionLoading(true)
+            try {
+                const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+                if (!token) return
 
-        console.log('🔄 コントリビューションデータ取得開始')
-        setIsContributionLoading(true)
-
-        try {
-            // セッショントークンを取得
-            const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
-            if (!token) {
-                console.warn('⚠️ セッショントークンが見つかりません')
-                return
-            }
-
-            // JWTからユーザーIDを抽出
-            const payload = parseJwtPayload(token)
-            const userId = payload?.user_id
-
-            if (!userId) {
-                console.error('❌ JWTからユーザーIDを取得できませんでした')
-                return
-            }
-
-            const apiUrl = `${API_BASE_URL}/api/data/contribution/${userId}`
-            console.log('📡 コントリビューションAPI呼び出し:', apiUrl)
-            console.log('👤 使用ユーザーID:', userId)
-
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-
-            console.log('📡 コントリビューションAPI応答:', response.status)
-
-            if (response.ok) {
-                const data: ContributionData = await response.json()
-                console.log('✅ コントリビューションデータ取得成功:', data)
-
-                if (data.success) {
-                    setContributionData(data)
-                    console.log(`📊 今週の総コントリビューション数: ${data.data.weekly_total}`)
-                    console.log(`📊 今月の総コントリビューション数: ${data.data.monthly_total}`)
-                    console.log(`📅 データ更新日: ${data.data.last_updated}`)
+                let actualUserId: string | undefined
+                if (isOwnProfile) {
+                    const payload = parseJwtPayload(token)
+                    actualUserId = payload?.user_id
                 } else {
-                    console.warn('⚠️ コントリビューションAPIからsuccessがfalse')
+                    actualUserId = targetUserId
                 }
-            } else {
-                const errorText = await response.text()
-                console.error('❌ コントリビューションAPI失敗:', response.status, errorText)
+                if (!actualUserId) return
+
+                const apiUrl = `${API_BASE_URL}/api/data/contribution/${actualUserId}`
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                if (response.ok) {
+                    const data: ContributionData = await response.json()
+                    if (data.success) {
+                        setContributionData(data)
+                        console.log('✅ Contribution API: success')
+                    } else {
+                        console.warn('⚠️ Contribution API: success=false')
+                    }
+                } else {
+                    const errorText = await response.text()
+                    console.error('❌ Contribution API: failed', response.status, errorText)
+                }
+            } catch (error) {
+                console.error('❌ Contribution API: error', error)
+            } finally {
+                setIsContributionLoading(false)
             }
-        } catch (error) {
-            console.error('❌ コントリビューション取得エラー:', error)
-        } finally {
-            setIsContributionLoading(false)
-        }
-    }, [isOwnProfile])
+        },
+        [isOwnProfile]
+    )
+
+    // APIから週歩数データを取得する関数（成功/失敗のみログ）
+    const fetchWeeklyStepsData = useCallback(
+        async (targetUserId?: string) => {
+            try {
+                const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+                if (!token) return null
+
+                let actualUserId: string | undefined
+                if (isOwnProfile) {
+                    const payload = parseJwtPayload(token)
+                    actualUserId = payload?.user_id
+                } else {
+                    actualUserId = targetUserId
+                }
+                if (!actualUserId) return null
+
+                const apiUrl = `${API_BASE_URL}/api/data/weekly/${actualUserId}`
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                if (response.ok) {
+                    const data: WeeklyStepsData = await response.json()
+                    if (data.success && data.data) {
+                        console.log('✅ Weekly steps API: success')
+                        return data.data
+                    }
+                    console.warn('⚠️ Weekly steps API: success=false or no data')
+                } else {
+                    const errorText = await response.text()
+                    console.error('❌ Weekly steps API: failed', response.status, errorText)
+                }
+                return null
+            } catch (error) {
+                console.error('❌ Weekly steps API: error', error)
+                return null
+            }
+        },
+        [isOwnProfile]
+    )
+
+    // APIから月歩数データを取得する関数（成功/失敗のみログ）
+    const fetchMonthlyStepsData = useCallback(
+        async (targetUserId?: string) => {
+            try {
+                const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+                if (!token) return null
+
+                let actualUserId: string | undefined
+                if (isOwnProfile) {
+                    const payload = parseJwtPayload(token)
+                    actualUserId = payload?.user_id
+                } else {
+                    actualUserId = targetUserId
+                }
+                if (!actualUserId) return null
+
+                const apiUrl = `${API_BASE_URL}/api/data/monthly/${actualUserId}`
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                if (response.ok) {
+                    const data: MonthlyStepsData = await response.json()
+                    if (data.success && data.data) {
+                        console.log('✅ Monthly steps API: success')
+                        return data.data
+                    }
+                    console.warn('⚠️ Monthly steps API: success=false or no data')
+                } else {
+                    const errorText = await response.text()
+                    console.error('❌ Monthly steps API: failed', response.status, errorText)
+                }
+                return null
+            } catch (error) {
+                console.error('❌ Monthly steps API: error', error)
+                return null
+            }
+        },
+        [isOwnProfile]
+    )
 
     // APIからメインペットデータを取得する関数
-    const fetchMainPet = useCallback(async () => {
-        if (!isOwnProfile) return // 他人のプロフィールの場合は取得しない
-
+    const fetchMainPet = useCallback(async (targetUserId?: string) => {
         console.log('メインペット情報取得開始')
         setIsPetLoading(true)
         try {
-            const token = await AsyncStorage.getItem('session_token')
-            if (!token) {
-                console.log('トークンが見つかりません')
+            let actualUserId: string | undefined
+
+            if (isOwnProfile) {
+                // 自分のプロフィールの場合はJWTからユーザーIDを取得
+                const token = await AsyncStorage.getItem('session_token')
+                if (!token) {
+                    console.log('トークンが見つかりません')
+                    return
+                }
+
+                const payload = parseJwtPayload(token)
+                actualUserId = payload?.user_id
+            } else {
+                // 他人のプロフィールの場合は渡されたuserIdを使用
+                actualUserId = targetUserId || userId
+            }
+
+            if (!actualUserId) {
+                console.log('ユーザーIDが取得できません')
                 return
             }
 
-            const response = await fetch(`${API_BASE_URL}/api/pet/profile`, {
+            const response = await fetch(`${API_BASE_URL}/api/pet/profile/${actualUserId}`, {
                 method: 'GET',
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             })
@@ -258,7 +391,7 @@ const ProfileContent = ({
         } finally {
             setIsPetLoading(false)
         }
-    }, [isOwnProfile])
+    }, [isOwnProfile, userId])
 
     // APIから2時間ごとの歩数データを取得する関数
     const fetchHourlyStepsData = useCallback(async () => {
@@ -343,72 +476,193 @@ const ProfileContent = ({
         if (!isOwnProfile) return // 他人のプロフィールの場合はAPIからデータを取得しない
 
         try {
+            console.log('🔄 ProfileContent: fetchUserData開始')
             setIsLoading(true)
 
             // AsyncStorageからトークンを取得
             const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
             if (!token) {
-                console.log('Profile: トークンがありません')
+                console.log('❌ Profile: トークンがありません')
                 return
             }
 
-            console.log('📊 Profile: データ取得開始')
+            console.log('📊 Profile: データ取得開始（週歩数・月歩数APIのみ）')
 
-            // ユーザーデータを取得
-            const userResponse = await fetch(`${API_BASE_URL}/api/data/user`, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+            // 週歩数データと月歩数データを並行取得
+            const [weeklyStepsData, monthlyStepsData] = await Promise.all([
+                fetchWeeklyStepsData(),
+                fetchMonthlyStepsData(),
+            ])
+
+            console.log('📊 Profile: API呼び出し完了', {
+                weeklyStepsData_exists: !!weeklyStepsData,
+                monthlyStepsData_exists: !!monthlyStepsData,
             })
 
-            // ユーザーデータの処理
-            if (userResponse.ok) {
-                const userData = await userResponse.json()
-                console.log('✅ Profile: ユーザーデータ取得成功', userData)
+            if (weeklyStepsData) {
+                // 時間別データも取得
+                const hourlySteps = await fetchHourlyStepsData()
+                console.log('🔗 Profile: データ結合処理:', {
+                    hourlyStepsExists: !!hourlySteps,
+                    hourlyStepsLength: hourlySteps ? hourlySteps.length : 0,
+                    weeklyStepsExists: !!weeklyStepsData,
+                    weeklyStepsCount: weeklyStepsData ? weeklyStepsData.recent_exercise.length : 0,
+                })
 
-                if (userData.success && userData.data) {
-                    // 時間別データも取得して結合
-                    const hourlySteps = await fetchHourlyStepsData()
-                    console.log('🔗 Profile: データ結合処理:', {
-                        userDataExists: !!userData.data,
-                        hourlyStepsExists: !!hourlySteps,
-                        hourlyStepsLength: hourlySteps ? hourlySteps.length : 0,
-                    })
+                // 週歩数データの詳細ログ
+                console.log('📊 週歩数データの詳細:', {
+                    total_steps: weeklyStepsData.total_steps,
+                    period: weeklyStepsData.period,
+                    recent_exercise_count: weeklyStepsData.recent_exercise.length,
+                    recent_exercise_data: weeklyStepsData.recent_exercise,
+                })
 
-                    const combinedUserData = {
-                        ...userData.data,
-                        hourly_steps: hourlySteps,
-                    }
-
-                    console.log('🔗 Profile: 結合後データ:', {
-                        today: combinedUserData.today,
-                        recent_exercise: combinedUserData.recent_exercise ? combinedUserData.recent_exercise.length : 0,
-                        hourly_steps: combinedUserData.hourly_steps ? combinedUserData.hourly_steps.length : 0,
-                    })
-
-                    setUserData(combinedUserData)
-
-                    // ユーザー基本情報も設定
-                    if (userData.data.user_name || userData.data.user_id) {
-                        setUser({
-                            user_id: userData.data.user_id,
-                            user_name: userData.data.user_name || 'Unknown User',
-                            user_icon: userData.data.user_icon || null,
-                            email: userData.data.email || null,
-                        })
-                    }
+                // 今日のデータを作成（週歩数データの最新日から）
+                const today = {
+                    steps:
+                        weeklyStepsData.recent_exercise.length > 0 ?
+                            weeklyStepsData.recent_exercise[weeklyStepsData.recent_exercise.length - 1]
+                                .exercise_quantity
+                        :   0,
+                    contributions: 0, // デフォルト値
+                    date: new Date().toISOString().split('T')[0],
                 }
+
+                const combinedUserData = {
+                    today: today,
+                    recent_exercise: weeklyStepsData.recent_exercise,
+                    monthly_exercise: monthlyStepsData?.recent_exercise || [],
+                    hourly_steps: hourlySteps,
+                    weekly_total_steps: parseInt(weeklyStepsData.total_steps),
+                    monthly_total_steps: monthlyStepsData?.total_steps ? parseInt(monthlyStepsData.total_steps) : 0,
+                    weekly_period: weeklyStepsData.period,
+                    monthly_period: monthlyStepsData?.period || '',
+                    weekly_last_updated: weeklyStepsData.last_updated,
+                    monthly_last_updated: monthlyStepsData?.last_updated || '',
+                }
+
+                console.log('🎯🎯🎯 結合後のcombinedUserDataの完全な内容 🎯🎯🎯')
+                console.log(JSON.stringify(combinedUserData, null, 2))
+                console.log('🎯🎯🎯 combinedUserData終了 🎯🎯🎯')
+
+                console.log('🔗 Profile: 結合後データ:', {
+                    today: combinedUserData.today,
+                    recent_exercise: combinedUserData.recent_exercise ? combinedUserData.recent_exercise.length : 0,
+                    recent_exercise_source: '週歩数API',
+                    monthly_exercise: combinedUserData.monthly_exercise ? combinedUserData.monthly_exercise.length : 0,
+                    monthly_exercise_source: '月歩数API',
+                    hourly_steps: combinedUserData.hourly_steps ? combinedUserData.hourly_steps.length : 0,
+                    weekly_total_steps: combinedUserData.weekly_total_steps,
+                    monthly_total_steps: combinedUserData.monthly_total_steps,
+                    weekly_period: combinedUserData.weekly_period,
+                    monthly_period: combinedUserData.monthly_period,
+                })
+
+                // 実際のrecent_exerciseデータの内容もログ出力
+                if (combinedUserData.recent_exercise && combinedUserData.recent_exercise.length > 0) {
+                    console.log('📊 実際の週間recent_exerciseデータ:')
+                    combinedUserData.recent_exercise.forEach((exercise, index) => {
+                        console.log(`📅 ${index + 1}: ${exercise.day} - ${exercise.exercise_quantity}歩`)
+                    })
+                }
+
+                // 月間データの内容もログ出力
+                if (combinedUserData.monthly_exercise && combinedUserData.monthly_exercise.length > 0) {
+                    console.log('📊 実際の月間exerciseデータ:')
+                    combinedUserData.monthly_exercise.forEach((exercise, index) => {
+                        console.log(`📅 ${index + 1}: ${exercise.day} - ${exercise.exercise_quantity}歩`)
+                    })
+                }
+
+                console.log('💾 ProfileContent: setUserData呼び出し前', {
+                    combinedUserData_exists: !!combinedUserData,
+                    combinedUserData_keys: Object.keys(combinedUserData),
+                    recent_exercise_length: combinedUserData.recent_exercise?.length || 0,
+                })
+
+                setUserData(combinedUserData)
+
+                console.log('✅ ProfileContent: setUserData呼び出し完了')
+
+                // setUserData後に少し待ってから状態を確認
+                setTimeout(() => {
+                    console.log('⏰ ProfileContent: setUserData後の状態確認', {
+                        userData_updated: !!userData,
+                        recent_exercise_exists: !!userData?.recent_exercise,
+                    })
+                }, 100)
+
+                // ユーザー基本情報も設定（週歩数データから）
+                setUser({
+                    user_id: weeklyStepsData.user_id,
+                    user_name: 'User', // 週歩数APIにはuser_nameがないため固定値
+                    user_icon: null,
+                    email: null,
+                })
+                console.log('✅ ProfileContent: setUser呼び出し完了')
             } else {
-                console.log('❌ Profile: ユーザーデータ取得失敗', userResponse.status)
+                console.error('❌ Profile: 週歩数データの取得に失敗')
             }
         } catch (error) {
             console.error('❌ Profile: データ取得エラー:', error)
         } finally {
+            console.log('🏁 ProfileContent: fetchUserData完了, setIsLoading(false)呼び出し')
             setIsLoading(false)
         }
     }, [isOwnProfile])
+
+    // 他人のプロフィール用のデータ取得関数
+    const fetchOtherUserData = useCallback(
+        async (targetUserId: string) => {
+            try {
+                setIsLoading(true)
+                const [weeklyStepsData, monthlyStepsData] = await Promise.all([
+                    fetchWeeklyStepsData(targetUserId),
+                    fetchMonthlyStepsData(targetUserId),
+                ])
+
+                if (weeklyStepsData) {
+                    const today = {
+                        steps:
+                            weeklyStepsData.recent_exercise.length > 0 ?
+                                weeklyStepsData.recent_exercise[weeklyStepsData.recent_exercise.length - 1]
+                                    .exercise_quantity
+                            :   0,
+                        contributions: 0,
+                        date: new Date().toISOString().split('T')[0],
+                    }
+
+                    const combinedUserData = {
+                        today,
+                        recent_exercise: weeklyStepsData.recent_exercise,
+                        monthly_exercise: monthlyStepsData?.recent_exercise || [],
+                        weekly_total_steps: parseInt(String(weeklyStepsData.total_steps)),
+                        monthly_total_steps:
+                            monthlyStepsData?.total_steps ? parseInt(String(monthlyStepsData.total_steps)) : 0,
+                        weekly_period: weeklyStepsData.period,
+                        monthly_period: monthlyStepsData?.period || '',
+                        weekly_last_updated: weeklyStepsData.last_updated,
+                        monthly_last_updated: monthlyStepsData?.last_updated || '',
+                    }
+
+                    setUserData(combinedUserData)
+                    setUser({
+                        user_id: weeklyStepsData.user_id,
+                        user_name: userName || 'User',
+                        user_icon: null,
+                        email: null,
+                    })
+                } else {
+                    console.error('❌ 他人プロフィール: weekly steps not available')
+                }
+            } catch (error) {
+                console.error('❌ 他人プロフィール: error', error)
+            } finally {
+                setIsLoading(false)
+            }
+        },
+        [fetchWeeklyStepsData, fetchMonthlyStepsData, userName]
+    )
 
     // SafeAreaInsetsが確実に取得できるまで待つ
     useEffect(() => {
@@ -432,19 +686,74 @@ const ProfileContent = ({
 
     // コンポーネントマウント時にデータを取得
     useEffect(() => {
-        if (!externalUserData && isOwnProfile && !isLoading) {
+        console.log('🎯 ProfileContent: useEffect実行 - マウント時チェック')
+        console.log('🎯 条件詳細:', {
+            externalUserData: !!externalUserData,
+            isOwnProfile,
+            isLoading,
+            shouldFetch: isOwnProfile && !isLoading, // 自分のプロフィールなら常に最新データを取得
+            currentUserData: !!userData,
+        })
+
+        // 自分のプロフィールの場合は常に最新のAPIデータを取得
+        if (isOwnProfile) {
+            console.log('🎯 ProfileContent: マウント時データ取得開始（強制実行）')
+            console.log('🔄 ProfileContent: fetchUserData呼び出し中...')
+
+            // ローディング状態に関係なく強制実行
             fetchUserData()
             fetchMainPet()
-            fetchContributionData() // コントリビューションデータも自動取得
+            fetchContributionData() // 自分のプロフィール用
+        } else {
+            // 他人のプロフィールの場合もコントリビューションデータと運動データ、ペット情報を取得
+            console.log('🎯 ProfileContent: 他人のプロフィールのデータ取得')
+            const targetUserId = userId || userName
+            if (targetUserId) {
+                fetchContributionData(targetUserId) // userIdを優先、なければuserNameを使用
+                fetchOtherUserData(targetUserId) // 運動データも取得
+                fetchMainPet(targetUserId) // ペット情報も取得
+            }
         }
-    }, [externalUserData, isOwnProfile])
+    }, [isOwnProfile, userId, userName]) // userIdも依存配列に追加
 
     // 外部データが更新された場合に内部状態を更新
     useEffect(() => {
+        console.log('🔄 ProfileContent: externalUserData変更検出', {
+            externalUserData_exists: !!externalUserData,
+        })
         if (externalUserData) {
+            console.log('✅ ProfileContent: externalUserDataからuserData更新')
             setUserData(externalUserData)
         }
     }, [externalUserData])
+
+    // userDataの変更を監視
+    useEffect(() => {
+        console.log('📊 ProfileContent: userData状態変更:', {
+            userData_exists: !!userData,
+            recent_exercise_exists: !!userData?.recent_exercise,
+            recent_exercise_length: userData?.recent_exercise?.length || 0,
+            today_exists: !!userData?.today,
+        })
+    }, [userData])
+
+    // contributionDataの変更を監視
+    useEffect(() => {
+        console.log('📊 ProfileContent: contributionData状態変更:', {
+            contributionData_exists: !!contributionData,
+            recent_contributions_exists: !!contributionData?.data?.recent_contributions,
+            recent_contributions_length: contributionData?.data?.recent_contributions?.length || 0,
+            weekly_total: contributionData?.data?.weekly_total,
+            monthly_total: contributionData?.data?.monthly_total,
+        })
+
+        if (contributionData?.data?.recent_contributions) {
+            console.log('📊 contributionData詳細 - 最初の3件:')
+            contributionData.data.recent_contributions.slice(0, 3).forEach((contrib, index) => {
+                console.log(`  ${index + 1}. ${contrib.day}: ${contrib.count}`)
+            })
+        }
+    }, [contributionData])
 
     // 期間が「日」に変更された時、時間別データが不足している場合は取得
     useEffect(() => {
@@ -621,6 +930,15 @@ const ProfileContent = ({
 
     // コントリビューションデータ取得メソッド（新しいAPIから取得したデータを使用）
     const getContributionsData = () => {
+        console.log('🔍 getContributionsData呼び出し - 詳細チェック開始')
+        console.log('🔍 contributionData存在確認:', !!contributionData)
+        console.log('🔍 contributionData詳細:', contributionData)
+
+        if (contributionData?.data?.recent_contributions) {
+            console.log('🔍 recent_contributions存在:', contributionData.data.recent_contributions.length)
+            console.log('🔍 recent_contributions内容:', contributionData.data.recent_contributions)
+        }
+
         if (contributionData?.data?.recent_contributions && contributionData.data.recent_contributions.length > 0) {
             // APIから取得した直近7日分のデータを時系列順に並べる（左が古い、右が新しい）
             const contributions = contributionData.data.recent_contributions
@@ -636,6 +954,7 @@ const ProfileContent = ({
                 contributions.unshift(0)
             }
 
+            console.log('📊 最終的なコントリビューションデータ:', contributions)
             return contributions
         } else if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
             // フォールバック: 既存のuserDataから取得
@@ -656,7 +975,14 @@ const ProfileContent = ({
             // ダミー値も左が古い、右が新しい（時系列順）
             console.log('⚠️ コントリビューションデータなし - ダミーデータを使用')
             console.log('⚠️ contributionData:', contributionData)
+            console.log('⚠️ contributionData?.data:', contributionData?.data)
+            console.log(
+                '⚠️ contributionData?.data?.recent_contributions:',
+                contributionData?.data?.recent_contributions
+            )
             console.log('⚠️ userData?.recent_contributions:', userData?.recent_contributions)
+            console.log('⚠️ isOwnProfile:', isOwnProfile)
+            console.log('⚠️ userName:', userName)
             return [2, 0, 7, 12, 17, 22, 4]
         }
     }
@@ -787,7 +1113,7 @@ const ProfileContent = ({
             <View style={styles.petParamRow}>
                 {/* ペット画像 */}
                 <View style={styles.petParamImageWrapper}>
-                    {isOwnProfile ?
+                    {petData ?
                         <Image
                             source={getPetImage()}
                             style={styles.petParamImage}
@@ -801,11 +1127,9 @@ const ProfileContent = ({
                     collapsable={false}
                 >
                     <Text style={styles.petParamName}>
-                        {isOwnProfile ?
-                            isPetLoading ?
-                                'ローディング中...'
-                            :   petData?.main_pet_user_name || petData?.main_pet_name || 'ペット名なし'
-                        :   'ペット'}
+                        {isPetLoading ?
+                            'ローディング中...'
+                        :   petData?.main_pet_user_name || petData?.main_pet_name || 'ペット名なし'}
                     </Text>
                     <View
                         style={styles.indicatorColumn}
@@ -910,13 +1234,59 @@ const ProfileContent = ({
             {/* ExerciseGraphコンポーネント */}
             <ExerciseGraph
                 userData={(() => {
-                    // デバッグ用：現在のuserDataの内容をログ出力
-                    console.log('🔍 ProfileContent: ExerciseGraphに渡すuserData:', {
+                    console.log('🎯🎯🎯 ExerciseGraphに渡すuserDataの完全チェック 🎯🎯🎯')
+                    console.log('userData:', JSON.stringify(userData, null, 2))
+                    console.log('🎯🎯🎯 ExerciseGraph渡しデータ終了 🎯🎯🎯')
+
+                    // デバッグ用：現在のuserDataの内容を詳細にログ出力
+                    console.log('🔍 ProfileContent: ExerciseGraphに渡すuserData 詳細:', {
+                        userData_exists: !!userData,
                         today: userData?.today,
-                        recent_exercise: userData?.recent_exercise ? `${userData.recent_exercise.length}件` : 'なし',
+                        recent_exercise_exists: !!userData?.recent_exercise,
+                        recent_exercise_length: userData?.recent_exercise?.length || 0,
+                        recent_exercise_data: userData?.recent_exercise,
                         hourly_steps: userData?.hourly_steps ? `${userData.hourly_steps.length}件` : 'なし',
-                        hourly_steps_data: userData?.hourly_steps,
+                        weekly_total_steps: userData?.weekly_total_steps,
+                        weekly_period: userData?.weekly_period,
+                        weekly_last_updated: userData?.weekly_last_updated,
+                        データソース: userData?.weekly_total_steps ? '週歩数API使用' : '基本ユーザーAPI使用',
                     })
+
+                    // recent_exerciseの具体的なデータもログ出力
+                    if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
+                        console.log('📊 ExerciseGraphに渡すrecent_exerciseの内容:')
+                        userData.recent_exercise.forEach((exercise, index) => {
+                            console.log(`📅 ${index + 1}: ${exercise.day} - ${exercise.exercise_quantity}歩`)
+                        })
+
+                        // 週の総歩数を計算
+                        const calculatedTotal = userData.recent_exercise.reduce(
+                            (sum, exercise) => sum + exercise.exercise_quantity,
+                            0
+                        )
+                        console.log(`🧮 計算された週総歩数: ${calculatedTotal}歩`)
+                        console.log(`📊 APIから取得した週総歩数: ${userData.weekly_total_steps || '取得なし'}歩`)
+
+                        // ダミーデータかどうかの判定
+                        const isDummyData = userData.recent_exercise.every(
+                            (exercise) =>
+                                exercise.day.includes('2024') ||
+                                exercise.exercise_quantity === 0 ||
+                                exercise.exercise_quantity > 50000
+                        )
+                        console.log(`🎭 データ判定: ${isDummyData ? 'ダミーデータの可能性' : '実データ'}`)
+
+                        // APIソースの確認
+                        if (userData.weekly_total_steps) {
+                            console.log('✅ 週歩数APIからのデータを使用中')
+                        } else {
+                            console.log('⚠️ 基本ユーザーAPIのデータを使用中 - 週歩数APIが失敗した可能性')
+                        }
+                    } else {
+                        console.log('❌ recent_exerciseデータが空または未定義')
+                        console.log('🔍 ExerciseGraphはダミーデータ(0)を使用することになります')
+                    }
+
                     return userData || undefined
                 })()}
                 period={period}
