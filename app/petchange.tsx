@@ -92,7 +92,7 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
     const insets = useSafeAreaInsets()
     const [isSafeAreaReady, setIsSafeAreaReady] = useState(false)
     const [nameEditVisible, setNameEditVisible] = useState(false)
-    const [newPetName, setNewPetName] = useState(PET_NAME)
+    const [newPetName, setNewPetName] = useState('')
     const [isUpdating, setIsUpdating] = useState(false)
     const [selectedPetId, setSelectedPetId] = useState('black_cat') // 選択されたペットID
     const [ownedPets, setOwnedPets] = useState<any[]>([]) // 所有ペット一覧
@@ -235,44 +235,31 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
         }
     }
 
-    // ペット名を更新する関数
-    const updatePetName = async () => {
+    // ペット名をローカルで更新する関数（一時保存）
+    const updatePetName = () => {
         if (!newPetName.trim()) {
             Alert.alert('エラー', 'ペット名を入力してください')
             return
         }
 
-        try {
-            setIsUpdating(true)
-
-            // API呼び出し
-            const response = await fetch(`${API_BASE_URL}/api/pets/update-name`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_pet_name: newPetName.trim(),
-                }),
-            })
-
-            if (response.ok) {
-                const result = await response.json()
-                if (result.success) {
-                    Alert.alert('成功', 'ペット名を更新しました')
-                    setNameEditVisible(false)
-                } else {
-                    Alert.alert('エラー', result.message || 'ペット名の更新に失敗しました')
-                }
-            } else {
-                Alert.alert('エラー', 'サーバーエラーが発生しました')
-            }
-        } catch (error) {
-            console.error('ペット名更新エラー:', error)
-            Alert.alert('エラー', 'ネットワークエラーが発生しました')
-        } finally {
-            setIsUpdating(false)
+        // 選択されたペット情報を取得
+        const selectedPet = getSelectedPet()
+        if (!selectedPet) {
+            Alert.alert('エラー', 'ペットが選択されていません')
+            return
         }
+
+        // ローカルでペット名を更新
+        const updatedPets = ownedPets.map(pet => 
+            pet.id === selectedPet.id 
+                ? { ...pet, name: newPetName.trim() }
+                : pet
+        )
+        setOwnedPets(updatedPets)
+
+        // モーダルを閉じる（成功メッセージなし）
+        setNameEditVisible(false)
+        setNewPetName('')
     }
 
     // SafeAreaInsetsが確実に取得できるまで待つ
@@ -400,6 +387,9 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                 <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => {
+                        // 現在選択されているペットの名前をセット
+                        const selectedPet = getSelectedPet()
+                        setNewPetName(selectedPet?.name || '')
                         setNameEditVisible(true)
                     }}
                 >
@@ -565,7 +555,9 @@ const PetChange: React.FC<PetChangeProps> = ({ onClose }) => {
                                 style={[styles.modalButton, styles.cancelButton]}
                                 onPress={() => {
                                     setNameEditVisible(false)
-                                    setNewPetName(PET_NAME) // 元の名前に戻す
+                                    // 実際の選択されたペット名に戻す
+                                    const selectedPet = getSelectedPet()
+                                    setNewPetName(selectedPet?.name || '')
                                 }}
                             >
                                 <Text style={styles.cancelButtonText}>キャンセル</Text>
