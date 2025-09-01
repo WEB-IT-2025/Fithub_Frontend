@@ -198,25 +198,75 @@ const HomeScreen = () => {
             try {
                 const token = await AsyncStorage.getItem('session_token')
                 if (!token) return
+
+                // JWTからユーザーIDを取得
+                const parseJwtPayload = (token: string): any | null => {
+                    try {
+                        const parts = token.split('.')
+                        if (parts.length !== 3) return null
+                        const payload = parts[1]
+                        let base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+                        switch (base64.length % 4) {
+                            case 2:
+                                base64 += '=='
+                                break
+                            case 3:
+                                base64 += '='
+                                break
+                        }
+                        return JSON.parse(atob(base64))
+                    } catch {
+                        return null
+                    }
+                }
+
+                const payload = parseJwtPayload(token)
+                const userId = payload?.user_id
+                if (!userId) {
+                    console.log('ユーザーIDが取得できません')
+                    return
+                }
+
                 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.11.57:3000').replace(
                     /\/+$/,
                     ''
                 )
-                const res = await fetch(`${API_BASE_URL}/api/data/user`, {
+
+                const res = await fetch(`${API_BASE_URL}/api/data/hourly/${userId}`, {
                     method: 'GET',
                     headers: {
-                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 })
+
                 if (res.ok) {
                     const data = await res.json()
-                    if (data.success && data.data && data.data.today && typeof data.data.today.steps === 'number') {
-                        setSteps(data.data.today.steps)
+                    console.log('時間別歩数データ:', data)
+
+                    if (data.success && data.data && data.data.hourly_data && Array.isArray(data.data.hourly_data)) {
+                        // 時間別データから最新のtotalStepsを取得（配列の最後の要素）
+                        const hourlyData = data.data.hourly_data
+                        if (hourlyData.length > 0) {
+                            const latestData = hourlyData[hourlyData.length - 1]
+                            const totalSteps = latestData.totalSteps || 0
+                            console.log('今日の総歩数:', totalSteps)
+                            setSteps(totalSteps)
+                        } else {
+                            console.log('時間別データが空です')
+                            setSteps(0)
+                        }
+                    } else {
+                        console.log('時間別データが不正:', data)
+                        setSteps(0)
                     }
+                } else {
+                    const errorText = await res.text()
+                    console.log('時間別歩数APIエラー:', res.status, errorText)
+                    setSteps(0)
                 }
             } catch (e) {
-                // エラーは無視
+                console.log('歩数取得エラー:', e)
+                setSteps(0)
             } finally {
                 setIsLoading(false)
             }
