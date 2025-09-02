@@ -251,13 +251,17 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const handleReceive = (id: string) => {
         setClearedId(id)
         clearAnim.setValue(0)
+        
+        // 2段階アニメーション: 540°回転 → クリア表示
         Animated.sequence([
+            // 1️⃣ 540°のY軸回転（1.5回転）
             Animated.timing(clearAnim, {
-                toValue: 1,
-                duration: 600,
+                toValue: 0.5,
+                duration: 800, // 0.8秒でスピン
                 useNativeDriver: true,
             }),
-            Animated.delay(400),
+            // 2️⃣ クリア表示待機時間
+            Animated.delay(1200), // 1.2秒間表示
         ]).start(() => {
             setClearedId(null)
             // APIにクリア通知を送信
@@ -276,27 +280,71 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
         // クリア可能なミッションのIDを収集
         const claimableIds: string[] = []
 
-        // ローカルミッションから削除
+        // ローカルミッションからクリア可能なミッションを特定
+        missions.forEach((m) => {
+            const isClaimable =
+                m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
+
+            if (m.type === type && isClaimable && m.board === 'display') {
+                claimableIds.push(m.id)
+            }
+        })
+
+        // APIミッションからもクリア可能なミッションを特定
+        apiMissions.forEach((m) => {
+            const isClaimable = m.clear_status === 1 || parseFloat(m.progress_percentage) >= 100
+            if (m.mission_category === type && isClaimable) {
+                claimableIds.push(m.mission_id)
+            }
+        })
+
+        // 重複を削除
+        const uniqueClaimableIds = [...new Set(claimableIds)]
+
+        // 各ミッションを順次アニメーション
+        for (let i = 0; i < uniqueClaimableIds.length; i++) {
+            const id = uniqueClaimableIds[i]
+            
+            // アニメーション実行
+            await new Promise<void>((resolve) => {
+                setClearedId(id)
+                clearAnim.setValue(0)
+                
+                // 2段階アニメーション: 360°回転 → クリア表示
+                Animated.sequence([
+                    // 1️⃣ 360°のY軸回転（1回転）
+                    Animated.timing(clearAnim, {
+                        toValue: 0.5,
+                        duration: 800, // 0.8秒でスピン
+                        useNativeDriver: true,
+                    }),
+                    // 2️⃣ クリア表示待機時間
+                    Animated.delay(1200), // 1.2秒間表示
+                ]).start(() => {
+                    setClearedId(null)
+                    resolve()
+                })
+            })
+
+            // APIにクリア通知を送信
+            await sendMissionClear(id)
+        }
+
+        // 全アニメーション完了後にミッションを削除
         setMissions((prev) =>
             prev.map((m) => {
                 const isClaimable =
                     m.progressPercentage !== undefined ? m.progressPercentage >= 100 : m.status === 'completed'
 
                 if (m.type === type && isClaimable && m.board === 'display') {
-                    claimableIds.push(m.id)
                     return { ...m, board: 'hidden' }
                 }
                 return m
             })
         )
 
-        // APIにクリア通知を一括送信
-        for (const missionId of claimableIds) {
-            await sendMissionClear(missionId)
-        }
-
         // APIミッションからも削除
-        setApiMissions((prev) => prev.filter((m) => !claimableIds.includes(m.mission_id)))
+        setApiMissions((prev) => prev.filter((m) => !uniqueClaimableIds.includes(m.mission_id)))
     }
 
     // SafeAreaInsetsが準備できるまでローディング表示
@@ -502,77 +550,6 @@ const styles = StyleSheet.create({
     },
     Spacer: {
         height: 12,
-    },
-    missionList: {
-        flex: 1,
-        marginBottom: 16,
-    },
-    missionItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#ACEEBB',
-        borderRadius: 10,
-        padding: 18, // ← 縦幅を増やす（元: 12）
-        marginBottom: 10,
-        // // ドロップシャドウ
-        // shadowColor: '#388e3c', // 少し濃い緑
-        // shadowOffset: { width: 0, height: 4 },
-        // shadowOpacity: 0.18,
-        // shadowRadius: 8,
-        // elevation: 5,
-    },
-    missionItemShadow: {
-        position: 'absolute',
-        width: '100%',
-        height: '95%',
-        backgroundColor: '#a5cfa5', // missionItemより濃い緑
-        borderRadius: 10,
-        zIndex: 0,
-    },
-    missionImage: {
-        width: 48,
-        height: 48,
-        borderRadius: 8,
-        marginRight: 12,
-        backgroundColor: '#b2d8b2',
-    },
-    missionTextContainer: {
-        flex: 1,
-    },
-    missionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#388e3c',
-    },
-    missionDesc: {
-        fontSize: 14,
-        color: '#388e3c',
-        marginTop: 4,
-    },
-    missionTitleCustom: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
-        textAlign: 'left',
-        marginBottom: 2,
-    },
-    missionDescCustom: {
-        fontSize: 15,
-        color: '#222',
-        textAlign: 'left',
-    },
-    progressBarBackground: {
-        width: '100%',
-        height: 8,
-        backgroundColor: '#BEBEBE',
-        borderRadius: 4,
-        overflow: 'hidden',
-        marginTop: 8,
-    },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: '#4caf50',
-        borderRadius: 4,
     },
     bottomButtons: {
         flexDirection: 'row',
