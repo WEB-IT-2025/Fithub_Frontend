@@ -243,20 +243,13 @@ const HomeScreen = () => {
                     const data = await res.json()
                     console.log('時間別歩数データ:', data)
 
-                    if (data.success && data.data && data.data.hourly_data && Array.isArray(data.data.hourly_data)) {
-                        // 時間別データから最新のtotalStepsを取得（配列の最後の要素）
-                        const hourlyData = data.data.hourly_data
-                        if (hourlyData.length > 0) {
-                            const latestData = hourlyData[hourlyData.length - 1]
-                            const totalSteps = latestData.totalSteps || 0
-                            console.log('今日の総歩数:', totalSteps)
-                            setSteps(totalSteps)
-                        } else {
-                            console.log('時間別データが空です')
-                            setSteps(0)
-                        }
+                    if (data.success && data.data && typeof data.data.total_steps === 'number') {
+                        // APIレスポンスのtotal_stepsを取得
+                        const totalSteps = data.data.total_steps
+                        console.log('今日の総歩数:', totalSteps)
+                        setSteps(totalSteps)
                     } else {
-                        console.log('時間別データが不正:', data)
+                        console.log('total_stepsが不正:', data)
                         setSteps(0)
                     }
                 } else {
