@@ -1284,7 +1284,13 @@ const ProfileContent = ({
                     {petData ?
                         <Image
                             source={getPetImage()}
-                            style={styles.petParamImage}
+                            style={[
+                                styles.petParamImage,
+                                {
+                                    width: Math.min(petData.main_pet_size * 1.2 + 80, 120), // サイズ調整：最小80、最大120
+                                    height: Math.min(petData.main_pet_size * 1.2 + 80, 120),
+                                },
+                            ]}
                             resizeMode='cover'
                         />
                     :   <View style={[styles.petParamImage, { backgroundColor: '#f0f0f0' }]} />}
