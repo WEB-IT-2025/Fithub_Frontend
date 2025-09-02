@@ -109,6 +109,18 @@ const petImageMap: Record<string, any> = {
     'vitiligo_cat.png': require('@/assets/images/vitiligo_cat.png'),
     'fithub_cat.png': require('@/assets/images/fithub_cat.png'),
     'ameshort_cat.png': require('@/assets/images/ameshort_cat.png'),
+    'gingin_penguin.png': require('@/assets/images/gingin_penguin.png'),
+    'bulldog.png': require('@/assets/images/bulldog.png'),
+    'chihuahua.png': require('@/assets/images/chihuahua.png'),
+    'chinpan.png': require('@/assets/images/chinpan.png'),
+    'panda.png': require('@/assets/images/panda.png'),
+    'penguin.png': require('@/assets/images/penguin.png'),
+    'rabbit.png': require('@/assets/images/rabbit.png'),
+    'shiba_dog.png': require('@/assets/images/shiba_dog.png'),
+    'slime.png': require('@/assets/images/slime.png'),
+    'takopee.png': require('@/assets/images/takopee.png'),
+    'toipo.png': require('@/assets/images/toipo.png'),
+    'zebra.png': require('@/assets/images/zebra.png'),
     // デフォルト画像
     default: require('@/assets/images/cat1.png'),
 }
@@ -594,9 +606,15 @@ const RoomScreen = () => {
         if (member.main_pet?.pet_image) {
             // APIデータの場合
             const petImage = member.main_pet.pet_image
+            console.log(`🖼️ ペット画像取得: ${member.user_name} → ${petImage}`, {
+                petImage,
+                hasImageInMap: !!petImageMap[petImage],
+                availableKeys: Object.keys(petImageMap).slice(0, 5), // 最初の5個のキーを表示
+            })
             return petImageMap[petImage] || petImageMap.default
         } else {
             // モックデータの場合
+            console.log(`🖼️ モックデータのペット画像使用: ${member.name || member.user_name}`)
             return require('@/assets/images/cat1.png')
         }
     }
