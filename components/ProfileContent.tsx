@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Animated, Image, Platform, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, Image, Linking, Platform, Text, TouchableOpacity, View } from 'react-native'
 import { responsiveFontSize, responsiveHeight, responsiveWidth } from 'react-native-responsive-dimensions'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -130,6 +130,7 @@ interface User {
     user_name: string
     user_icon: string | null
     email: string | null
+    github_username?: string | null // GitHubユーザー名を追加
 }
 
 interface PetData {
@@ -524,14 +525,15 @@ const ProfileContent = ({
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                }).then(response => response.ok ? response.json() : null)
+                }).then((response) => (response.ok ? response.json() : null)),
             ])
 
             console.log('📊 Profile: API呼び出し完了', {
                 weeklyStepsData_exists: !!weeklyStepsData,
                 monthlyStepsData_exists: !!monthlyStepsData,
                 userNameData_exists: !!userNameData,
-                userNameData: userNameData
+                userNameData: userNameData,
+                github_username: userNameData?.data?.github_username,
             })
 
             if (weeklyStepsData) {
@@ -666,15 +668,20 @@ const ProfileContent = ({
                 }, 100)
 
                 // ユーザー基本情報も設定（取得したユーザー名データを使用）
-                const userName = userNameData?.success && userNameData?.data?.user_name ? 
-                    userNameData.data.user_name : 
-                    'User' // フォールバック値
-                
+                const userName =
+                    userNameData?.success && userNameData?.data?.user_name ? userNameData.data.user_name : 'User' // フォールバック値
+
+                const githubUsername =
+                    userNameData?.success && userNameData?.data?.github_username ?
+                        userNameData.data.github_username
+                    :   null // GitHubユーザー名（ない場合はnull）
+
                 console.log('👤 Profile: ユーザー名設定:', {
                     userName,
+                    githubUsername,
                     userNameData_success: userNameData?.success,
                     api_user_name: userNameData?.data?.user_name,
-                    github_username: userNameData?.data?.github_username
+                    api_github_username: userNameData?.data?.github_username,
                 })
 
                 setUser({
@@ -682,6 +689,7 @@ const ProfileContent = ({
                     user_name: userName,
                     user_icon: null,
                     email: null,
+                    github_username: githubUsername, // GitHubユーザー名を追加
                 })
                 console.log('✅ ProfileContent: setUser呼び出し完了')
             } else {
@@ -700,10 +708,25 @@ const ProfileContent = ({
         async (targetUserId: string) => {
             try {
                 setIsLoading(true)
-                const [weeklyStepsData, monthlyStepsData] = await Promise.all([
+                const [weeklyStepsData, monthlyStepsData, userNameData] = await Promise.all([
                     fetchWeeklyStepsData(targetUserId),
                     fetchMonthlyStepsData(targetUserId),
+                    // 他人のユーザー名API呼び出し
+                    fetch(`${API_BASE_URL}/api/data/UserName/${targetUserId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }).then((response) => (response.ok ? response.json() : null)),
                 ])
+
+                console.log('📊 Other Profile: API呼び出し完了', {
+                    weeklyStepsData_exists: !!weeklyStepsData,
+                    monthlyStepsData_exists: !!monthlyStepsData,
+                    userNameData_exists: !!userNameData,
+                    userNameData: userNameData,
+                    github_username: userNameData?.data?.github_username,
+                })
 
                 if (weeklyStepsData) {
                     // 時間別データも取得
@@ -762,11 +785,32 @@ const ProfileContent = ({
                     }
 
                     setUserData(combinedUserData)
+
+                    // 他人のプロフィール用ユーザー情報設定（GitHubユーザー名を含む）
+                    const otherUserName =
+                        userNameData?.success && userNameData?.data?.user_name ?
+                            userNameData.data.user_name
+                        :   userName || 'User' // propsのuserNameをフォールバックとして使用
+
+                    const otherGithubUsername =
+                        userNameData?.success && userNameData?.data?.github_username ?
+                            userNameData.data.github_username
+                        :   null
+
+                    console.log('👤 Other Profile: ユーザー名設定:', {
+                        otherUserName,
+                        otherGithubUsername,
+                        userNameData_success: userNameData?.success,
+                        api_user_name: userNameData?.data?.user_name,
+                        api_github_username: userNameData?.data?.github_username,
+                    })
+
                     setUser({
                         user_id: weeklyStepsData.user_id,
-                        user_name: userName || 'User',
+                        user_name: otherUserName,
                         user_icon: null,
                         email: null,
+                        github_username: otherGithubUsername, // GitHubユーザー名を追加
                     })
                 } else {
                     console.error('❌ 他人プロフィール: weekly steps not available')
@@ -1166,7 +1210,7 @@ const ProfileContent = ({
                     </Text>
                     <TouchableOpacity
                         style={{
-                            backgroundColor: '#24292e',
+                            backgroundColor: user?.github_username ? '#24292e' : '#cccccc', // GitHubユーザー名がない場合はグレーアウト
                             paddingHorizontal: responsiveWidth(3),
                             paddingVertical: responsiveHeight(0.8),
                             borderRadius: responsiveWidth(2),
@@ -1174,24 +1218,32 @@ const ProfileContent = ({
                             flexDirection: 'row',
                             alignItems: 'center',
                         }}
+                        disabled={!user?.github_username} // GitHubユーザー名がない場合は無効化
                         onPress={() => {
-                            // TODO: GitHubプロフィールを開く処理
+                            if (user?.github_username) {
+                                // GitHubプロフィールを開く処理
+                                const githubUrl = `https://github.com/${user.github_username}`
+                                console.log('🔗 GitHubプロフィールを開く:', githubUrl)
+                                Linking.openURL(githubUrl).catch((err) =>
+                                    console.error('GitHub URLを開くのに失敗:', err)
+                                )
+                            }
                         }}
                     >
                         <FontAwesomeIcon
                             icon={faGithub}
                             size={responsiveFontSize(1.6)}
-                            color='#ffffff'
+                            color={user?.github_username ? '#ffffff' : '#999999'} // GitHubユーザー名がない場合はグレー
                             style={{ marginRight: responsiveWidth(1.5) }}
                         />
                         <Text
                             style={{
-                                color: '#ffffff',
+                                color: user?.github_username ? '#ffffff' : '#999999', // GitHubユーザー名がない場合はグレー
                                 fontSize: responsiveFontSize(1.4),
                                 fontWeight: '600',
                             }}
                         >
-                            GitHub
+                            {user?.github_username ? `@${user.github_username}` : 'GitHub'}
                         </Text>
                     </TouchableOpacity>
                 </View>
