@@ -52,6 +52,9 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
             userData: !!userData,
             hourly_steps: userData?.hourly_steps,
             hourly_steps_length: userData?.hourly_steps ? userData.hourly_steps.length : 0,
+            hourly_steps_type: typeof userData?.hourly_steps,
+            hourly_steps_isArray: Array.isArray(userData?.hourly_steps),
+            hourly_steps_firstItem: userData?.hourly_steps?.[0],
         })
 
         if (userData?.hourly_steps && userData.hourly_steps.length > 0) {

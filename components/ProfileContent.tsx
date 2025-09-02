@@ -111,13 +111,6 @@ interface UserData {
         totalSteps: number
         timestamp: string
     }>
-    hourly_exercise?: Array<{
-        time: string
-        timeValue: number
-        steps: number
-        totalSteps: number
-        timestamp: string
-    }>
     // 週歩数データの新しいフィールド
     weekly_total_steps?: number
     weekly_period?: string
@@ -404,92 +397,95 @@ const ProfileContent = ({
     )
 
     // APIから2時間ごとの歩数データを取得する関数
-    const fetchHourlyStepsData = useCallback(async (targetUserId?: string) => {
-        if (isHourlyDataLoading) return null // 既にローディング中の場合は取得しない
+    const fetchHourlyStepsData = useCallback(
+        async (targetUserId?: string) => {
+            if (isHourlyDataLoading) return null // 既にローディング中の場合は取得しない
 
-        try {
-            setIsHourlyDataLoading(true)
+            try {
+                setIsHourlyDataLoading(true)
 
-            // ユーザーIDを決定（渡された場合はそれを使用、そうでなければ自分のID）
-            let actualUserId = targetUserId
-            if (!actualUserId) {
-                // AsyncStorageからトークンを取得してユーザーIDを抽出
-                const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
-                if (!token) {
-                    console.log('Profile: トークンがありません（hourly）')
-                    return null
-                }
-
-                const payload = parseJwtPayload(token)
-                if (!payload || !payload.user_id) {
-                    console.log('Profile: JWTからユーザーIDを取得できません（hourly）')
-                    return null
-                }
-                actualUserId = payload.user_id
-            }
-
-            console.log('🕒 Profile: 時間別データ取得開始', { userId: actualUserId })
-
-            // 時間別データを取得（新しいエンドポイント使用）
-            const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${actualUserId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-
-            if (hourlyResponse.ok) {
-                const hourlyData = await hourlyResponse.json()
-                console.log('✅ Profile: 時間別データ取得成功', hourlyData)
-
-                if (hourlyData.success && hourlyData.data && hourlyData.data.hourly_data) {
-                    console.log('🕒 Profile: 時間別データの詳細:', {
-                        totalSteps: hourlyData.data.total_steps,
-                        dataPoints: hourlyData.data.data_points,
-                        date: hourlyData.data.date,
-                        userId: hourlyData.data.user_id,
-                        hourlyDataLength: hourlyData.data.hourly_data.length
-                    })
-
-                    // データが配列でない場合の対処
-                    if (!Array.isArray(hourlyData.data.hourly_data)) {
-                        console.log('❌ Profile: 時間別データが配列ではありません', hourlyData.data.hourly_data)
+                // ユーザーIDを決定（渡された場合はそれを使用、そうでなければ自分のID）
+                let actualUserId = targetUserId
+                if (!actualUserId) {
+                    // AsyncStorageからトークンを取得してユーザーIDを抽出
+                    const token = await AsyncStorage.getItem(STORAGE_KEYS.SESSION_TOKEN)
+                    if (!token) {
+                        console.log('Profile: トークンがありません（hourly）')
                         return null
                     }
 
-                    // データの各要素が期待される形式かチェック
-                    const isValidData = hourlyData.data.hourly_data.every(
-                        (item) =>
-                            typeof item === 'object' &&
-                            typeof item.timeValue === 'number' &&
-                            typeof item.steps === 'number'
-                    )
-
-                    if (!isValidData) {
-                        console.log('❌ Profile: 時間別データの形式が不正です', hourlyData.data.hourly_data)
+                    const payload = parseJwtPayload(token)
+                    if (!payload || !payload.user_id) {
+                        console.log('Profile: JWTからユーザーIDを取得できません（hourly）')
                         return null
                     }
+                    actualUserId = payload.user_id
+                }
 
-                    console.log('✅ Profile: 時間別データ検証完了')
-                    return hourlyData.data.hourly_data
+                console.log('🕒 Profile: 時間別データ取得開始', { userId: actualUserId })
+
+                // 時間別データを取得（新しいエンドポイント使用）
+                const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${actualUserId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                if (hourlyResponse.ok) {
+                    const hourlyData = await hourlyResponse.json()
+                    console.log('✅ Profile: 時間別データ取得成功', hourlyData)
+
+                    if (hourlyData.success && hourlyData.data && hourlyData.data.hourly_data) {
+                        console.log('🕒 Profile: 時間別データの詳細:', {
+                            totalSteps: hourlyData.data.total_steps,
+                            dataPoints: hourlyData.data.data_points,
+                            date: hourlyData.data.date,
+                            userId: hourlyData.data.user_id,
+                            hourlyDataLength: hourlyData.data.hourly_data.length,
+                        })
+
+                        // データが配列でない場合の対処
+                        if (!Array.isArray(hourlyData.data.hourly_data)) {
+                            console.log('❌ Profile: 時間別データが配列ではありません', hourlyData.data.hourly_data)
+                            return null
+                        }
+
+                        // データの各要素が期待される形式かチェック
+                        const isValidData = hourlyData.data.hourly_data.every(
+                            (item) =>
+                                typeof item === 'object' &&
+                                typeof item.timeValue === 'number' &&
+                                typeof item.steps === 'number'
+                        )
+
+                        if (!isValidData) {
+                            console.log('❌ Profile: 時間別データの形式が不正です', hourlyData.data.hourly_data)
+                            return null
+                        }
+
+                        console.log('✅ Profile: 時間別データ検証完了')
+                        return hourlyData.data.hourly_data
+                    } else {
+                        console.log('❌ Profile: APIレスポンスが不正です', {
+                            success: hourlyData.success,
+                            hasData: !!hourlyData.data,
+                            hasHourlyData: !!(hourlyData.data && hourlyData.data.hourly_data),
+                        })
+                    }
                 } else {
-                    console.log('❌ Profile: APIレスポンスが不正です', {
-                        success: hourlyData.success,
-                        hasData: !!hourlyData.data,
-                        hasHourlyData: !!(hourlyData.data && hourlyData.data.hourly_data),
-                    })
+                    console.log('❌ Profile: 時間別データ取得失敗', hourlyResponse.status)
                 }
-            } else {
-                console.log('❌ Profile: 時間別データ取得失敗', hourlyResponse.status)
+            } catch (error) {
+                console.error('❌ Profile: 時間別データ取得エラー:', error)
+            } finally {
+                setIsHourlyDataLoading(false)
             }
-        } catch (error) {
-            console.error('❌ Profile: 時間別データ取得エラー:', error)
-        } finally {
-            setIsHourlyDataLoading(false)
-        }
 
-        return null
-    }, [isHourlyDataLoading])
+            return null
+        },
+        [isHourlyDataLoading]
+    )
 
     // APIからユーザーデータを取得する関数
     const fetchUserData = useCallback(async () => {
@@ -520,11 +516,38 @@ const ProfileContent = ({
             })
 
             if (weeklyStepsData) {
-                // 時間別データも取得（自分のプロフィールの場合のみ）
-                const hourlySteps = await fetchHourlyStepsData()
+                // 時間別データも取得して今日の総歩数を正確に取得
+                const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${user?.user_id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+                let hourlySteps: any[] | null = null
+                let todayTotalSteps = 0
+
+                if (hourlyResponse.ok) {
+                    const hourlyData = await hourlyResponse.json()
+                    console.log('✅ Profile: 時間別データ取得成功', hourlyData)
+
+                    if (hourlyData.success && hourlyData.data && hourlyData.data.hourly_data) {
+                        hourlySteps = hourlyData.data.hourly_data
+                        // 今日の総歩数を取得（APIレスポンスのtotal_stepsを使用）
+                        todayTotalSteps = hourlyData.data.total_steps || 0
+                        console.log('📊 Profile: 今日の総歩数:', todayTotalSteps)
+                    }
+                } else {
+                    console.log('❌ Profile: 時間別データ取得失敗', hourlyResponse.status)
+                    // フォールバック：古い方法で時間別データを取得
+                    hourlySteps = await fetchHourlyStepsData()
+                }
+
                 console.log('🔗 Profile: データ結合処理:', {
                     hourlyStepsExists: !!hourlySteps,
                     hourlyStepsLength: hourlySteps ? hourlySteps.length : 0,
+                    hourlyStepsData: hourlySteps?.slice(0, 3), // 最初の3件をログ出力
+                    todayTotalSteps: todayTotalSteps,
                     weeklyStepsExists: !!weeklyStepsData,
                     weeklyStepsCount: weeklyStepsData ? weeklyStepsData.recent_exercise.length : 0,
                 })
@@ -537,10 +560,11 @@ const ProfileContent = ({
                     recent_exercise_data: weeklyStepsData.recent_exercise,
                 })
 
-                // 今日のデータを作成（週歩数データの最新日から）
+                // 今日のデータを作成（時間別データから取得した総歩数を優先使用）
                 const today = {
                     steps:
-                        weeklyStepsData.recent_exercise.length > 0 ?
+                        todayTotalSteps > 0 ? todayTotalSteps
+                        : weeklyStepsData.recent_exercise.length > 0 ?
                             weeklyStepsData.recent_exercise[weeklyStepsData.recent_exercise.length - 1]
                                 .exercise_quantity
                         :   0,
@@ -552,7 +576,7 @@ const ProfileContent = ({
                     today: today,
                     recent_exercise: weeklyStepsData.recent_exercise,
                     monthly_exercise: monthlyStepsData?.recent_exercise || [],
-                    hourly_steps: hourlySteps,
+                    hourly_steps: hourlySteps || undefined, // null を undefined に変換
                     weekly_total_steps: parseInt(weeklyStepsData.total_steps),
                     monthly_total_steps: monthlyStepsData?.total_steps ? parseInt(monthlyStepsData.total_steps) : 0,
                     weekly_period: weeklyStepsData.period,
@@ -643,20 +667,42 @@ const ProfileContent = ({
 
                 if (weeklyStepsData) {
                     // 時間別データも取得
-                    const hourlySteps = await fetchHourlyStepsData(targetUserId)
+                    const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${targetUserId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    })
+
+                    let hourlySteps: any[] | null = null
+                    let todayTotalSteps = 0
+
+                    if (hourlyResponse.ok) {
+                        const hourlyData = await hourlyResponse.json()
+                        console.log('✅ Other Profile: 時間別データ取得成功', hourlyData)
+
+                        if (hourlyData.success && hourlyData.data && hourlyData.data.hourly_data) {
+                            hourlySteps = hourlyData.data.hourly_data
+                            // 今日の総歩数を取得（APIレスポンスのtotal_stepsを使用）
+                            todayTotalSteps = hourlyData.data.total_steps || 0
+                            console.log('📊 Other Profile: 今日の総歩数:', todayTotalSteps)
+                        }
+                    } else {
+                        console.log('❌ Other Profile: 時間別データ取得失敗', hourlyResponse.status)
+                    }
+
                     console.log('🔗 Other Profile: データ結合処理:', {
                         hourlyStepsExists: !!hourlySteps,
                         hourlyStepsLength: hourlySteps ? hourlySteps.length : 0,
+                        hourlyStepsData: hourlySteps?.slice(0, 3), // 最初の3件をログ出力
+                        todayTotalSteps: todayTotalSteps,
                         weeklyStepsExists: !!weeklyStepsData,
                         weeklyStepsCount: weeklyStepsData ? weeklyStepsData.recent_exercise.length : 0,
                     })
 
+                    // 今日のデータを作成（時間別データから取得した総歩数を使用）
                     const today = {
-                        steps:
-                            weeklyStepsData.recent_exercise.length > 0 ?
-                                weeklyStepsData.recent_exercise[weeklyStepsData.recent_exercise.length - 1]
-                                    .exercise_quantity
-                            :   0,
+                        steps: todayTotalSteps, // 時間別データから取得した今日の総歩数
                         contributions: 0,
                         date: new Date().toISOString().split('T')[0],
                     }
@@ -665,7 +711,7 @@ const ProfileContent = ({
                         today,
                         recent_exercise: weeklyStepsData.recent_exercise,
                         monthly_exercise: monthlyStepsData?.recent_exercise || [],
-                        hourly_exercise: hourlySteps || [], // 時間別データを追加
+                        hourly_steps: hourlySteps || undefined, // ExerciseGraphが期待するフィールド名に統一
                         weekly_total_steps: parseInt(String(weeklyStepsData.total_steps)),
                         monthly_total_steps:
                             monthlyStepsData?.total_steps ? parseInt(String(monthlyStepsData.total_steps)) : 0,
