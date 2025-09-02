@@ -108,26 +108,30 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
         if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
             console.log('✅ ExerciseGraph: 実データを使用してweeklyStepsを生成')
             console.log('🔥 週歩数API データ:', userData.recent_exercise)
-            
+
             // 曜日別にデータを整理（月曜=0, 火曜=1, ..., 日曜=6）
             const weeklySteps = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
-            
+
             userData.recent_exercise.forEach((exercise, index) => {
                 console.log(`🎯 処理中のデータ${index}: "${exercise.day}", 歩数=${exercise.exercise_quantity}`)
-                
+
                 // タイムゾーンの影響を避けるため UTC 基準で日付を解析
                 const date = new Date(exercise.day)
                 const dayOfWeek = (date.getUTCDay() + 6) % 7 // UTC基準で日曜=0を月曜=0に変換
-                
+
                 console.log(`📅 日付解析: ${exercise.day}`)
-                console.log(`  - UTC曜日: ${date.getUTCDay()} (${['日','月','火','水','木','金','土'][date.getUTCDay()]})`)
-                console.log(`  - 配列インデックス: ${dayOfWeek} (${['月','火','水','木','金','土','日'][dayOfWeek]}曜日)`)
+                console.log(
+                    `  - UTC曜日: ${date.getUTCDay()} (${['日', '月', '火', '水', '木', '金', '土'][date.getUTCDay()]})`
+                )
+                console.log(
+                    `  - 配列インデックス: ${dayOfWeek} (${['月', '火', '水', '木', '金', '土', '日'][dayOfWeek]}曜日)`
+                )
                 console.log(`  - 配置する歩数: ${exercise.exercise_quantity}`)
-                
+
                 if (dayOfWeek >= 0 && dayOfWeek < 7) {
                     weeklySteps[dayOfWeek] = exercise.exercise_quantity
                     console.log(`✅ 配置完了: weeklySteps[${dayOfWeek}] = ${exercise.exercise_quantity}`)
-                    
+
                     // 日曜日の特別チェック
                     if (dayOfWeek === 6) {
                         console.log(`🌟 日曜日データ: ${exercise.exercise_quantity}歩 (期待値: 2225歩)`)
@@ -135,14 +139,14 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                     }
                 }
             })
-            
+
             console.log('🎯 最終結果:', weeklySteps)
             console.log('📊 各曜日:')
             weeklySteps.forEach((steps, i) => {
-                const dayName = ['月','火','水','木','金','土','日'][i]
+                const dayName = ['月', '火', '水', '木', '金', '土', '日'][i]
                 console.log(`  ${dayName}: ${steps}歩`)
             })
-            
+
             return weeklySteps
         } else {
             console.log('❌ 実データなし - ダミーデータ使用')
@@ -155,46 +159,49 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     const getMonthlyStepsData = () => {
         console.log('📊 ExerciseGraph: getMonthlyStepsData開始')
         console.log('📊 ExerciseGraph: userDataの存在チェック:', !!userData)
-        
+
         if (!userData?.monthly_exercise) {
             console.log('⚠️ ExerciseGraph: monthly_exerciseデータが存在しません、ダミーデータを使用')
             // ダミーデータ（31日分）、10000歩以下に制限
             const rawData = [
-                3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600, 3800,
-                5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500, 3800,
+                3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600,
+                3800, 5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500, 3800,
             ]
             return rawData.map((steps) => Math.min(steps, 10000))
         }
 
         console.log('📊 ExerciseGraph: monthly_exerciseデータが存在', {
             monthly_exercise_length: userData.monthly_exercise.length,
-            first_item: userData.monthly_exercise[0]
+            first_item: userData.monthly_exercise[0],
         })
 
         // 31日分の空データを用意
         const monthlySteps = new Array(31).fill(0)
-        
+
         // APIデータをマッピング
         userData.monthly_exercise.forEach((exercise, index) => {
             const exerciseDate = new Date(exercise.day)
             const day = exerciseDate.getUTCDate() // UTCベースで日付取得（タイムゾーン問題を回避）
-            
+
             console.log(`🔍 月別データマッピング[${index}]:`, {
                 original_day: exercise.day,
                 parsed_date: exerciseDate.toISOString(),
                 day_number: day,
                 exercise_quantity: exercise.exercise_quantity,
                 array_index: day - 1,
-                will_be_placed_at_position: day - 1
+                will_be_placed_at_position: day - 1,
             })
-            
+
             if (day >= 1 && day <= 31) {
-                const steps = typeof exercise.exercise_quantity === 'string' 
-                    ? parseInt(exercise.exercise_quantity) || 0
-                    : exercise.exercise_quantity || 0
+                const steps =
+                    typeof exercise.exercise_quantity === 'string' ?
+                        parseInt(exercise.exercise_quantity) || 0
+                    :   exercise.exercise_quantity || 0
                 monthlySteps[day - 1] = Math.min(steps, 10000) // 10000歩上限
-                
-                console.log(`✅ データ配置完了: ${exercise.day} (${day}日目) → 配列位置[${day-1}] = ${monthlySteps[day-1]}歩`)
+
+                console.log(
+                    `✅ データ配置完了: ${exercise.day} (${day}日目) → 配列位置[${day - 1}] = ${monthlySteps[day - 1]}歩`
+                )
             } else {
                 console.log(`❌ 無効な日付: ${exercise.day} → day=${day}`)
             }
@@ -206,7 +213,7 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
         console.log('📊 ExerciseGraph: getMonthlyStepsData完了', {
             result_length: monthlySteps.length,
             total_steps: monthlySteps.reduce((sum, steps) => sum + steps, 0),
-            first_5_days: monthlySteps.slice(0, 5)
+            first_5_days: monthlySteps.slice(0, 5),
         })
 
         return monthlySteps

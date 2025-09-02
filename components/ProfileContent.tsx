@@ -516,8 +516,18 @@ const ProfileContent = ({
             })
 
             if (weeklyStepsData) {
+                // JWTからユーザーIDを取得（userオブジェクトはまだ設定されていないため）
+                const payload = parseJwtPayload(token)
+                const currentUserId = payload?.user_id
+
+                console.log('🔍 Profile: ユーザーID確認:', {
+                    currentUserId,
+                    user_exists: !!user,
+                    user_user_id: user?.user_id,
+                })
+
                 // 時間別データも取得して今日の総歩数を正確に取得
-                const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${user?.user_id}`, {
+                const hourlyResponse = await fetch(`${API_BASE_URL}/api/data/hourly/${currentUserId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
