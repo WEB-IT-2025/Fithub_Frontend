@@ -1243,7 +1243,7 @@ const ProfileContent = ({
                                 fontWeight: '600',
                             }}
                         >
-                            {user?.github_username ? `@${user.github_username}` : 'GitHub'}
+                            GitHub
                         </Text>
                     </TouchableOpacity>
                 </View>
