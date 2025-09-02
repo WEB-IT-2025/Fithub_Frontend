@@ -164,6 +164,15 @@ const GroupCreateScreen = () => {
                     nestedScrollEnabled={true}
                     contentContainerStyle={styles.scrollViewContent}
                 >
+                    {/* ドロップダウンが開いているときの背景オーバーレイ */}
+                    {showDropdown && (
+                        <TouchableOpacity
+                            style={styles.dropdownOverlay}
+                            activeOpacity={1}
+                            onPress={() => setShowDropdown(false)}
+                        />
+                    )}
+
                     {/* 説明テキスト */}
                     <View style={styles.descriptionSection}>
                         <Text style={styles.descriptionText}>
@@ -185,39 +194,45 @@ const GroupCreateScreen = () => {
                     </View>
 
                     {/* 参加上限設定 */}
-                    <View style={[styles.section, showDropdown && { zIndex: 1000, elevation: 1000 }]}>
+                    <View style={styles.section}>
                         <Text style={styles.sectionTitle}>参加上限</Text>
-                        <TouchableOpacity
-                            style={styles.dropdownButton}
-                            onPress={() => setShowDropdown(!showDropdown)}
-                        >
-                            <Text style={styles.dropdownText}>{maxPerson}人</Text>
-                            <Ionicons
-                                name={showDropdown ? 'chevron-up' : 'chevron-down'}
-                                size={20}
-                                color='#666'
-                            />
-                        </TouchableOpacity>
+                        <View style={styles.dropdownContainer}>
+                            <TouchableOpacity
+                                style={styles.dropdownButton}
+                                onPress={() => setShowDropdown(!showDropdown)}
+                            >
+                                <Text style={styles.dropdownText}>{maxPerson}人</Text>
+                                <Ionicons
+                                    name={showDropdown ? 'chevron-up' : 'chevron-down'}
+                                    size={20}
+                                    color='#666'
+                                />
+                            </TouchableOpacity>
 
-                        {showDropdown && (
-                            <View style={styles.dropdownList}>
-                                {participantOptions.map((option, index) => (
-                                    <TouchableOpacity
-                                        key={option}
-                                        style={[
-                                            styles.dropdownItem,
-                                            index === participantOptions.length - 1 && styles.lastDropdownItem,
-                                        ]}
-                                        onPress={() => {
-                                            setMaxPerson(option)
-                                            setShowDropdown(false)
-                                        }}
-                                    >
-                                        <Text style={styles.dropdownItemText}>{option}人</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
+                            {showDropdown && (
+                                <ScrollView 
+                                    style={styles.dropdownList}
+                                    nestedScrollEnabled={true}
+                                    showsVerticalScrollIndicator={false}
+                                >
+                                    {participantOptions.map((option, index) => (
+                                        <TouchableOpacity
+                                            key={option}
+                                            style={[
+                                                styles.dropdownItem,
+                                                index === participantOptions.length - 1 && styles.lastDropdownItem,
+                                            ]}
+                                            onPress={() => {
+                                                setMaxPerson(option)
+                                                setShowDropdown(false)
+                                            }}
+                                        >
+                                            <Text style={styles.dropdownItemText}>{option}人</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            )}
+                        </View>
                     </View>
 
                     {/* グループ非公開設定 */}
@@ -289,9 +304,11 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
         paddingHorizontal: 16,
+        overflow: 'visible',
     },
     scrollViewContent: {
-        paddingBottom: 100, // ドロップダウンのための余白
+        paddingBottom: 150, // ドロップダウンのための余白を増加
+        overflow: 'visible',
     },
     descriptionSection: {
         marginTop: 16,
@@ -337,6 +354,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         backgroundColor: '#fafafa',
     },
+    dropdownContainer: {
+        position: 'relative',
+        zIndex: 1000,
+    },
+    dropdownOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: -16,
+        right: -16,
+        bottom: -150,
+        zIndex: 999,
+    },
     dropdownText: {
         fontSize: 16,
         color: '#333',
@@ -351,16 +380,16 @@ const styles = StyleSheet.create({
         marginTop: 4,
         borderWidth: 1,
         borderColor: '#ddd',
-        maxHeight: 200,
-        zIndex: 9999,
-        elevation: 10, // Android用の影
-        shadowColor: '#000', // iOS用の影
+        maxHeight: 180,
+        zIndex: 10000,
+        elevation: 15,
+        shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 4,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
     },
     dropdownItem: {
         paddingVertical: 12,
