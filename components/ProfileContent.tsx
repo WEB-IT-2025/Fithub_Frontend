@@ -502,17 +502,36 @@ const ProfileContent = ({
                 return
             }
 
-            console.log('📊 Profile: データ取得開始（週歩数・月歩数APIのみ）')
+            console.log('📊 Profile: データ取得開始（週歩数・月歩数・ユーザー名APIのみ）')
 
-            // 週歩数データと月歩数データを並行取得
-            const [weeklyStepsData, monthlyStepsData] = await Promise.all([
+            // JWTからユーザーIDを取得（userオブジェクトはまだ設定されていないため）
+            const payload = parseJwtPayload(token)
+            const currentUserId = payload?.user_id
+
+            console.log('🔍 Profile: ユーザーID確認:', {
+                currentUserId,
+                user_exists: !!user,
+                user_user_id: user?.user_id,
+            })
+
+            // 週歩数データ、月歩数データ、ユーザー名を並行取得
+            const [weeklyStepsData, monthlyStepsData, userNameData] = await Promise.all([
                 fetchWeeklyStepsData(),
                 fetchMonthlyStepsData(),
+                // ユーザー名API呼び出し
+                fetch(`${API_BASE_URL}/api/data/UserName/${currentUserId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }).then(response => response.ok ? response.json() : null)
             ])
 
             console.log('📊 Profile: API呼び出し完了', {
                 weeklyStepsData_exists: !!weeklyStepsData,
                 monthlyStepsData_exists: !!monthlyStepsData,
+                userNameData_exists: !!userNameData,
+                userNameData: userNameData
             })
 
             if (weeklyStepsData) {
@@ -646,10 +665,21 @@ const ProfileContent = ({
                     })
                 }, 100)
 
-                // ユーザー基本情報も設定（週歩数データから）
+                // ユーザー基本情報も設定（取得したユーザー名データを使用）
+                const userName = userNameData?.success && userNameData?.data?.user_name ? 
+                    userNameData.data.user_name : 
+                    'User' // フォールバック値
+                
+                console.log('👤 Profile: ユーザー名設定:', {
+                    userName,
+                    userNameData_success: userNameData?.success,
+                    api_user_name: userNameData?.data?.user_name,
+                    github_username: userNameData?.data?.github_username
+                })
+
                 setUser({
                     user_id: weeklyStepsData.user_id,
-                    user_name: 'User', // 週歩数APIにはuser_nameがないため固定値
+                    user_name: userName,
                     user_icon: null,
                     email: null,
                 })
