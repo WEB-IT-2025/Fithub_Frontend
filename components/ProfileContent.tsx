@@ -328,70 +328,73 @@ const ProfileContent = ({
     )
 
     // APIからメインペットデータを取得する関数
-    const fetchMainPet = useCallback(async (targetUserId?: string) => {
-        console.log('メインペット情報取得開始')
-        setIsPetLoading(true)
-        try {
-            let actualUserId: string | undefined
+    const fetchMainPet = useCallback(
+        async (targetUserId?: string) => {
+            console.log('メインペット情報取得開始')
+            setIsPetLoading(true)
+            try {
+                let actualUserId: string | undefined
 
-            if (isOwnProfile) {
-                // 自分のプロフィールの場合はJWTからユーザーIDを取得
-                const token = await AsyncStorage.getItem('session_token')
-                if (!token) {
-                    console.log('トークンが見つかりません')
+                if (isOwnProfile) {
+                    // 自分のプロフィールの場合はJWTからユーザーIDを取得
+                    const token = await AsyncStorage.getItem('session_token')
+                    if (!token) {
+                        console.log('トークンが見つかりません')
+                        return
+                    }
+
+                    const payload = parseJwtPayload(token)
+                    actualUserId = payload?.user_id
+                } else {
+                    // 他人のプロフィールの場合は渡されたuserIdを使用
+                    actualUserId = targetUserId || userId
+                }
+
+                if (!actualUserId) {
+                    console.log('ユーザーIDが取得できません')
                     return
                 }
 
-                const payload = parseJwtPayload(token)
-                actualUserId = payload?.user_id
-            } else {
-                // 他人のプロフィールの場合は渡されたuserIdを使用
-                actualUserId = targetUserId || userId
-            }
+                const response = await fetch(`${API_BASE_URL}/api/pet/profile/${actualUserId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
 
-            if (!actualUserId) {
-                console.log('ユーザーIDが取得できません')
-                return
-            }
+                console.log('メインペットAPIレスポンスステータス:', response.status)
 
-            const response = await fetch(`${API_BASE_URL}/api/pet/profile/${actualUserId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
+                if (response.ok) {
+                    const data = await response.json()
+                    console.log('🐱 メインペットデータ受信:', JSON.stringify(data, null, 2))
 
-            console.log('メインペットAPIレスポンスステータス:', response.status)
-
-            if (response.ok) {
-                const data = await response.json()
-                console.log('🐱 メインペットデータ受信:', JSON.stringify(data, null, 2))
-
-                if (data.success && data.data) {
-                    setPetData(data.data)
-                    console.log('🐱 メインペット設定完了:', {
-                        main_pet_user_name: data.data.main_pet_user_name,
-                        main_pet_name: data.data.main_pet_name,
-                        main_pet_image_url: data.data.main_pet_image_url,
-                        main_pet_intimacy: data.data.main_pet_intimacy,
-                        main_pet_size: data.data.main_pet_size,
-                    })
+                    if (data.success && data.data) {
+                        setPetData(data.data)
+                        console.log('🐱 メインペット設定完了:', {
+                            main_pet_user_name: data.data.main_pet_user_name,
+                            main_pet_name: data.data.main_pet_name,
+                            main_pet_image_url: data.data.main_pet_image_url,
+                            main_pet_intimacy: data.data.main_pet_intimacy,
+                            main_pet_size: data.data.main_pet_size,
+                        })
+                    } else {
+                        console.log('❌ メインペットデータが不正:', data)
+                        setPetData(null)
+                    }
                 } else {
-                    console.log('❌ メインペットデータが不正:', data)
+                    const errorText = await response.text()
+                    console.log('メインペットAPI エラー:', response.status, errorText)
                     setPetData(null)
                 }
-            } else {
-                const errorText = await response.text()
-                console.log('メインペットAPI エラー:', response.status, errorText)
+            } catch (error) {
+                console.error('メインペット取得エラー:', error)
                 setPetData(null)
+            } finally {
+                setIsPetLoading(false)
             }
-        } catch (error) {
-            console.error('メインペット取得エラー:', error)
-            setPetData(null)
-        } finally {
-            setIsPetLoading(false)
-        }
-    }, [isOwnProfile, userId])
+        },
+        [isOwnProfile, userId]
+    )
 
     // APIから2時間ごとの歩数データを取得する関数
     const fetchHourlyStepsData = useCallback(async () => {

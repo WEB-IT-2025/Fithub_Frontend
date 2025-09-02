@@ -1,4 +1,8 @@
 import React, { useState } from 'react'
+
+import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useRouter } from 'expo-router'
 import {
     Alert,
     KeyboardAvoidingView,
@@ -11,12 +15,9 @@ import {
     View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Ionicons } from '@expo/vector-icons'
 
 // APIベースURL設定
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_TEST_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.200.4.2:3000').replace(/\/+$/, '')
 
 // ストレージキー
 const STORAGE_KEYS = {
@@ -55,7 +56,7 @@ const GroupCreateScreen = () => {
         'toipo',
         'tora_cat',
         'vitiligo_cat',
-        'zebra'
+        'zebra',
     ]
 
     // ランダムなペット画像を選択する関数
@@ -100,7 +101,7 @@ const GroupCreateScreen = () => {
                 body: JSON.stringify({
                     group_name: groupName.trim(),
                     max_person: maxPerson,
-                    back_image: getRandomPetImage(), // ランダムなペット画像を設定
+                    back_image: 'black_cat.png', // 黒猫画像を設定
                     is_private: isPrivate,
                 }),
             })
@@ -119,19 +120,15 @@ const GroupCreateScreen = () => {
             const result = await response.json()
             console.log('グループ作成成功:', result)
 
-            Alert.alert(
-                '作成完了',
-                `グループ「${groupName}」を作成しました！`,
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            // グループ画面に戻る
-                            router.back()
-                        },
+            Alert.alert('作成完了', `グループ「${groupName}」を作成しました！`, [
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        // グループ画面に戻る
+                        router.back()
                     },
-                ]
-            )
+                },
+            ])
         } catch (error) {
             console.error('グループ作成エラー:', error)
             Alert.alert('エラー', 'グループ作成中にエラーが発生しました。')
@@ -152,12 +149,21 @@ const GroupCreateScreen = () => {
                         style={styles.closeButton}
                         onPress={() => router.back()}
                     >
-                        <Ionicons name="close" size={24} color="#000" />
+                        <Ionicons
+                            name='close'
+                            size={24}
+                            color='#000'
+                        />
                     </TouchableOpacity>
                     <Text style={styles.title}>グループ作成</Text>
                 </View>
 
-                <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                    contentContainerStyle={styles.scrollViewContent}
+                >
                     {/* 説明テキスト */}
                     <View style={styles.descriptionSection}>
                         <Text style={styles.descriptionText}>
@@ -170,8 +176,8 @@ const GroupCreateScreen = () => {
                     <View style={styles.section}>
                         <TextInput
                             style={styles.textInput}
-                            placeholder="グループ名"
-                            placeholderTextColor="#999"
+                            placeholder='グループ名'
+                            placeholderTextColor='#999'
                             value={groupName}
                             onChangeText={setGroupName}
                             maxLength={30}
@@ -179,26 +185,29 @@ const GroupCreateScreen = () => {
                     </View>
 
                     {/* 参加上限設定 */}
-                    <View style={styles.section}>
+                    <View style={[styles.section, showDropdown && { zIndex: 1000, elevation: 1000 }]}>
                         <Text style={styles.sectionTitle}>参加上限</Text>
                         <TouchableOpacity
                             style={styles.dropdownButton}
                             onPress={() => setShowDropdown(!showDropdown)}
                         >
                             <Text style={styles.dropdownText}>{maxPerson}人</Text>
-                            <Ionicons 
-                                name={showDropdown ? "chevron-up" : "chevron-down"} 
-                                size={20} 
-                                color="#666" 
+                            <Ionicons
+                                name={showDropdown ? 'chevron-up' : 'chevron-down'}
+                                size={20}
+                                color='#666'
                             />
                         </TouchableOpacity>
-                        
+
                         {showDropdown && (
                             <View style={styles.dropdownList}>
-                                {participantOptions.map((option) => (
+                                {participantOptions.map((option, index) => (
                                     <TouchableOpacity
                                         key={option}
-                                        style={styles.dropdownItem}
+                                        style={[
+                                            styles.dropdownItem,
+                                            index === participantOptions.length - 1 && styles.lastDropdownItem,
+                                        ]}
                                         onPress={() => {
                                             setMaxPerson(option)
                                             setShowDropdown(false)
@@ -220,12 +229,17 @@ const GroupCreateScreen = () => {
                                 onPress={() => setIsPrivate(!isPrivate)}
                             >
                                 {isPrivate && (
-                                    <Ionicons name="checkmark" size={16} color="#388e3c" />
+                                    <Ionicons
+                                        name='checkmark'
+                                        size={16}
+                                        color='#388e3c'
+                                    />
                                 )}
                             </TouchableOpacity>
                         </View>
                         <Text style={styles.privateDescription}>
-                            ルームを非公開にすると、<Text style={styles.highlightText}>（招待限定ルームの作成が可能）</Text>です。
+                            ルームを非公開にすると、
+                            <Text style={styles.highlightText}>（招待限定ルームの作成が可能）</Text>です。
                         </Text>
                     </View>
                 </ScrollView>
@@ -237,9 +251,7 @@ const GroupCreateScreen = () => {
                         onPress={createGroup}
                         disabled={loading}
                     >
-                        <Text style={styles.createButtonText}>
-                            {loading ? '作成中...' : 'グループを作成する'}
-                        </Text>
+                        <Text style={styles.createButtonText}>{loading ? '作成中...' : 'グループを作成する'}</Text>
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -251,9 +263,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
+        overflow: 'visible', // ドロップダウンが見えるように
     },
     keyboardAvoidingView: {
         flex: 1,
+        overflow: 'visible', // ドロップダウンが見えるように
     },
     header: {
         flexDirection: 'row',
@@ -276,6 +290,9 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 16,
     },
+    scrollViewContent: {
+        paddingBottom: 100, // ドロップダウンのための余白
+    },
     descriptionSection: {
         marginTop: 16,
         marginBottom: 8,
@@ -293,6 +310,7 @@ const styles = StyleSheet.create({
     },
     section: {
         marginTop: 48,
+        position: 'relative', // ドロップダウンの絶対位置のため
     },
     sectionTitle: {
         fontSize: 14,
@@ -324,18 +342,34 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     dropdownList: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        right: 0,
         backgroundColor: '#fff',
         borderRadius: 8,
-        marginTop: 8,
+        marginTop: 4,
         borderWidth: 1,
         borderColor: '#ddd',
         maxHeight: 200,
+        zIndex: 9999,
+        elevation: 10, // Android用の影
+        shadowColor: '#000', // iOS用の影
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     dropdownItem: {
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
+    },
+    lastDropdownItem: {
+        borderBottomWidth: 0, // 最後のアイテムはボーダーなし
     },
     dropdownItemText: {
         fontSize: 16,
