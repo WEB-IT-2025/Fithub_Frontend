@@ -210,7 +210,7 @@ const GroupCreateScreen = () => {
                             </TouchableOpacity>
 
                             {showDropdown && (
-                                <ScrollView 
+                                <ScrollView
                                     style={styles.dropdownList}
                                     nestedScrollEnabled={true}
                                     showsVerticalScrollIndicator={false}
