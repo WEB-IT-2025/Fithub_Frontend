@@ -1088,6 +1088,34 @@ const ProfileContent = ({
         }
     }
 
+    // 動的な曜日順序を生成する関数（昨日が一番右に来る）
+    const generateDayOrder = (): string[] => {
+        const today = new Date()
+        const dayOrder: string[] = []
+        
+        console.log('📅 ProfileContent: コントリビューション動的順序生成開始', {
+            today: today.toLocaleDateString(),
+            todayDayOfWeek: today.getDay(), // 0=日曜, 1=月曜, ..., 6=土曜
+            todayName: ['日', '月', '火', '水', '木', '金', '土'][today.getDay()]
+        })
+        
+        // 過去7日間の曜日を生成（昨日が右端に来る）- 今日は含めない
+        for (let i = 7; i >= 1; i--) {  // 7日前から昨日まで（今日は含めない）
+            const date = new Date(today)
+            date.setDate(today.getDate() - i)
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+            const dayName = dayNames[date.getDay()]
+            dayOrder.push(dayName)
+            
+            console.log(`📅 位置${7-i}: ${date.toLocaleDateString()} (${['日', '月', '火', '水', '木', '金', '土'][date.getDay()]}) -> ${dayName}`)
+        }
+        
+        console.log('📅 ProfileContent: 最終的なコントリビューション順序:', dayOrder)
+        console.log('📅 ProfileContent: 右端（昨日）:', dayOrder[dayOrder.length - 1])
+        
+        return dayOrder
+    }
+
     // コントリビューションデータ取得メソッド（新しいAPIから取得したデータを使用）
     const getContributionsData = () => {
         console.log('🔍 getContributionsData呼び出し - 詳細チェック開始')
@@ -1100,35 +1128,40 @@ const ProfileContent = ({
         }
 
         if (contributionData?.data?.recent_contributions && contributionData.data.recent_contributions.length > 0) {
-            // APIから取得した直近7日分のデータを時系列順に並べる（左が古い、右が新しい）
-            const contributions = contributionData.data.recent_contributions
-                .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()) // 日付順にソート
-                .slice(-7) // 直近7日分を取得
-                .map((contribution) => parseInt(contribution.count, 10))
+            // APIから取得した直近7日分のデータを動的な順序（昨日が右端）で並べる
+            const dayOrder = generateDayOrder()
+            const contributionMap = new Map()
+            
+            // 日付ベースのマップを作成
+            contributionData.data.recent_contributions.forEach((contribution) => {
+                const date = new Date(contribution.day)
+                const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
+                contributionMap.set(dayName, parseInt(contribution.count, 10))
+            })
+            
+            // 動的な順序でデータを並べる
+            const contributions = dayOrder.map(day => contributionMap.get(day) || 0)
 
-            console.log('📊 APIから取得したコントリビューションデータ:', contributions)
-            console.log('📊 元データ:', contributionData.data.recent_contributions)
+            console.log('📊 動的順序でのコントリビューションデータ:', contributions)
+            console.log('📊 曜日順序:', dayOrder)
 
-            // 7日に満たない場合は左側を0で埋める
-            while (contributions.length < 7) {
-                contributions.unshift(0)
-            }
-
-            console.log('📊 最終的なコントリビューションデータ:', contributions)
             return contributions
         } else if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
-            // フォールバック: 既存のuserDataから取得
-            const contributions = userData.recent_contributions
-                .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime()) // 日付順にソート
-                .slice(-7) // 直近7日分を取得
-                .map((contribution) => parseInt(contribution.count, 10))
+            // フォールバック: 既存のuserDataから動的な順序で取得
+            const dayOrder = generateDayOrder()
+            const contributionMap = new Map()
+            
+            // 日付ベースのマップを作成
+            userData.recent_contributions.forEach((contribution) => {
+                const date = new Date(contribution.day)
+                const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
+                contributionMap.set(dayName, parseInt(contribution.count, 10))
+            })
+            
+            // 動的な順序でデータを並べる
+            const contributions = dayOrder.map(day => contributionMap.get(day) || 0)
 
-            console.log('📊 userDataから取得したコントリビューションデータ:', contributions)
-
-            // 7日に満たない場合は左側を0で埋める
-            while (contributions.length < 7) {
-                contributions.unshift(0)
-            }
+            console.log('📊 userDataから動的順序でのコントリビューションデータ:', contributions)
 
             return contributions
         } else {

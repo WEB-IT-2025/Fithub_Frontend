@@ -46,6 +46,33 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     onChartTypeChange,
     isLoading = false,
 }) => {
+    // 動的な曜日順序を生成する関数（昨日が一番右に来る）
+    const generateDayOrder = (): number[] => {
+        const today = new Date()
+        const dayOrder: number[] = []
+        
+        console.log('📅 ExerciseGraph: 動的順序生成開始', {
+            today: today.toLocaleDateString(),
+            todayDayOfWeek: today.getDay(), // 0=日曜, 1=月曜, ..., 6=土曜
+            todayName: ['日', '月', '火', '水', '木', '金', '土'][today.getDay()]
+        })
+        
+        // 過去7日間の曜日インデックスを生成（昨日が右端に来る）- 今日は含めない
+        for (let i = 7; i >= 1; i--) {  // 7日前から昨日まで（今日は含めない）
+            const date = new Date(today)
+            date.setDate(today.getDate() - i)
+            const dayOfWeek = (date.getDay() + 6) % 7 // 日曜=0を月曜=0に変換
+            dayOrder.push(dayOfWeek)
+            
+            console.log(`📅 位置${7-i}: ${date.toLocaleDateString()} (${['日', '月', '火', '水', '木', '金', '土'][date.getDay()]}) -> インデックス${dayOfWeek}`)
+        }
+        
+        console.log('📅 ExerciseGraph: 最終的な動的順序:', dayOrder)
+        console.log('📅 ExerciseGraph: 曜日名順序:', dayOrder.map(idx => ['月', '火', '水', '木', '金', '土', '日'][idx]))
+        console.log('📅 ExerciseGraph: 右端（昨日）:', ['月', '火', '水', '木', '金', '土', '日'][dayOrder[dayOrder.length - 1]])
+        
+        return dayOrder
+    }
     // 日別歩数データ取得メソッド（2時間ごと13本のデータ）
     const getDailyStepsData = () => {
         console.log('🕒 ExerciseGraph: getDailyStepsData呼び出し', {
@@ -106,11 +133,11 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
     // 週別歩数データ取得メソッド
     const getWeeklyStepsData = () => {
         if (userData?.recent_exercise && userData.recent_exercise.length > 0) {
-            console.log('✅ ExerciseGraph: 実データを使用してweeklyStepsを生成')
+            console.log('✅ ExerciseGraph: 実データを使用してweeklyStepsを生成（動的順序）')
             console.log('🔥 週歩数API データ:', userData.recent_exercise)
 
-            // 曜日別にデータを整理（月曜=0, 火曜=1, ..., 日曜=6）
-            const weeklySteps = new Array(7).fill(0) // [月, 火, 水, 木, 金, 土, 日]
+            // 全7曜日のデータを初期化（月曜=0, 火曜=1, ..., 日曜=6）
+            const weeklyStepsMap = new Array(7).fill(0)
 
             userData.recent_exercise.forEach((exercise, index) => {
                 console.log(`🎯 処理中のデータ${index}: "${exercise.day}", 歩数=${exercise.exercise_quantity}`)
@@ -126,32 +153,38 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                 console.log(
                     `  - 配列インデックス: ${dayOfWeek} (${['月', '火', '水', '木', '金', '土', '日'][dayOfWeek]}曜日)`
                 )
-                console.log(`  - 配置する歩数: ${exercise.exercise_quantity}`)
 
                 if (dayOfWeek >= 0 && dayOfWeek < 7) {
-                    weeklySteps[dayOfWeek] = exercise.exercise_quantity
-                    console.log(`✅ 配置完了: weeklySteps[${dayOfWeek}] = ${exercise.exercise_quantity}`)
-
-                    // 日曜日の特別チェック
-                    if (dayOfWeek === 6) {
-                        console.log(`🌟 日曜日データ: ${exercise.exercise_quantity}歩 (期待値: 2225歩)`)
-                        console.log(`🌟 正しいか: ${exercise.exercise_quantity === 2225 ? '✅' : '❌'}`)
-                    }
+                    weeklyStepsMap[dayOfWeek] = exercise.exercise_quantity
+                    console.log(`✅ 配置完了: weeklyStepsMap[${dayOfWeek}] = ${exercise.exercise_quantity}`)
                 }
             })
 
-            console.log('🎯 最終結果:', weeklySteps)
-            console.log('📊 各曜日:')
+            // 動的順序でデータを並べ替え（昨日が右端に来る）
+            const dayOrder = generateDayOrder()
+            const weeklySteps = dayOrder.map(dayIndex => weeklyStepsMap[dayIndex] || 0)
+
+            console.log('� 動的順序:', dayOrder)
+            console.log('🎯 最終結果（昨日が右端）:', weeklySteps)
+            console.log('📊 各位置の曜日:')
             weeklySteps.forEach((steps, i) => {
-                const dayName = ['月', '火', '水', '木', '金', '土', '日'][i]
-                console.log(`  ${dayName}: ${steps}歩`)
+                const actualDayIndex = dayOrder[i]
+                const dayName = ['月', '火', '水', '木', '金', '土', '日'][actualDayIndex]
+                console.log(`  位置${i}(${dayName}): ${steps}歩`)
             })
 
             return weeklySteps
         } else {
-            console.log('❌ 実データなし - ダミーデータ使用')
-            // ダミーデータ（月〜日の7日分）
-            return [3200, 4100, 2900, 5800, 4700, 3600, userData?.today.steps || 5000]
+            console.log('❌ 実データなし - ダミーデータ使用（動的順序）')
+            // 固定の週データを動的順序で並べ替え
+            const fixedWeekData = [3200, 4100, 2900, 5800, 4700, 3600, userData?.today.steps || 5000] // [月, 火, 水, 木, 金, 土, 日]
+            const dayOrder = generateDayOrder()
+            const weeklySteps = dayOrder.map(dayIndex => fixedWeekData[dayIndex] || 0)
+            
+            console.log('🎯 ダミーデータの動的順序:', dayOrder)
+            console.log('🎯 ダミーデータの最終結果（昨日が右端）:', weeklySteps)
+            
+            return weeklySteps
         }
     }
 
@@ -264,8 +297,12 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
             case '日':
                 // 2時間ごと+24時
                 return ['0', '2', '4', '6', '8', '10', '12', '14', '16', '18', '20', '22', '24']
-            case '週':
-                return ['月', '火', '水', '木', '金', '土', '日']
+            case '週': {
+                // 動的順序で曜日ラベルを生成（昨日が右端）
+                const dayOrder = generateDayOrder()
+                const dayLabels = ['月', '火', '水', '木', '金', '土', '日']
+                return dayOrder.map(dayIndex => dayLabels[dayIndex])
+            }
             case '月': {
                 // 1,8,15,22,29日だけ表示し、それ以外は空文字（31日分）
                 const len = 31 // 月別は常に31日分表示
