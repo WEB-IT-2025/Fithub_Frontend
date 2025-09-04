@@ -652,11 +652,19 @@ const GroupScreen = () => {
                 >
                     {/* ローディング中でもレイアウトを固定 */}
                     {!sessionToken && (
-                        <Text style={styles.authRequiredText}>
-                            {type === 'home' ?
-                                '参加グループを表示するにはログインが必要です'
-                            :   'グループを表示するにはログインが必要です'}
-                        </Text>
+                        <View style={styles.authRequiredContainer}>
+                            <Text style={styles.authRequiredText}>
+                                {type === 'home' ?
+                                    '参加グループを表示するにはログインが必要です'
+                                :   'グループを表示するにはログインが必要です'}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.loginButton}
+                                onPress={() => router.push('/config')}
+                            >
+                                <Text style={styles.loginButtonText}>ログイン画面へ</Text>
+                            </TouchableOpacity>
+                        </View>
                     )}
 
                     {type === 'search' && sessionToken && loading && filteredRooms().length === 0 && (
@@ -1019,9 +1027,32 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#ff6b6b',
         fontSize: 16,
-        marginVertical: 30,
+        marginBottom: 16,
         fontWeight: 'bold',
         minHeight: 24, // レイアウト安定のための最小高さ
+    },
+    authRequiredContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 30,
+        paddingHorizontal: 20,
+    },
+    loginButton: {
+        backgroundColor: '#388e3c',
+        borderRadius: 25,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    loginButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     // 不要になった古いスタイル（削除）
     roomList: {
