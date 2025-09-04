@@ -1044,7 +1044,7 @@ const styles = StyleSheet.create({
         right: 8,
         bottom: 150,
         alignItems: 'center',
-        zIndex: 10,
+        zIndex: 2000, // ペットよりも高いz-indexを設定
     },
     menuButton: {
         backgroundColor: 'rgba(255,255,255,0.85)',
@@ -1088,6 +1088,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+        zIndex: 3000, // ペットよりも高いz-indexを設定
     },
     // モーダル関連のスタイル
     modalOverlay: {
