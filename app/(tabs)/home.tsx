@@ -325,8 +325,8 @@ const HomeScreen = () => {
                             style={[
                                 styles.petImage,
                                 {
-                                    width: Math.min(petProfile.main_pet_size * 2 + 1, 280), // サイズ調整：最小80、最大280（より激しい変化）
-                                    height: Math.min(petProfile.main_pet_size * 2 + 1, 280),
+                                    width: Math.min(petProfile.main_pet_size * 2 + 40, 280), // サイズ調整：最小80、最大280（より激しい変化）
+                                    height: Math.min(petProfile.main_pet_size * 2 + 40, 280),
                                 },
                             ]}
                             resizeMode='contain'

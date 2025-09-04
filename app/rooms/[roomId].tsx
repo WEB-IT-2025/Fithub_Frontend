@@ -83,20 +83,25 @@ interface DisplayMember {
 }
 
 // ペットサイズに基づく表示サイズ（APIのpet_sizeに対応）
+// ホーム画面と同じ計算式: petSize * 2 + 40
 const statusToSize: Record<number, number> = {
-    1: 2 * 1 + 1, // 3px
-    2: 2 * 2 + 1, // 5px
-    3: 2 * 3 + 1, // 7px
-    4: 2 * 4 + 1, // 9px
-    5: 2 * 5 + 1, // 11px
+    1: 2 * 1 + 40, // 42px
+    2: 2 * 2 + 40, // 44px
+    3: 2 * 3 + 40, // 46px
+    4: 2 * 4 + 40, // 48px
+    5: 2 * 5 + 40, // 50px
     // APIから受け取る可能性のあるより大きなサイズにも対応
-    10: 2 * 10 + 1, // 21px
-    20: 2 * 20 + 1, // 41px
-    30: 2 * 30 + 1, // 61px
-    40: 2 * 40 + 1, // 81px
-    50: 2 * 50 + 1, // 101px
+    10: 2 * 10 + 40, // 60px
+    20: 2 * 20 + 40, // 80px
+    30: 2 * 30 + 40, // 100px
+    40: 2 * 40 + 40, // 120px
+    50: 2 * 50 + 40, // 140px
+    60: 2 * 60 + 40, // 160px
+    70: 2 * 70 + 40, // 180px
+    80: 2 * 80 + 40, // 200px
+    90: 2 * 90 + 40, // 220px
     // 最大サイズ
-    100: Math.min(2 * 100 + 1, 280), // 201px（最大280pxで制限）
+    100: Math.min(2 * 100 + 40, 280), // 240px（最大280pxで制限）
 }
 
 // ペット画像のマッピング（APIのpet_imageに対応）
@@ -589,11 +594,13 @@ const RoomScreen = () => {
             const positions = getNonOverlappingPositions(displayMembers.length, (idx) => {
                 const member = displayMembers[idx]
                 if (member.main_pet?.pet_size) {
-                    // APIデータの場合
-                    return statusToSize[member.main_pet.pet_size] || 64
+                    // APIデータの場合（ホーム画面と同じ計算式）
+                    const petSize = member.main_pet.pet_size
+                    return statusToSize[petSize] || Math.min(2 * petSize + 40, 280)
                 } else if (member.pet?.pet_size) {
-                    // モックデータの場合
-                    return statusToSize[member.pet.pet_size] || 64
+                    // モックデータの場合（ホーム画面と同じ計算式）
+                    const petSize = member.pet.pet_size
+                    return statusToSize[petSize] || Math.min(2 * petSize + 40, 280)
                 }
                 return 64
             })
@@ -623,10 +630,13 @@ const RoomScreen = () => {
     const getPetSize = (member: DisplayMember) => {
         if (member.main_pet?.pet_size) {
             // APIデータの場合
-            return statusToSize[member.main_pet.pet_size] || 64
+            const petSize = member.main_pet.pet_size
+            // statusToSizeマッピングにない場合は動的に計算（ホーム画面と同じ式）
+            return statusToSize[petSize] || Math.min(2 * petSize + 40, 280)
         } else if (member.pet?.pet_size) {
             // モックデータの場合
-            return statusToSize[member.pet.pet_size] || 64
+            const petSize = member.pet.pet_size
+            return statusToSize[petSize] || Math.min(2 * petSize + 40, 280)
         }
         return 64
     }
