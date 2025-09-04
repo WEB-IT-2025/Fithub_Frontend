@@ -461,14 +461,31 @@ const ShopScreen = () => {
                                                 .map((item, index) => (
                                                     <TouchableOpacity
                                                         key={item.item_id}
-                                                        style={styles.sliderItem}
-                                                        onPress={() => setSelectedPetIndex(index)}
+                                                        style={[
+                                                            styles.sliderItem,
+                                                            item.owned && styles.sliderItemOwned
+                                                        ]}
+                                                        onPress={() => !item.owned && setSelectedPetIndex(index)}
+                                                        disabled={item.owned}
                                                     >
                                                         <Image
                                                             source={getImageSource(item.item_image_url)}
-                                                            style={styles.sliderPetImage}
+                                                            style={[
+                                                                styles.sliderPetImage,
+                                                                item.owned && styles.sliderPetImageOwned
+                                                            ]}
                                                         />
-                                                        <Text style={styles.sliderPetName}>{item.item_name}</Text>
+                                                        <Text style={[
+                                                            styles.sliderPetName,
+                                                            item.owned && styles.sliderPetNameOwned
+                                                        ]}>
+                                                            {item.item_name}
+                                                        </Text>
+                                                        {item.owned && (
+                                                            <View style={styles.ownedOverlay}>
+                                                                <Text style={styles.ownedOverlayText}>所有済み</Text>
+                                                            </View>
+                                                        )}
                                                     </TouchableOpacity>
                                                 ))}
                                         </View>
@@ -480,18 +497,33 @@ const ShopScreen = () => {
                                                 .map((item, index) => (
                                                     <TouchableOpacity
                                                         key={item.item_id}
-                                                        style={styles.sliderItem}
-                                                        onPress={() =>
-                                                            setSelectedPetIndex(
-                                                                Math.ceil(filteredItems.length / 2) + index
-                                                            )
-                                                        }
+                                                        style={[
+                                                            styles.sliderItem,
+                                                            item.owned && styles.sliderItemOwned
+                                                        ]}
+                                                        onPress={() => !item.owned && setSelectedPetIndex(
+                                                            Math.ceil(filteredItems.length / 2) + index
+                                                        )}
+                                                        disabled={item.owned}
                                                     >
                                                         <Image
                                                             source={getImageSource(item.item_image_url)}
-                                                            style={styles.sliderPetImage}
+                                                            style={[
+                                                                styles.sliderPetImage,
+                                                                item.owned && styles.sliderPetImageOwned
+                                                            ]}
                                                         />
-                                                        <Text style={styles.sliderPetName}>{item.item_name}</Text>
+                                                        <Text style={[
+                                                            styles.sliderPetName,
+                                                            item.owned && styles.sliderPetNameOwned
+                                                        ]}>
+                                                            {item.item_name}
+                                                        </Text>
+                                                        {item.owned && (
+                                                            <View style={styles.ownedOverlay}>
+                                                                <Text style={styles.ownedOverlayText}>所有済み</Text>
+                                                            </View>
+                                                        )}
                                                     </TouchableOpacity>
                                                 ))}
                                         </View>

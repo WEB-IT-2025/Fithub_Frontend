@@ -354,6 +354,34 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 2,
     },
+    // 所有済みアイテムのスタイル
+    sliderItemOwned: {
+        backgroundColor: 'rgba(0, 0, 0, 0.7)', // 黒っぽい背景
+        opacity: 0.6,
+    },
+    sliderPetImageOwned: {
+        opacity: 0.5, // 画像を薄くする
+    },
+    sliderPetNameOwned: {
+        color: '#999', // テキストを薄くする
+    },
+    ownedOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    ownedOverlayText: {
+        fontSize: 12,
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
 })
 
 export default styles
