@@ -199,33 +199,66 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window')
 
 // ペット出現範囲を計算
 const TABBAR_HEIGHT = 80 // TabBarの高さを正確に設定（必要に応じて調整）
-const PET_AREA_TOP = screenHeight / 4 // 上端をもう少し下に移動
-const PET_AREA_BOTTOM = screenHeight / 1.25 - TABBAR_HEIGHT // TabBarの上端まで
-const PET_AREA_LEFT = 20
-const PET_AREA_RIGHT = screenWidth - 80 // 右端から少し余白
+const PET_AREA_TOP = 120 // タイトル領域を避けて上端から開始
+const PET_AREA_BOTTOM = screenHeight - TABBAR_HEIGHT - 60 // TabBarの上に十分なマージンを確保
+const PET_AREA_LEFT = 0 // 画面の端まで使用
+const PET_AREA_RIGHT = screenWidth // 画面の端まで使用
 
-// ランダム位置生成（被りを避ける）
-const getNonOverlappingPositions = (count: number, sizeGetter: (idx: number) => number, maxTry = 100) => {
+// 画面全体に散らばる配置（全画面活用）
+const getNonOverlappingPositions = (count: number, sizeGetter: (idx: number) => number, maxTry = 50) => {
     const positions: { top: number; left: number }[] = []
+
+    // 配置設定 - 画面全体を活用
+    const MARGIN = 0 // マージンなしで画面を最大活用
+    const availableWidth = PET_AREA_RIGHT - PET_AREA_LEFT - MARGIN * 2
+    const availableHeight = PET_AREA_BOTTOM - PET_AREA_TOP - MARGIN * 2
+
+    // 完全にランダムな散らばり配置
     for (let i = 0; i < count; i++) {
+        const width = sizeGetter(i)
+        const height = sizeGetter(i)
+
+        // 完全ランダム配置（画面全体を使用）
         let tryCount = 0
-        let pos
+        let left, top
         let overlap
+
         do {
-            const width = sizeGetter(i)
-            const height = sizeGetter(i)
-            const top = Math.random() * (PET_AREA_BOTTOM - PET_AREA_TOP - height) + PET_AREA_TOP
-            const left = Math.random() * (PET_AREA_RIGHT - PET_AREA_LEFT - width) + PET_AREA_LEFT
-            pos = { top, left }
-            overlap = positions.some((p, j) => {
-                const w2 = sizeGetter(j)
-                const h2 = sizeGetter(j)
-                return Math.abs(p.left - left) < (width + w2) / 2 && Math.abs(p.top - top) < (height + h2) / 2
+            // 画面全体でランダムに配置
+            left = Math.random() * (availableWidth - width) + PET_AREA_LEFT + MARGIN
+            top = Math.random() * (availableHeight - height) + PET_AREA_TOP + MARGIN
+
+            // 軽い重なりチェック（完全に重ならない程度）
+            overlap = positions.some((pos, j) => {
+                const prevWidth = sizeGetter(j)
+                const prevHeight = sizeGetter(j)
+                const horizontalOverlap = Math.max(
+                    0,
+                    Math.min(left + width, pos.left + prevWidth) - Math.max(left, pos.left)
+                )
+                const verticalOverlap = Math.max(
+                    0,
+                    Math.min(top + height, pos.top + prevHeight) - Math.max(top, pos.top)
+                )
+                const overlapArea = horizontalOverlap * verticalOverlap
+                const currentArea = width * height
+                const existingArea = prevWidth * prevHeight
+                const smallerArea = Math.min(currentArea, existingArea)
+
+                // 80%以上重なっている場合のみ避ける（かなり緩い条件）
+                return overlapArea > smallerArea * 0.8
             })
+
             tryCount++
         } while (overlap && tryCount < maxTry)
-        positions.push(pos)
+
+        // 画面境界の最終チェック
+        left = Math.max(PET_AREA_LEFT, Math.min(left, PET_AREA_RIGHT - width))
+        top = Math.max(PET_AREA_TOP, Math.min(top, PET_AREA_BOTTOM - height))
+
+        positions.push({ top, left })
     }
+
     return positions
 }
 
@@ -569,7 +602,8 @@ const RoomScreen = () => {
 
     // APIデータとモックデータを組み合わせて表示用データを作成
     const displayMembers: DisplayMember[] = useMemo(() => {
-        return groupMembers.length > 0 ?
+        const members =
+            groupMembers.length > 0 ?
                 groupMembers.map((member) => ({
                     user_id: member.user_id,
                     user_name: member.user_name,
@@ -583,6 +617,20 @@ const RoomScreen = () => {
                     name: user.name,
                     pet: user.pet,
                 }))
+
+        // ペットサイズの昇順（小さい順）でソート - 小さいペットが後に描画され上に表示される
+        return members.sort((a, b) => {
+            const getSizeForSort = (member: DisplayMember): number => {
+                if (member.main_pet?.pet_size) {
+                    return member.main_pet.pet_size
+                } else if (member.pet?.pet_size) {
+                    return member.pet.pet_size
+                }
+                return 50 // デフォルトサイズ
+            }
+
+            return getSizeForSort(a) - getSizeForSort(b) // 昇順ソート
+        })
     }, [groupMembers])
 
     // ペットのランダム位置を初期化（メンバー数に応じて動的に計算）
@@ -700,37 +748,44 @@ const RoomScreen = () => {
                     )}
 
                     {!loading &&
-                        displayMembers.map((member, idx) => (
-                            <TouchableOpacity
-                                key={getMemberKey(member)}
-                                style={[
-                                    {
-                                        position: 'absolute',
-                                        top: petPositions[idx]?.top || 100,
-                                        left: petPositions[idx]?.left || 100,
-                                    },
-                                ]}
-                                onPress={() => {
-                                    setSelectedUser(member)
-                                    setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
-                                    setTimeout(() => {
-                                        setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
-                                    }, 500)
-                                }}
-                            >
-                                <Image
-                                    source={getPetImage(member)}
+                        displayMembers.map((member, idx) => {
+                            // 小さいペットほど高いzIndexを設定（上に表示される）
+                            const petSize = member.main_pet?.pet_size || member.pet?.pet_size || 50
+                            const zIndex = 1000 - petSize // サイズが小さいほどzIndexが大きくなる
+
+                            return (
+                                <TouchableOpacity
+                                    key={getMemberKey(member)}
                                     style={[
-                                        styles.petImage,
                                         {
-                                            width: getPetSize(member),
-                                            height: getPetSize(member),
+                                            position: 'absolute',
+                                            top: petPositions[idx]?.top || 100,
+                                            left: petPositions[idx]?.left || 100,
+                                            zIndex: zIndex, // 小さいペットほど上に表示
                                         },
                                     ]}
-                                    resizeMode='contain'
-                                />
-                            </TouchableOpacity>
-                        ))}
+                                    onPress={() => {
+                                        setSelectedUser(member)
+                                        setProfileKey((prev) => prev + 1) // キーを更新して強制再レンダリング
+                                        setTimeout(() => {
+                                            setUserDetailModalVisible(true) // プロフィールモーダルを0.2秒後に開く
+                                        }, 500)
+                                    }}
+                                >
+                                    <Image
+                                        source={getPetImage(member)}
+                                        style={[
+                                            styles.petImage,
+                                            {
+                                                width: getPetSize(member),
+                                                height: getPetSize(member),
+                                            },
+                                        ]}
+                                        resizeMode='contain'
+                                    />
+                                </TouchableOpacity>
+                            )
+                        })}
                 </View>
 
                 {/* フローティングメニュー */}
