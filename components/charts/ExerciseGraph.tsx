@@ -73,6 +73,34 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
         
         return dayOrder
     }
+
+    // 月間動的順序を生成する関数（昨日が一番右に来る）
+    const generateMonthlyDayOrder = (): number[] => {
+        const today = new Date()
+        const monthOrder: number[] = []
+        
+        console.log('📅 ExerciseGraph: 月間動的順序生成開始', {
+            today: today.toLocaleDateString(),
+            todayDate: today.getDate(),
+            todayMonth: today.getMonth() + 1
+        })
+        
+        // 過去31日間の日付を生成（昨日が右端に来る）- 今日は含めない
+        for (let i = 31; i >= 1; i--) {  // 31日前から昨日まで（今日は含めない）
+            const date = new Date(today)
+            date.setDate(today.getDate() - i)
+            const dayOfMonth = date.getDate()
+            monthOrder.push(dayOfMonth)
+            
+            console.log(`📅 月間位置${31-i}: ${date.toLocaleDateString()} -> ${dayOfMonth}日`)
+        }
+        
+        console.log('📅 ExerciseGraph: 最終的な月間動的順序（最初の5日）:', monthOrder.slice(0, 5))
+        console.log('📅 ExerciseGraph: 最終的な月間動的順序（最後の5日）:', monthOrder.slice(-5))
+        console.log('📅 ExerciseGraph: 右端（昨日）:', monthOrder[monthOrder.length - 1] + '日')
+        
+        return monthOrder
+    }
     // 日別歩数データ取得メソッド（2時間ごと13本のデータ）
     const getDailyStepsData = () => {
         console.log('🕒 ExerciseGraph: getDailyStepsData呼び出し', {
@@ -190,26 +218,38 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
 
     // 月別歩数データ取得メソッド
     const getMonthlyStepsData = () => {
-        console.log('📊 ExerciseGraph: getMonthlyStepsData開始')
+        console.log('📊 ExerciseGraph: getMonthlyStepsData開始（動的順序）')
         console.log('📊 ExerciseGraph: userDataの存在チェック:', !!userData)
 
         if (!userData?.monthly_exercise) {
-            console.log('⚠️ ExerciseGraph: monthly_exerciseデータが存在しません、ダミーデータを使用')
-            // ダミーデータ（31日分）、10000歩以下に制限
-            const rawData = [
+            console.log('⚠️ ExerciseGraph: monthly_exerciseデータが存在しません、ダミーデータを使用（動的順序）')
+            // 固定のダミーデータを動的順序で並べ替え
+            const fixedMonthData = [
                 3200, 4100, 2900, 5800, 4700, 3600, 5000, 4200, 3900, 5100, 4800, 3700, 5300, 4400, 4100, 5500, 4600,
                 3800, 5700, 4900, 4000, 5900, 4300, 4100, 6100, 4200, 4300, 9300, 4400, 4500, 3800,
             ]
-            return rawData.map((steps) => Math.min(steps, 10000))
+            
+            const dayOrder = generateMonthlyDayOrder()
+            const monthlySteps = dayOrder.map(dayIndex => {
+                // 日付から配列インデックスに変換（1日 -> インデックス0）
+                const dataIndex = (dayIndex - 1) % 31
+                const steps = fixedMonthData[dataIndex] || 0
+                return Math.min(steps, 10000)
+            })
+            
+            console.log('📊 ダミーデータの月間動的順序結果（最初の5日）:', monthlySteps.slice(0, 5))
+            console.log('📊 ダミーデータの月間動的順序結果（最後の5日）:', monthlySteps.slice(-5))
+            
+            return monthlySteps
         }
 
-        console.log('📊 ExerciseGraph: monthly_exerciseデータが存在', {
+        console.log('📊 ExerciseGraph: monthly_exerciseデータが存在（動的順序で処理）', {
             monthly_exercise_length: userData.monthly_exercise.length,
             first_item: userData.monthly_exercise[0],
         })
 
-        // 31日分の空データを用意
-        const monthlySteps = new Array(31).fill(0)
+        // 日付ベースのマップを作成
+        const monthlyStepsMap = new Map<number, number>()
 
         // APIデータをマッピング
         userData.monthly_exercise.forEach((exercise, index) => {
@@ -221,8 +261,6 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                 parsed_date: exerciseDate.toISOString(),
                 day_number: day,
                 exercise_quantity: exercise.exercise_quantity,
-                array_index: day - 1,
-                will_be_placed_at_position: day - 1,
             })
 
             if (day >= 1 && day <= 31) {
@@ -230,24 +268,30 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                     typeof exercise.exercise_quantity === 'string' ?
                         parseInt(exercise.exercise_quantity) || 0
                     :   exercise.exercise_quantity || 0
-                monthlySteps[day - 1] = Math.min(steps, 10000) // 10000歩上限
+                const limitedSteps = Math.min(steps, 10000) // 10000歩上限
+                
+                monthlyStepsMap.set(day, limitedSteps)
 
-                console.log(
-                    `✅ データ配置完了: ${exercise.day} (${day}日目) → 配列位置[${day - 1}] = ${monthlySteps[day - 1]}歩`
-                )
+                console.log(`✅ データマップ登録完了: ${exercise.day} (${day}日目) → ${limitedSteps}歩`)
             } else {
                 console.log(`❌ 無効な日付: ${exercise.day} → day=${day}`)
             }
         })
 
-        console.log('📊 最終的な月別データ配列（最初の10日分）:', monthlySteps.slice(0, 10))
-        console.log('📊 最終的な月別データ配列（最後の10日分）:', monthlySteps.slice(-10))
+        // 動的順序でデータを並べ替え（昨日が右端に来る）
+        const dayOrder = generateMonthlyDayOrder()
+        const monthlySteps = dayOrder.map(day => monthlyStepsMap.get(day) || 0)
 
-        console.log('📊 ExerciseGraph: getMonthlyStepsData完了', {
+        console.log('📊 最終的な月別データ配列（動的順序、最初の5日分）:', monthlySteps.slice(0, 5))
+        console.log('📊 最終的な月別データ配列（動的順序、最後の5日分）:', monthlySteps.slice(-5))
+
+        console.log('📊 ExerciseGraph: getMonthlyStepsData完了（動的順序）', {
             result_length: monthlySteps.length,
             total_steps: monthlySteps.reduce((sum, steps) => sum + steps, 0),
-            first_5_days: monthlySteps.slice(0, 5),
+            order: dayOrder.slice(0, 5).map(d => d + '日').concat(['...', ...dayOrder.slice(-2).map(d => d + '日')]),
         })
+
+        return monthlySteps
 
         return monthlySteps
     }
@@ -304,10 +348,11 @@ const ExerciseGraph: React.FC<ExerciseGraphProps> = ({
                 return dayOrder.map(dayIndex => dayLabels[dayIndex])
             }
             case '月': {
-                // 1,8,15,22,29日だけ表示し、それ以外は空文字（31日分）
-                const len = 31 // 月別は常に31日分表示
-                return Array.from({ length: len }, (_, i) => {
-                    return i % 7 === 0 ? `${i + 1}日` : ''
+                // 動的順序で月別ラベルを生成（昨日が右端）
+                const dayOrder = generateMonthlyDayOrder()
+                return dayOrder.map((day, index) => {
+                    // 1,8,15,22,29日だけ表示し、それ以外は空文字
+                    return index % 7 === 0 ? `${day}日` : ''
                 })
             }
             default:
