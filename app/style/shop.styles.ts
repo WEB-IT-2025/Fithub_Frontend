@@ -356,14 +356,13 @@ const styles = StyleSheet.create({
     },
     // 所有済みアイテムのスタイル
     sliderItemOwned: {
-        backgroundColor: 'rgba(0, 0, 0, 0.7)', // 黒っぽい背景
-        opacity: 0.6,
+        position: 'relative', // オーバーレイのために相対位置に設定
     },
     sliderPetImageOwned: {
-        opacity: 0.5, // 画像を薄くする
+        // 画像は通常のまま
     },
     sliderPetNameOwned: {
-        color: '#999', // テキストを薄くする
+        // テキストは通常のまま
     },
     ownedOverlay: {
         position: 'absolute',
@@ -371,10 +370,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)', // 黒のオーバーレイ
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 10, // オーバーレイを最前面に
     },
     ownedOverlayText: {
         fontSize: 12,
