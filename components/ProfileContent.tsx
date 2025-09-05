@@ -83,8 +83,8 @@ interface ContributionData {
             day: string
             count: string
         }>
-        weekly_total: number
-        monthly_total: number
+        weekly_total: string  // 文字列として受け取る
+        monthly_total: string // 文字列として受け取る
         last_updated: string
     }
 }
@@ -592,6 +592,16 @@ const ProfileContent = ({
                 })
 
                 // 今日のデータを作成（時間別データから取得した総歩数を優先使用）
+                // 今日のコントリビューション数を取得
+                let todayContributions = 0
+                if (contributionData?.data?.recent_contributions) {
+                    const todayDate = new Date().toISOString().split('T')[0]
+                    const todayContribution = contributionData.data.recent_contributions.find(c => 
+                        c.day.split('T')[0] === todayDate
+                    )
+                    todayContributions = todayContribution ? parseInt(todayContribution.count, 10) : 0
+                }
+
                 const today = {
                     steps:
                         todayTotalSteps > 0 ? todayTotalSteps
@@ -599,7 +609,7 @@ const ProfileContent = ({
                             weeklyStepsData.recent_exercise[weeklyStepsData.recent_exercise.length - 1]
                                 .exercise_quantity
                         :   0,
-                    contributions: 0, // デフォルト値
+                    contributions: todayContributions, // 実際の今日のコントリビューション数
                     date: new Date().toISOString().split('T')[0],
                 }
 
@@ -1128,22 +1138,32 @@ const ProfileContent = ({
         }
 
         if (contributionData?.data?.recent_contributions && contributionData.data.recent_contributions.length > 0) {
-            // APIから取得した直近7日分のデータを動的な順序（昨日が右端）で並べる
-            const dayOrder = generateDayOrder()
-            const contributionMap = new Map()
+            console.log('📊 APIコントリビューションデータ処理開始')
+            console.log('📊 受信データ:', contributionData.data.recent_contributions)
             
-            // 日付ベースのマップを作成
+            // 過去7日分の日付を生成（今日から7日前まで）
+            const today = new Date()
+            const last7Days: string[] = []
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today)
+                date.setDate(date.getDate() - i)
+                last7Days.push(date.toISOString().split('T')[0]) // YYYY-MM-DD形式
+            }
+            
+            console.log('📊 対象期間（過去7日）:', last7Days)
+            
+            // データをマップに変換（日付をキーとして）
+            const contributionMap = new Map()
             contributionData.data.recent_contributions.forEach((contribution) => {
-                const date = new Date(contribution.day)
-                const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()]
-                contributionMap.set(dayName, parseInt(contribution.count, 10))
+                const dateKey = contribution.day.split('T')[0] // ISO文字列からYYYY-MM-DD部分を取得
+                contributionMap.set(dateKey, parseInt(contribution.count, 10))
             })
             
-            // 動的な順序でデータを並べる
-            const contributions = dayOrder.map(day => contributionMap.get(day) || 0)
+            // 過去7日分のデータを順序通りに並べる
+            const contributions = last7Days.map(date => contributionMap.get(date) || 0)
 
-            console.log('📊 動的順序でのコントリビューションデータ:', contributions)
-            console.log('📊 曜日順序:', dayOrder)
+            console.log('📊 最終コントリビューションデータ（7日分）:', contributions)
+            console.log('📊 日付順序:', last7Days)
 
             return contributions
         } else if (userData?.recent_contributions && userData.recent_contributions.length > 0) {
