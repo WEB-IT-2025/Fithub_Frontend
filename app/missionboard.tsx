@@ -56,6 +56,7 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
     const [loading, setLoading] = useState(false)
     const [userId, setUserId] = useState<string | null>(null)
     const [sessionToken, setSessionToken] = useState<string | null>(null)
+    const [isToggleDisabled, setIsToggleDisabled] = useState(false) // タイムアウト制御用
 
     const sliderMargin = 8
     const sliderCount = 2
@@ -148,7 +149,28 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
             // 未完了ミッションのみ取得
             fetchMissions(type, false)
         }
-    }, [userId, sessionToken, type, isSafeAreaReady])
+    }, [userId, sessionToken, isSafeAreaReady]) // typeを依存配列から除外
+
+    // デイリー・ウィークリー切り替え処理（タイムアウト付き）
+    const handleTogglePress = (newType: MissionType) => {
+        // 連続クリック防止
+        if (isToggleDisabled || loading || newType === type) {
+            return
+        }
+
+        setIsToggleDisabled(true)
+        setType(newType)
+        
+        if (userId && sessionToken) {
+            // 未完了ミッションのみ取得（clearedをfalseに変更）
+            fetchMissions(newType, false)
+        }
+
+        // 1秒後にクリックを再有効化
+        setTimeout(() => {
+            setIsToggleDisabled(false)
+        }, 1000)
+    }
 
     // スライダー位置を計算
     const getLeft = (t: MissionType) => {
@@ -384,11 +406,9 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                                 ]}
                             />
                             <TouchableOpacity
-                                style={styles.toggleTouchable}
-                                onPress={() => {
-                                    setType('daily')
-                                    if (userId && sessionToken) fetchMissions('daily', true)
-                                }}
+                                style={[styles.toggleTouchable, isToggleDisabled && styles.disabledToggle]}
+                                onPress={() => handleTogglePress('daily')}
+                                disabled={isToggleDisabled}
                                 activeOpacity={1}
                             >
                                 <Text style={[styles.toggleText, type === 'daily' && styles.activeToggleText]}>
@@ -396,11 +416,9 @@ const MissionBoard: React.FC<MissionBoardProps> = ({ onClose }) => {
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={styles.toggleTouchable}
-                                onPress={() => {
-                                    setType('weekly')
-                                    if (userId && sessionToken) fetchMissions('weekly', true)
-                                }}
+                                style={[styles.toggleTouchable, isToggleDisabled && styles.disabledToggle]}
+                                onPress={() => handleTogglePress('weekly')}
+                                disabled={isToggleDisabled}
                                 activeOpacity={1}
                             >
                                 <Text style={[styles.toggleText, type === 'weekly' && styles.activeToggleText]}>
@@ -520,6 +538,9 @@ const styles = StyleSheet.create({
     },
     activeToggleText: {
         color: '#fff',
+    },
+    disabledToggle: {
+        opacity: 0.6,
     },
     sectionLabel: {
         fontSize: 13,
